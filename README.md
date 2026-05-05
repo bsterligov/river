@@ -1,6 +1,6 @@
 # river
 
-> **Experimental.** This project is an exploration of how fast a full observability stack can be built from scratch — with the constraint that it must be unlimitedly scalable and deployable anywhere: any cloud provider or on-premises.
+> **Experimental.** This project is an exploration of how fast a full observability stack can be built from scratch — with the constraint that it must be infinitely scalable and deployable anywhere: any cloud provider or on-premises.
 
 An open-source observability platform built for production workloads. River collects logs, metrics, and traces from your services via lightweight sidecar agents and provides a unified interface for storage and querying.
 
