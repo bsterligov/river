@@ -1,0 +1,18 @@
+services:
+  sidecar:
+    build:
+      context: src/sidecar
+    ports:
+      - "4317:4317"
+    restart: unless-stopped
+
+  demo-app:
+    build:
+      context: src/demo-app
+    depends_on:
+      - sidecar
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://sidecar:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_SERVICE_NAME: demo-app
+    restart: on-failure
