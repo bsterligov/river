@@ -33,6 +33,7 @@ Spans received by the sidecar are reliably written to S3 (LocalStack in local de
 - Real AWS S3 configuration or credentials management
 - Retry logic on S3 write failure
 - Compression of batched payloads
+- Metric aggregation before batching (delta → cumulative rollup, dedup of identical metric points)
 
 ## Open Questions
 
@@ -45,6 +46,10 @@ Spans received by the sidecar are reliably written to S3 (LocalStack in local de
 
 ## Update History
 <!-- append updates below, newest first -->
+
+### 2026-05-07 — Metric aggregation deferred
+
+Identified that metrics should be aggregated (rolled up) before batching to S3 rather than storing raw repeated points. Deferred to a future iteration — captured in Won't Have.
 
 ### 2026-05-07 — Decisions recorded
 

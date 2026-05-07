@@ -10,20 +10,21 @@ An open-source observability platform built for production workloads. River coll
 docker compose up --build
 ```
 
-This starts the full dev stack: a .NET demo app emitting OTel signals every 2 seconds, received by the Rust sidecar on port 4317. Sidecar output confirms all three signal types are arriving:
+This starts the full dev stack: LocalStack S3, a .NET demo app emitting OTel signals every 2 seconds, and the Rust sidecar on port 4317. The sidecar buffers incoming signals and flushes batches to S3:
 
 ```
 river sidecar listening on 0.0.0.0:4317
-[traces] resource_spans=1 spans=1
-[metrics] resource_metrics=1 metrics=1
-[logs] resource_logs=1 records=1
+[flush] key=traces/demo-app/1748345823001-550e8400-e29b-41d4.pb bytes=312
+[flush] key=metrics/demo-app/1748345833002-a987fbc9-4bed-31da.pb bytes=204
 ```
+
+Flushing is triggered when either threshold is reached: 10 MB of buffered data or 10 seconds since the last flush (both configurable via `SIDECAR_BUFFER_MAX_BYTES` and `SIDECAR_FLUSH_INTERVAL_SECS`).
 
 ## Repository Layout
 
 ```
 src/
-  sidecar/      # Rust — OTLP/gRPC receiver (port 4317)
+  sidecar/      # Rust — OTLP/gRPC receiver + S3 batcher (port 4317)
   demo-app/     # .NET 10 — continuous OTel signal emitter
 specs/          # spec-driven development artifacts
 ```
@@ -34,29 +35,37 @@ specs/          # spec-driven development artifacts
 ┌─────────────────────────────────────────────────────────┐
 │                      Your Services                      │
 │                                                         │
-│  [Service A] ──► [river-agent]                          │
-│  [Service B] ──► [river-agent]  ──► [river-ingestion]   │
-│  [Service C] ──► [river-agent]                          │
+│  [Service A] ──► [river-sidecar]                        │
+│  [Service B] ──► [river-sidecar]                        │
+│  [Service C] ──► [river-sidecar]                        │
 └─────────────────────────────────────────────────────────┘
-                                           │
-                    ┌──────────────────────┤
-                    │                      │
-                    ▼                      ▼
-             [ClickHouse]         [VictoriaMetrics]
-             logs & traces             metrics
-                    │                      │
-                    └──────────┬───────────┘
-                               ▼
-                         [river-api]
-                               │
-                               ▼
-                          [river-ui]
+                         │
+                         ▼
+              [S3 — durable batch store]
+              traces/{svc}/{ts}-{id}.pb
+              metrics/{svc}/{ts}-{id}.pb
+              logs/{svc}/{ts}-{id}.pb
+                         │
+                         ▼
+                 [river-ingestion] 🔜
+                         │
+                    ┌────┴────┐
+                    ▼         ▼
+             [ClickHouse]  [VictoriaMetrics]
+             logs & traces     metrics
+                    │              │
+                    └──────┬───────┘
+                           ▼
+                      [river-api] 🔜
+                           │
+                           ▼
+                      [river-ui] 🔜
 ```
 
 ## Components
 
-### `sidecar` — OTLP Receiver (Rust) ✅
-Lightweight sidecar deployed alongside each service. Accepts logs, metrics, and traces over OTLP/gRPC (port 4317). This is the permanent ingestion entrypoint — not a dev scaffold.
+### `sidecar` — OTLP Receiver + S3 Batcher (Rust) ✅
+Lightweight sidecar deployed alongside each service. Accepts logs, metrics, and traces over OTLP/gRPC (port 4317) and buffers them in memory. Flushes batches to S3 when either the buffer size or the flush interval threshold is reached. Each batch is a length-delimited OTLP protobuf file keyed by signal type and service name. On shutdown, the remaining buffer is flushed before exit.
 
 ### `demo-app` — Signal Emitter (.NET 10) ✅
 A .NET 10 console app pre-configured with the OpenTelemetry SDK. Emits traces, metrics, and structured logs on a continuous 2-second loop. Used to drive development and validate the ingestion pipeline against real OTel data.
@@ -83,6 +92,7 @@ Cross-platform frontend for exploring logs, traces, and metrics. Built with [Flu
 
 - **Backend:** Rust across all server-side components
 - **Frontend:** Flutter (web + desktop)
+- **Telemetry Buffer:** S3 (LocalStack in local dev, any S3-compatible store in production)
 - **Log/Trace Storage:** ClickHouse
 - **Metric Storage:** VictoriaMetrics
 - **Wire Protocol:** OpenTelemetry Protocol (OTLP/gRPC)

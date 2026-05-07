@@ -20,9 +20,11 @@ use prost::Message;
 use tonic::{transport::Server, Request, Response, Status};
 
 mod batcher;
+mod metrics_aggregator;
 mod sink;
 
 use batcher::{Batcher, Config};
+use metrics_aggregator::MetricsAggregator;
 use sink::S3Sink;
 
 fn service_name(attrs: &[opentelemetry_proto::tonic::common::v1::KeyValue]) -> String {
@@ -41,7 +43,7 @@ fn service_name(attrs: &[opentelemetry_proto::tonic::common::v1::KeyValue]) -> S
 #[derive(Clone)]
 struct Receiver {
     traces: Arc<Batcher>,
-    metrics: Arc<Batcher>,
+    metrics: Arc<MetricsAggregator>,
     logs: Arc<Batcher>,
 }
 
@@ -82,7 +84,7 @@ impl MetricsService for Receiver {
             .map(|r| service_name(&r.attributes))
             .unwrap_or_else(|| "unknown".to_string());
         self.metrics
-            .push(&svc, req.encode_length_delimited_to_vec())
+            .push(&svc, req)
             .await
             .map_err(|e| Status::internal(e.to_string()))?;
         Ok(Response::new(ExportMetricsServiceResponse {
@@ -145,8 +147,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let traces = make("traces");
-    let metrics = make("metrics");
     let logs = make("logs");
+
+    let metrics = Arc::new(MetricsAggregator::new(
+        metrics_aggregator::Config {
+            flush_interval,
+            key_prefix: "metrics".to_string(),
+        },
+        Arc::new(S3Sink::new(s3.clone(), bucket.clone())),
+    ));
 
     {
         let t = Arc::clone(&traces);
