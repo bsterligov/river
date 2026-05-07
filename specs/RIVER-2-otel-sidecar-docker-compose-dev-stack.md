@@ -1,5 +1,5 @@
 # RIVER-2: OTel Sidecar + Docker Compose Dev Stack
-Status: In Progress
+Status: Done
 Priority: Must
 Test Approach: BDD
 Why: We need a local end-to-end signal flow so we can develop and validate the river ingestion pipeline against real OTel data.

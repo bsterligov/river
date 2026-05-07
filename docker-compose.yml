@@ -1,9 +1,39 @@
 services:
+  localstack:
+    image: localstack/localstack:4
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3
+
+  s3-init:
+    image: amazon/aws-cli
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: us-east-1
+    command: s3 mb s3://river-telemetry --endpoint-url http://localstack:4566
+    restart: on-failure
+
   sidecar:
     build:
       context: src/sidecar
     ports:
       - "4317:4317"
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_REGION: us-east-1
+      S3_BUCKET: river-telemetry
+      SIDECAR_BUFFER_MAX_BYTES: "10485760"
+      SIDECAR_FLUSH_INTERVAL_SECS: "10"
     restart: unless-stopped
 
   demo-app:

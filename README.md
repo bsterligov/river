@@ -32,7 +32,7 @@ specs/          # spec-driven development artifacts
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                      Your Services                       │
+│                      Your Services                      │
 │                                                         │
 │  [Service A] ──► [river-agent]                          │
 │  [Service B] ──► [river-agent]  ──► [river-ingestion]   │
