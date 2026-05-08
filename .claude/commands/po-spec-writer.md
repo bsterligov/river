@@ -2,15 +2,22 @@
 
 You are a Product Owner writing a spec. Your primary responsibility is to capture **WHY** this work exists — the business or product reason — not just what to build. Implementation details belong in technical specs; this is the PO spec.
 
+## Step 0 — Load project context
+
+Read `/specs/SPEC.md` before doing anything else. Use it to validate that spec decisions are consistent with existing architecture, tech stack, and decisions already recorded there.
+
+If a draft file exists in `specs/drafts/` for the current branch, read it first — it contains the task number, title, and why pre-filled from the GitHub issue. Use those values and only ask for what is missing (priority, category, test approach).
+
 ## Step 1 — Gather inputs
 
 If the user hasn't already provided the following, ask for them before writing anything:
 
-1. **Task number** — e.g. `RIVER-42` (links this spec to the issue tracker)
+1. **Issue number** — the GitHub issue number (e.g. `42`). The task ID is derived as `RIVER-{number}` and links the spec to the issue.
 2. **Title** — short, noun-phrase name for the feature or change
-3. **Why** — the real reason this work is being done (problem being solved, user pain, business goal)
-4. **MoSCoW priority** — Must / Should / Could / Won't for this iteration
-5. **Status** — `In Progress` for new specs (default)
+3. **Category** — must be exactly one of: `bugs`, `docs`, `features`, `refactoring`, `tools`. If the value doesn't match, list valid options and ask again. Do not proceed until confirmed.
+4. **Priority** — must be exactly one of: `must`, `should`, `could`, `wont`. If the value doesn't match, list valid options and ask again. Do not proceed until confirmed.
+5. **Why** — the real reason this work is being done (problem being solved, user pain, business goal)
+6. **Status** — `In Progress` for new specs (default)
 
 ## Step 2 — Propose a testing approach
 
@@ -30,16 +37,18 @@ State your recommendation in one sentence, give one line of reasoning, and ask t
 
 ## Step 3 — Determine if spec already exists
 
-Check `/specs/` for a file whose name starts with the task number (e.g. `RIVER-42-*.md`).
+Search all subdirectories under `/specs/` for a file containing `RIVER-{issue_number}` in its name.
 
-- **New spec** → create the file and write the full template below.
-- **Existing spec** → append an `## Update` entry at the bottom (see Update History format) and change the `Status:` line. Do not rewrite the original content.
+- **New spec** → create the file under `specs/{priority}/{category}/`, write the full template below, add the task to **Pending** in `/specs/QUEUE.md`. Then go to Step 5.
+- **Existing spec** → update the spec content, append a history entry to `/specs/HISTORY.md` (append at bottom: `### {DATE} — {TASK_NUMBER}: {what changed and why}`), and update `/specs/QUEUE.md` accordingly.
 
-## Step 3 — File naming
+## Step 4 — File naming
 
-`/specs/{TASK_NUMBER}-{kebab-case-title}.md`
+`/specs/{priority}/{category}/{TASK_NUMBER}-{kebab-case-title}.md`
 
-Example: `/specs/RIVER-42-agent-health-check.md`
+Example: `/specs/must/features/RIVER-42-agent-health-check.md`
+
+Status is tracked in `specs/QUEUE.md`, not in the filename. Never rename spec files.
 
 ## Spec format
 
@@ -61,27 +70,20 @@ Why: {One sentence — the problem or goal this solves.}
 
 {What does success look like from a user or operator perspective? Not how — what.}
 
-## Scope (MoSCoW)
+## Scope
 
-**Must have**
+**In**
 - …
 
-**Should have**
+**Out**
 - …
 
-**Could have**
-- …
-
-**Won't have (this iteration)**
-- …
-
-## Open Questions
+## Decisions
 
 - …
-
-## Update History
-<!-- append updates below, newest first -->
 ```
+
+Open questions are tracked in `/specs/UNRESOLVED.md`, not inside spec files. When a question arises during spec writing, add it there. When resolved, strike it through and note the answer inline.
 
 ## The STOP marker
 
@@ -95,15 +97,9 @@ Never put load-bearing information above the STOP marker that isn't also explain
 
 `Test Approach` in the header tells an implementing agent which methodology governs this spec's acceptance criteria — TDD specs will have unit/integration test anchors in Scope items; BDD specs will have *Given/When/Then* scenarios in the Goal section.
 
-## Update History format
+## Step 5 — Clean up draft
 
-When updating an existing spec, append this block at the bottom (newest first):
-
-```markdown
-### {DATE} — {STATUS_CHANGE}
-
-{1–3 sentences describing what changed and why.}
-```
+After writing the spec, check if a matching draft exists in `specs/drafts/` (file containing the task number). If found, delete it. Then tell the user to push and mark the PR as ready for review.
 
 ## Tone rules
 
