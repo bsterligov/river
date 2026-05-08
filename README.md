@@ -1,133 +1,97 @@
 # river
 
-> **Experimental.** This project is an exploration of how fast a full observability stack can be built from scratch — with the constraint that it must be infinitely scalable and deployable anywhere: any cloud provider or on-premises.
+> Experimental. Open-source observability platform — infinitely scalable, deployable anywhere.
 
-An open-source observability platform built for production workloads. River collects logs, metrics, and traces from your services via lightweight sidecar agents and provides a unified interface for storage and querying.
+For architecture, tech stack, and project decisions see [specs/SPEC.md](specs/SPEC.md).
 
-## Quick Start
+---
+
+## Spec-Driven Development (SDD)
+
+River uses SDD natively — no external project management tools, no ticket trackers, no extra frameworks. Specs, skills, and context files live in the repo and are read directly by Claude. The entire workflow runs inside Claude Code.
+
+**The key idea: we review specs, not code.** A spec PR is reviewed before any implementation starts. Once merged, code goes straight to main — no code review.
+
+Work is linear — one spec at a time. Status lives in `specs/QUEUE.md`, not in filenames.
+
+### Workflow
+
+```
+GitHub Issue → draft PR → checkout → /po-spec-writer → review & merge → /dev-spec → /sync-spec
+```
+
+### 1. Create a GitHub issue
+
+Open an issue with:
+- **Title** — short noun phrase
+- **Body** — one sentence: the problem or goal (becomes the *Why*)
+
+On issue open, the `spec-from-issue` workflow automatically:
+- Creates branch `spec/RIVER-{number}`
+- Adds a draft prompt to `specs/drafts/RIVER-{number}-title.md`
+- Opens a **draft PR**
+
+No API key or labels needed.
+
+### 2. Write the spec locally
+
+Checkout the branch and open Claude Code:
 
 ```bash
-docker compose up --build
+git checkout spec/RIVER-{number}
+# then run in Claude Code:
+/po-spec-writer
 ```
 
-This starts the full dev stack: LocalStack S3, a .NET demo app emitting OTel signals every 2 seconds, and the Rust sidecar on port 4317. The sidecar buffers incoming signals and flushes batches to S3:
+Claude reads the draft (task, title, why pre-filled from the issue) and only asks for priority, category, and test approach. It writes the real spec to `specs/{priority}/{category}/`, updates `QUEUE.md`, and deletes the draft file.
+
+Push and mark the PR as ready for review.
+
+### 3. Review
+
+The PR is the spec contract — check before merging:
+1. **Why line** — states the problem, not the solution. One sentence above `<!-- STOP -->`.
+2. **Scope In** — every item is independently testable. Split if not.
+3. **Scope Out** — explicitly lists what is deferred.
+
+### 4. Implement
+
+Once merged, run:
 
 ```
-river sidecar listening on 0.0.0.0:4317
-[flush] key=traces/demo-app/1748345823001-550e8400-e29b-41d4.pb bytes=312
-[flush] key=metrics/demo-app/1748345833002-a987fbc9-4bed-31da.pb bytes=204
+/dev-spec
 ```
 
-Flushing is triggered when either threshold is reached: 10 MB of buffered data or 10 seconds since the last flush (both configurable via `SIDECAR_BUFFER_MAX_BYTES` and `SIDECAR_FLUSH_INTERVAL_SECS`).
+Reads the spec, implements **Scope In**, commits to main, updates `QUEUE.md` and `HISTORY.md`. No code review.
 
-## Repository Layout
-
-```
-src/
-  sidecar/      # Rust — OTLP/gRPC receiver + S3 batcher (port 4317)
-  demo-app/     # .NET 10 — continuous OTel signal emitter
-specs/          # spec-driven development artifacts
-```
-
-## Architecture
+### 5. Sync SPEC.md
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                      Your Services                      │
-│                                                         │
-│  [Service A] ──► [river-sidecar]                        │
-│  [Service B] ──► [river-sidecar]                        │
-│  [Service C] ──► [river-sidecar]                        │
-└─────────────────────────────────────────────────────────┘
-                         │
-                         ▼
-              [S3 — durable batch store]
-              traces/{svc}/{ts}-{id}.pb
-              metrics/{svc}/{ts}-{id}.pb
-              logs/{svc}/{ts}-{id}.pb
-                         │
-                         ▼
-                 [river-ingestion] 🔜
-                         │
-                    ┌────┴────┐
-                    ▼         ▼
-             [ClickHouse]  [VictoriaMetrics]
-             logs & traces     metrics
-                    │              │
-                    └──────┬───────┘
-                           ▼
-                      [river-api] 🔜
-                           │
-                           ▼
-                      [river-ui] 🔜
+/sync-spec
 ```
 
-## Components
+Patches `specs/SPEC.md` with architectural decisions from the completed spec. Read-only at all other times.
 
-### `sidecar` — OTLP Receiver + S3 Batcher (Rust) ✅
-Lightweight sidecar deployed alongside each service. Accepts logs, metrics, and traces over OTLP/gRPC (port 4317) and buffers them in memory. Flushes batches to S3 when either the buffer size or the flush interval threshold is reached. Each batch is a length-delimited OTLP protobuf file keyed by signal type and service name. On shutdown, the remaining buffer is flushed before exit.
+### Spec path
 
-### `demo-app` — Signal Emitter (.NET 10) ✅
-A .NET 10 console app pre-configured with the OpenTelemetry SDK. Emits traces, metrics, and structured logs on a continuous 2-second loop. Used to drive development and validate the ingestion pipeline against real OTel data.
+`specs/{priority}/{category}/RIVER-N-title.md`
 
-### `river-ingestion` — Ingestion Service (Rust) 🔜
-Receives telemetry from the sidecar, validates and parses it, and writes to the appropriate storage backend:
-- Logs and traces → ClickHouse
-- Metrics → VictoriaMetrics
+| Priority | When |
+|----------|------|
+| `must` | Required for this iteration |
+| `should` | Important but not blocking |
+| `could` | Nice to have if time allows |
+| `wont` | Explicitly out of scope |
 
-### Storage 🔜
-| Signal  | Backend                                               |
-|---------|-------------------------------------------------------|
-| Logs    | [ClickHouse](https://clickhouse.com/) — columnar, fast full-text search |
-| Traces  | [ClickHouse](https://clickhouse.com/) — efficient span storage and trace assembly |
-| Metrics | [VictoriaMetrics](https://victoriametrics.com/) — high-performance time-series |
+| Category | Use for |
+|----------|---------|
+| `bugs` | Defects and regressions |
+| `docs` | Documentation, guides, reference material |
+| `features` | New user-facing or operator-facing capabilities |
+| `refactoring` | Internal restructuring with no behavior change |
+| `tools` | Dev tooling, CI, scripts, skills |
 
-### `river-api` — Query API (Rust) 🔜
-Unified HTTP/gRPC API that queries both ClickHouse and VictoriaMetrics and exposes results to the UI and external consumers.
-
-### `river-ui` — Dashboard (Flutter) 🔜
-Cross-platform frontend for exploring logs, traces, and metrics. Built with [Flutter](https://flutter.dev/) for web and desktop.
-
-## Tech Stack
-
-- **Backend:** Rust across all server-side components
-- **Frontend:** Flutter (web + desktop)
-- **Telemetry Buffer:** S3 (LocalStack in local dev, any S3-compatible store in production)
-- **Log/Trace Storage:** ClickHouse
-- **Metric Storage:** VictoriaMetrics
-- **Wire Protocol:** OpenTelemetry Protocol (OTLP/gRPC)
-
-## Dev Environment
-
-Runtime versions are managed by [mise](https://mise.jdx.dev/). Run `mise install` once to provision the toolchain.
-
-```bash
-mise exec -- cargo build     # Rust
-mise exec -- cargo test
-mise exec -- flutter build   # Flutter
-```
-
-## Development Approach
-
-River is built using **spec-driven development**. Each feature cycle begins and ends with a specification:
-
-```
-spec → code → spec → code → ...
-```
-
-**How it works:**
-1. Write or refine a spec for the next increment
-2. Implement against the spec
-3. Update the spec to reflect what was built and what was learned
-4. Repeat
-
-**Prioritization** follows the [MoSCoW method](https://en.wikipedia.org/wiki/MoSCoW_method): every feature or requirement is tagged as Must have, Should have, Could have, or Won't have for the current iteration.
-
-Specs, cursor rules, and AI skills are first-class artifacts in this repo — they live alongside the code and evolve with it.
-
-## Status
-
-Early development — not yet production ready.
+---
 
 ## License
 
