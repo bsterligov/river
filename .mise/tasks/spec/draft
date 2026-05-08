@@ -34,5 +34,10 @@ mkdir -p specs/drafts
   printf 'Category: %s\n' "$CATEGORY"
 } > "$FILE"
 
-printf 'SPEC_TASK=%s\nSPEC_TITLE=%s\nSPEC_BRANCH=%s\nSPEC_FILE=%s\nSPEC_NUMBER=%s\n' \
-  "$TASK" "$TITLE" "$BRANCH" "$FILE" "$ISSUE_NUMBER" > .spec-env
+{
+  printf 'SPEC_TASK=%q\n'   "$TASK"
+  printf 'SPEC_TITLE=%q\n'  "$TITLE"
+  printf 'SPEC_BRANCH=%q\n' "$BRANCH"
+  printf 'SPEC_FILE=%q\n'   "$FILE"
+  printf 'SPEC_NUMBER=%q\n' "$ISSUE_NUMBER"
+} > .spec-env
