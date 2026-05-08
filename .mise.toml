@@ -1,3 +1,19 @@
 [tools]
 rust = "1.95.0"
-flutter = "3.41.0"
+"cargo:cargo-llvm-cov" = "latest"
+
+[tasks.fmt-check]
+description = "Check formatting"
+run = "cargo fmt -- --check"
+
+[tasks.clippy]
+description = "Run linter"
+run = "cargo clippy -- -D warnings"
+
+[tasks.test]
+description = "Run tests"
+run = "cargo test"
+
+[tasks.coverage]
+description = "Run tests and generate lcov.info"
+run = "cargo llvm-cov --workspace --lcov --output-path lcov.info"

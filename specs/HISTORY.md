@@ -19,3 +19,7 @@ Metrics should be aggregated before batching to S3 rather than storing raw repea
 ### 2026-05-08 — RIVER-1: implementation done
 
 Ingestion service implemented in Rust: S3 poll loop routing OTLP protobuf files by key prefix to VictoriaMetrics (metrics via OTLP HTTP) and ClickHouse (logs/traces via JSONEachRow). ClickHouse and VictoriaMetrics services added to docker-compose.
+
+### 2026-05-08 — RIVER-4: implementation done
+
+GitHub Actions CI workflow added: fmt-check, clippy (-D warnings), and test via mise tasks, followed by SonarQube scan and quality gate. Two pre-existing clippy issues in sidecar fixed as part of rollout.

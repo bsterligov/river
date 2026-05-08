@@ -2,7 +2,6 @@ use std::collections::{hash_map::Entry, HashMap};
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use async_trait::async_trait;
 use prost::Message;
 use tokio::sync::Mutex;
 
@@ -252,6 +251,7 @@ fn ingest(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn upsert(
     series: &mut HashMap<String, SeriesEntry>,
     rk: &str,
@@ -394,6 +394,8 @@ fn build_metric(entries: &[SeriesEntry]) -> Metric {
 mod tests {
     use super::*;
     use std::sync::Mutex as StdMutex;
+
+    use async_trait::async_trait;
 
     use opentelemetry_proto::tonic::{
         common::v1::{any_value::Value as AV, AnyValue},
