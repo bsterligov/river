@@ -14,6 +14,5 @@ Currently being implemented.
 *(none)*
 
 ## Pending
-Spec not yet written. Add task numbers in priority order.
 
-*(none)*
+- RIVER-6: Setup DevOps Part 2 — `specs/must/tools/RIVER-6-setup-devops-part-2.md`

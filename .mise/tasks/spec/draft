@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#MISE description="Fetch GitHub issue and create draft spec file"
+set -eu
+
+NUMBER="${ISSUE_NUMBER:-${1:-}}"
+[ -n "$NUMBER" ] || { echo "usage: ISSUE_NUMBER=<n> mise run spec:draft"; exit 1; }
+
+DATA=$(gh issue view "$NUMBER" --json number,title,body,labels)
+ISSUE_NUMBER=$(echo "$DATA" | jq -r '.number')
+TITLE=$(echo "$DATA" | jq -r '.title')
+BODY=$(echo "$DATA" | jq -r '.body')
+LABELS=$(echo "$DATA" | jq -r '.labels[].name')
+
+PRIORITY=$(echo "$LABELS" | grep -E '^(must|should|could|wont)$' | head -1)
+CATEGORY=$(echo "$LABELS" | grep -E '^(bugs|docs|features|refactoring|tools)$' | head -1)
+PRIORITY=${PRIORITY:-"<!-- must / should / could / wont -->"}
+CATEGORY=${CATEGORY:-"<!-- bugs / docs / features / refactoring / tools -->"}
+
+TASK="RIVER-${ISSUE_NUMBER}"
+SLUG=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+BRANCH="spec/${TASK,,}"
+FILE="specs/drafts/${TASK}-${SLUG}.md"
+
+mkdir -p specs/drafts
+{
+  printf '# DRAFT -- Issue #%s\n' "$ISSUE_NUMBER"
+  printf '# Run `/po-spec-writer` on this branch to generate the full spec.\n'
+  printf '\n'
+  printf 'Issue:    #%s\n' "$ISSUE_NUMBER"
+  printf 'Task:     %s\n' "$TASK"
+  printf 'Title:    %s\n' "$TITLE"
+  printf 'Why:\n%s\n' "$BODY"
+  printf 'Priority: %s\n' "$PRIORITY"
+  printf 'Category: %s\n' "$CATEGORY"
+} > "$FILE"
+
+printf 'SPEC_TASK=%s\nSPEC_TITLE=%s\nSPEC_BRANCH=%s\nSPEC_FILE=%s\nSPEC_NUMBER=%s\n' \
+  "$TASK" "$TITLE" "$BRANCH" "$FILE" "$ISSUE_NUMBER" > .spec-env

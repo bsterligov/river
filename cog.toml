@@ -1,0 +1,3 @@
+[commit_types]
+spec = { changelog_title = "Specifications", omit_from_changelog = true }
+day  = { changelog_title = "Setup",          omit_from_changelog = true }

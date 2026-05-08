@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#MISE description="Push tag and create GitHub release"
+set -eu
+
+git tag "$RELEASE_VERSION"
+git push origin tag "$RELEASE_VERSION"
+NOTES=$(git log -1 --pretty=%B)
+gh release create "$RELEASE_VERSION" --title "$RELEASE_VERSION" --notes "$NOTES" --latest

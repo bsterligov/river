@@ -15,7 +15,6 @@ Read in this order:
 
 Implement everything listed under **Scope In**. Follow the Test Approach declared in the spec header (TDD or BDD). Do not implement anything listed under **Scope Out**.
 
-Commit incrementally as logical units of work — do not batch everything into one commit.
 
 Before each commit, run and fix all failures from:
 ```bash
@@ -23,8 +22,6 @@ mise exec -- cargo fmt
 mise exec -- cargo clippy -- -D warnings
 mise exec -- cargo test
 ```
-
-Do not commit until all three pass cleanly.
 
 ## Step 3 — Close out tracking files
 
@@ -38,13 +35,17 @@ When implementation is complete:
    {1–2 sentences on what was built and any notable outcome.}
    ```
 
-4. **Commit all tracking changes** in a single commit:
-   ```
-   chore: close RIVER-N — mark done, update queue and history
-   ```
+
 
 ## Step 4 — Prompt for sync
 
 Tell the user: implementation is complete. Run `/sync-spec` to update `specs/SPEC.md` with any decisions from this spec.
 
 Do not run `/sync-spec` yourself.
+
+## Step 5 — Commit changes
+
+**Commit all tracking changes** in a single commit:
+   ```
+   <type: fix, feat, docs ...>: RIVER-N message
+   ```

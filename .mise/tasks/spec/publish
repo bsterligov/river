@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+#MISE description="Commit draft spec and open draft PR"
+set -eu
+
+[ -f .spec-env ] || { echo "run spec:draft first"; exit 1; }
+. ./.spec-env
+rm -f .spec-env
+
+if [ -n "${CI:-}" ]; then
+  git config user.name "github-actions[bot]"
+  git config user.email "github-actions[bot]@users.noreply.github.com"
+fi
+
+git checkout -b "$SPEC_BRANCH"
+git add specs/drafts/
+git commit -m "draft: $SPEC_TASK -- $SPEC_TITLE"
+git push -u origin "$SPEC_BRANCH"
+
+gh pr create \
+  --title "spec: $SPEC_TASK -- $SPEC_TITLE" \
+  --body "Draft spec from issue #${SPEC_NUMBER}.
+
+Checkout this branch and run \`/po-spec-writer\` to generate the full spec.
+
+\`\`\`
+git checkout $SPEC_BRANCH
+\`\`\`
+
+Then open Claude Code and run \`/po-spec-writer\`." \
+  --head "$SPEC_BRANCH" \
+  --base main \
+  --draft

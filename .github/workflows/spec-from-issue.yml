@@ -1,4 +1,4 @@
-name: spec-from-issue
+name: Create Spec from Issue
 
 # On every new issue: create a branch and open a draft PR
 # with a pre-filled spec prompt in specs/drafts/.
@@ -14,84 +14,23 @@ on:
         required: true
         type: number
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   create-draft:
+    name: Create Draft PR
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Fetch issue and create draft file
-        id: draft
+      - uses: jdx/mise-action@v4
+
+      - name: Create draft spec and open PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
         run: |
-          DATA=$(gh issue view "$NUMBER" --json number,title,body,labels)
-          ISSUE_NUMBER=$(echo "$DATA" | jq -r '.number')
-          TITLE=$(echo "$DATA" | jq -r '.title')
-          BODY=$(echo "$DATA" | jq -r '.body')
-          LABELS=$(echo "$DATA" | jq -r '.labels[].name')
-
-          PRIORITY=$(echo "$LABELS" | grep -E '^(must|should|could|wont)$' | head -1)
-          CATEGORY=$(echo "$LABELS" | grep -E '^(bugs|docs|features|refactoring|tools)$' | head -1)
-
-          PRIORITY=${PRIORITY:-"<!-- must / should / could / wont -->"}
-          CATEGORY=${CATEGORY:-"<!-- bugs / docs / features / refactoring / tools -->"}
-
-          TASK="RIVER-${ISSUE_NUMBER}"
-          SLUG=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
-          BRANCH="spec/${TASK,,}"
-          FILE="specs/drafts/${TASK}-${SLUG}.md"
-
-          echo "task=$TASK"           >> $GITHUB_OUTPUT
-          echo "title=$TITLE"         >> $GITHUB_OUTPUT
-          echo "branch=$BRANCH"       >> $GITHUB_OUTPUT
-          echo "file=$FILE"           >> $GITHUB_OUTPUT
-          echo "number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
-
-          mkdir -p specs/drafts
-          {
-            printf '# DRAFT -- Issue #%s\n' "$ISSUE_NUMBER"
-            printf '# Run `/po-spec-writer` on this branch to generate the full spec.\n'
-            printf '\n'
-            printf 'Issue:    #%s\n' "$ISSUE_NUMBER"
-            printf 'Task:     %s\n' "$TASK"
-            printf 'Title:    %s\n' "$TITLE"
-            printf 'Why:\n%s\n' "$BODY"
-            printf 'Priority: %s\n' "$PRIORITY"
-            printf 'Category: %s\n' "$CATEGORY"
-          } > "$FILE"
-
-      - name: Commit and open draft PR
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_BODY: |
-            Draft spec from issue #${{ steps.draft.outputs.number }}.
-
-            Checkout this branch and run `/po-spec-writer` to generate the full spec.
-
-            ```
-            git checkout ${{ steps.draft.outputs.branch }}
-            ```
-
-            Then open Claude Code and run `/po-spec-writer`.
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b ${{ steps.draft.outputs.branch }}
-          git add specs/drafts/
-          git commit -m "draft: ${{ steps.draft.outputs.task }} -- ${{ steps.draft.outputs.title }}"
-          git push -u origin ${{ steps.draft.outputs.branch }}
-          gh pr create \
-            --title "spec: ${{ steps.draft.outputs.task }} -- ${{ steps.draft.outputs.title }}" \
-            --body "$PR_BODY" \
-            --head ${{ steps.draft.outputs.branch }} \
-            --base main \
-            --draft
+          mise run spec:draft
+          mise run spec:publish

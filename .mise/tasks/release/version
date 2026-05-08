@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#MISE description="Calculate next version from Conventional Commits (dry-run)"
+
+LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+COMMITS_SINCE=$(git rev-list "${LAST_TAG:+${LAST_TAG}..}HEAD" --count 2>/dev/null || echo "0")
+
+if [ "$COMMITS_SINCE" -eq 0 ]; then
+  echo "${LAST_TAG#v}"
+  exit 0
+fi
+
+if VERSION=$(cog bump --auto --dry-run 2>/dev/null) && [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+  echo "$VERSION"
+else
+  cog bump --minor --dry-run 2>/dev/null || echo "0.1.0"
+fi

@@ -1,4 +1,4 @@
-# river
+# Opentelemetry based observability platform
 
 > Experimental. Open-source observability platform — infinitely scalable, deployable anywhere.
 
