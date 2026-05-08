@@ -2,8 +2,6 @@
 
 > Experimental. Open-source observability platform — infinitely scalable, deployable anywhere.
 
-For architecture, tech stack, and project decisions see [specs/SPEC.md](specs/SPEC.md).
-
 ---
 
 ## Spec-Driven Development (SDD)
@@ -91,8 +89,3 @@ Patches `specs/SPEC.md` with architectural decisions from the completed spec. Re
 | `refactoring` | Internal restructuring with no behavior change |
 | `tools` | Dev tooling, CI, scripts, skills |
 
----
-
-## License
-
-See [LICENSE](LICENSE).
