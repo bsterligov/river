@@ -23,3 +23,7 @@ Ingestion service implemented in Rust: S3 poll loop routing OTLP protobuf files 
 ### 2026-05-08 — RIVER-4: implementation done
 
 GitHub Actions CI workflow added: fmt-check, clippy (-D warnings), and test via mise tasks, followed by SonarQube scan and quality gate. Two pre-existing clippy issues in sidecar fixed as part of rollout.
+
+### 2026-05-08 — RIVER-6: spec created
+
+PO spec written for automated release and tagging workflow. Scope limited to tag-push trigger and GitHub release creation; binary asset uploads deferred until CI builds exist.
