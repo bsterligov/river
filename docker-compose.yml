@@ -36,6 +36,51 @@ services:
       SIDECAR_FLUSH_INTERVAL_SECS: "10"
     restart: unless-stopped
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_DB: river
+      CLICKHOUSE_USER: river
+      CLICKHOUSE_PASSWORD: river
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--user", "river", "--password", "river", "--query", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.100.0
+    ports:
+      - "8428:8428"
+    command: -retentionPeriod=30d
+
+  ingestion:
+    build:
+      context: src/ingestion
+    depends_on:
+      localstack:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      victoriametrics:
+        condition: service_started
+    environment:
+      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_REGION: us-east-1
+      S3_BUCKET: river-telemetry
+      RIVER_POLL_INTERVAL_SECS: "10"
+      VICTORIAMETRICS_URL: http://victoriametrics:8428
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_DB: river
+      CLICKHOUSE_USER: river
+      CLICKHOUSE_PASSWORD: river
+    restart: unless-stopped
+
   demo-app:
     build:
       context: src/demo-app

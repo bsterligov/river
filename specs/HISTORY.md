@@ -15,3 +15,7 @@ Closed both open questions: raw OTLP protobuf as payload; object key includes se
 ### 2026-05-07 — RIVER-3: Metric aggregation deferred
 
 Metrics should be aggregated before batching to S3 rather than storing raw repeated points. Deferred to a future iteration — captured in Out scope.
+
+### 2026-05-08 — RIVER-1: implementation done
+
+Ingestion service implemented in Rust: S3 poll loop routing OTLP protobuf files by key prefix to VictoriaMetrics (metrics via OTLP HTTP) and ClickHouse (logs/traces via JSONEachRow). ClickHouse and VictoriaMetrics services added to docker-compose.

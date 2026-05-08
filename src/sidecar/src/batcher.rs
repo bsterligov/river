@@ -77,7 +77,8 @@ impl Batcher {
     pub async fn tick(&self) -> anyhow::Result<()> {
         let to_flush = {
             let mut state = self.state.lock().await;
-            if !state.buffer.is_empty() && state.last_flush.elapsed() >= self.config.flush_interval {
+            if !state.buffer.is_empty() && state.last_flush.elapsed() >= self.config.flush_interval
+            {
                 Some(self.drain(&mut state))
             } else {
                 None

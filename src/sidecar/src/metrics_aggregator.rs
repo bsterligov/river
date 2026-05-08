@@ -72,7 +72,11 @@ impl MetricsAggregator {
         }
     }
 
-    pub async fn push(&self, service_name: &str, req: ExportMetricsServiceRequest) -> anyhow::Result<()> {
+    pub async fn push(
+        &self,
+        service_name: &str,
+        req: ExportMetricsServiceRequest,
+    ) -> anyhow::Result<()> {
         let mut state = self.state.lock().await;
         if state.series.is_empty() {
             state.service_name = service_name.to_string();
@@ -93,7 +97,8 @@ impl MetricsAggregator {
     pub async fn tick(&self) -> anyhow::Result<()> {
         let to_flush = {
             let mut state = self.state.lock().await;
-            if !state.series.is_empty() && state.last_flush.elapsed() >= self.config.flush_interval {
+            if !state.series.is_empty() && state.last_flush.elapsed() >= self.config.flush_interval
+            {
                 Some(self.drain(&mut state))
             } else {
                 None
@@ -133,10 +138,15 @@ impl MetricsAggregator {
             .as_millis();
         let key = format!(
             "{}/{}/{}-{}.pb",
-            self.config.key_prefix, service, ts,
+            self.config.key_prefix,
+            service,
+            ts,
             uuid::Uuid::new_v4()
         );
-        println!("[flush:metrics] key={key} bytes={} series={series_count}", buf.len());
+        println!(
+            "[flush:metrics] key={key} bytes={} series={series_count}",
+            buf.len()
+        );
         (key, buf)
     }
 }
@@ -151,7 +161,10 @@ fn attrs_key(attrs: &[KeyValue]) -> String {
 }
 
 fn resource_key(resource: &Option<Resource>) -> String {
-    resource.as_ref().map(|r| attrs_key(&r.attributes)).unwrap_or_default()
+    resource
+        .as_ref()
+        .map(|r| attrs_key(&r.attributes))
+        .unwrap_or_default()
 }
 
 fn ingest(
@@ -166,10 +179,21 @@ fn ingest(
         Some(Data::Gauge(g)) => {
             for p in &g.data_points {
                 upsert(
-                    series, rk, resource.clone(), scope_name, scope_ver, m,
+                    series,
+                    rk,
+                    resource.clone(),
+                    scope_name,
+                    scope_ver,
+                    m,
                     &attrs_key(&p.attributes),
                     || SeriesKind::Gauge(p.clone()),
-                    |k| { if let SeriesKind::Gauge(e) = k { if p.time_unix_nano >= e.time_unix_nano { *e = p.clone(); } } },
+                    |k| {
+                        if let SeriesKind::Gauge(e) = k {
+                            if p.time_unix_nano >= e.time_unix_nano {
+                                *e = p.clone();
+                            }
+                        }
+                    },
                 );
             }
         }
@@ -177,10 +201,25 @@ fn ingest(
             let (t, mono) = (s.aggregation_temporality, s.is_monotonic);
             for p in &s.data_points {
                 upsert(
-                    series, rk, resource.clone(), scope_name, scope_ver, m,
+                    series,
+                    rk,
+                    resource.clone(),
+                    scope_name,
+                    scope_ver,
+                    m,
                     &attrs_key(&p.attributes),
-                    || SeriesKind::Sum { temporality: t, is_monotonic: mono, point: p.clone() },
-                    |k| { if let SeriesKind::Sum { point: e, .. } = k { if p.time_unix_nano >= e.time_unix_nano { *e = p.clone(); } } },
+                    || SeriesKind::Sum {
+                        temporality: t,
+                        is_monotonic: mono,
+                        point: p.clone(),
+                    },
+                    |k| {
+                        if let SeriesKind::Sum { point: e, .. } = k {
+                            if p.time_unix_nano >= e.time_unix_nano {
+                                *e = p.clone();
+                            }
+                        }
+                    },
                 );
             }
         }
@@ -188,10 +227,24 @@ fn ingest(
             let t = h.aggregation_temporality;
             for p in &h.data_points {
                 upsert(
-                    series, rk, resource.clone(), scope_name, scope_ver, m,
+                    series,
+                    rk,
+                    resource.clone(),
+                    scope_name,
+                    scope_ver,
+                    m,
                     &attrs_key(&p.attributes),
-                    || SeriesKind::Histogram { temporality: t, point: p.clone() },
-                    |k| { if let SeriesKind::Histogram { point: e, .. } = k { if p.time_unix_nano >= e.time_unix_nano { *e = p.clone(); } } },
+                    || SeriesKind::Histogram {
+                        temporality: t,
+                        point: p.clone(),
+                    },
+                    |k| {
+                        if let SeriesKind::Histogram { point: e, .. } = k {
+                            if p.time_unix_nano >= e.time_unix_nano {
+                                *e = p.clone();
+                            }
+                        }
+                    },
                 );
             }
         }
@@ -230,7 +283,10 @@ fn upsert(
 fn build_request(series: HashMap<String, SeriesEntry>) -> ExportMetricsServiceRequest {
     let mut by_resource: HashMap<String, Vec<SeriesEntry>> = HashMap::new();
     for entry in series.into_values() {
-        by_resource.entry(resource_key(&entry.resource)).or_default().push(entry);
+        by_resource
+            .entry(resource_key(&entry.resource))
+            .or_default()
+            .push(entry);
     }
 
     let resource_metrics = by_resource
@@ -267,7 +323,11 @@ fn build_request(series: HashMap<String, SeriesEntry>) -> ExportMetricsServiceRe
                 })
                 .collect();
 
-            ResourceMetrics { resource, scope_metrics, schema_url: String::new() }
+            ResourceMetrics {
+                resource,
+                scope_metrics,
+                schema_url: String::new(),
+            }
         })
         .collect();
 
@@ -278,20 +338,45 @@ fn build_metric(entries: &[SeriesEntry]) -> Metric {
     let first = &entries[0];
     let data = match &first.kind {
         SeriesKind::Gauge(_) => Data::Gauge(Gauge {
-            data_points: entries.iter()
-                .filter_map(|e| if let SeriesKind::Gauge(p) = &e.kind { Some(p.clone()) } else { None })
+            data_points: entries
+                .iter()
+                .filter_map(|e| {
+                    if let SeriesKind::Gauge(p) = &e.kind {
+                        Some(p.clone())
+                    } else {
+                        None
+                    }
+                })
                 .collect(),
         }),
-        SeriesKind::Sum { temporality, is_monotonic, .. } => Data::Sum(Sum {
-            data_points: entries.iter()
-                .filter_map(|e| if let SeriesKind::Sum { point, .. } = &e.kind { Some(point.clone()) } else { None })
+        SeriesKind::Sum {
+            temporality,
+            is_monotonic,
+            ..
+        } => Data::Sum(Sum {
+            data_points: entries
+                .iter()
+                .filter_map(|e| {
+                    if let SeriesKind::Sum { point, .. } = &e.kind {
+                        Some(point.clone())
+                    } else {
+                        None
+                    }
+                })
                 .collect(),
             aggregation_temporality: *temporality,
             is_monotonic: *is_monotonic,
         }),
         SeriesKind::Histogram { temporality, .. } => Data::Histogram(Histogram {
-            data_points: entries.iter()
-                .filter_map(|e| if let SeriesKind::Histogram { point, .. } = &e.kind { Some(point.clone()) } else { None })
+            data_points: entries
+                .iter()
+                .filter_map(|e| {
+                    if let SeriesKind::Histogram { point, .. } = &e.kind {
+                        Some(point.clone())
+                    } else {
+                        None
+                    }
+                })
                 .collect(),
             aggregation_temporality: *temporality,
         }),
@@ -311,7 +396,7 @@ mod tests {
     use std::sync::Mutex as StdMutex;
 
     use opentelemetry_proto::tonic::{
-        common::v1::{AnyValue, any_value::Value as AV},
+        common::v1::{any_value::Value as AV, AnyValue},
         metrics::v1::number_data_point::Value,
     };
 
@@ -325,9 +410,15 @@ mod tests {
         }
     }
 
-    fn make_agg(interval: Duration, captured: Arc<StdMutex<Vec<(String, Vec<u8>)>>>) -> MetricsAggregator {
+    fn make_agg(
+        interval: Duration,
+        captured: Arc<StdMutex<Vec<(String, Vec<u8>)>>>,
+    ) -> MetricsAggregator {
         MetricsAggregator::new(
-            Config { flush_interval: interval, key_prefix: "metrics".to_string() },
+            Config {
+                flush_interval: interval,
+                key_prefix: "metrics".to_string(),
+            },
             Arc::new(CaptureSink(captured)),
         )
     }
@@ -351,7 +442,9 @@ mod tests {
                         name: metric.to_string(),
                         description: String::new(),
                         unit: String::new(),
-                        data: Some(Data::Gauge(Gauge { data_points: points })),
+                        data: Some(Data::Gauge(Gauge {
+                            data_points: points,
+                        })),
                         metadata: vec![],
                     }],
                     schema_url: String::new(),
@@ -378,8 +471,12 @@ mod tests {
         let captured = Arc::new(StdMutex::new(vec![]));
         let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
 
-        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])])).await.unwrap();
-        agg.push("svc", gauge_req("cpu", vec![num_point(2_000, 0.9, vec![])])).await.unwrap();
+        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])]))
+            .await
+            .unwrap();
+        agg.push("svc", gauge_req("cpu", vec![num_point(2_000, 0.9, vec![])]))
+            .await
+            .unwrap();
 
         agg.flush().await.unwrap();
 
@@ -395,27 +492,48 @@ mod tests {
         let captured = Arc::new(StdMutex::new(vec![]));
         let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
 
-        agg.push("svc", gauge_req("cpu", vec![num_point(2_000, 0.9, vec![])])).await.unwrap();
-        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])])).await.unwrap();
+        agg.push("svc", gauge_req("cpu", vec![num_point(2_000, 0.9, vec![])]))
+            .await
+            .unwrap();
+        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])]))
+            .await
+            .unwrap();
 
         agg.flush().await.unwrap();
 
         let flushed = captured.lock().unwrap();
-        assert_eq!(gauge_points(&decode(&flushed[0].1))[0].value, Some(Value::AsDouble(0.9)));
+        assert_eq!(
+            gauge_points(&decode(&flushed[0].1))[0].value,
+            Some(Value::AsDouble(0.9))
+        );
     }
 
     #[tokio::test]
     async fn different_attrs_are_separate_series() {
-        let mk_attr = |v: &str| vec![KeyValue {
-            key: "host".to_string(),
-            value: Some(AnyValue { value: Some(AV::StringValue(v.to_string())) }),
-        }];
+        let mk_attr = |v: &str| {
+            vec![KeyValue {
+                key: "host".to_string(),
+                value: Some(AnyValue {
+                    value: Some(AV::StringValue(v.to_string())),
+                }),
+            }]
+        };
 
         let captured = Arc::new(StdMutex::new(vec![]));
         let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
 
-        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.3, mk_attr("a"))])).await.unwrap();
-        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.7, mk_attr("b"))])).await.unwrap();
+        agg.push(
+            "svc",
+            gauge_req("cpu", vec![num_point(1_000, 0.3, mk_attr("a"))]),
+        )
+        .await
+        .unwrap();
+        agg.push(
+            "svc",
+            gauge_req("cpu", vec![num_point(1_000, 0.7, mk_attr("b"))]),
+        )
+        .await
+        .unwrap();
 
         agg.flush().await.unwrap();
 
@@ -428,7 +546,9 @@ mod tests {
         let captured = Arc::new(StdMutex::new(vec![]));
         let agg = make_agg(Duration::from_millis(50), Arc::clone(&captured));
 
-        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])])).await.unwrap();
+        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])]))
+            .await
+            .unwrap();
         tokio::time::sleep(Duration::from_millis(100)).await;
         agg.tick().await.unwrap();
 
@@ -440,7 +560,9 @@ mod tests {
         let captured = Arc::new(StdMutex::new(vec![]));
         let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
 
-        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])])).await.unwrap();
+        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])]))
+            .await
+            .unwrap();
         agg.tick().await.unwrap();
 
         assert_eq!(captured.lock().unwrap().len(), 0);

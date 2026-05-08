@@ -17,6 +17,15 @@ Implement everything listed under **Scope In**. Follow the Test Approach declare
 
 Commit incrementally as logical units of work — do not batch everything into one commit.
 
+Before each commit, run and fix all failures from:
+```bash
+mise exec -- cargo fmt
+mise exec -- cargo clippy -- -D warnings
+mise exec -- cargo test
+```
+
+Do not commit until all three pass cleanly.
+
 ## Step 3 — Close out tracking files
 
 When implementation is complete:
