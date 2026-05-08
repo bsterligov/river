@@ -16,4 +16,4 @@ Currently being implemented.
 ## Pending
 Spec not yet written. Add task numbers in priority order.
 
-*(none)*
+- RIVER-1: Ingestion Service
