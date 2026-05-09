@@ -72,9 +72,7 @@ async fn main() -> Result<()> {
     migrator.run().await?;
 
     let mut seen: HashSet<String> = HashSet::new();
-    let start_ts_ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)?
-        .as_millis() as u64;
+    let start_ts_ms = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis() as u64;
 
     println!(
         "river ingestion starting bucket={} interval={:?}",

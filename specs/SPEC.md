@@ -35,6 +35,9 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Flutter UI** — one codebase for web + desktop
 - **S3 key schema:** `{signal}/{service}/{timestamp}-{uuid}.pb`
 - **Env vars:** all prefixed `RIVER_` (e.g. `RIVER_BUFFER_MAX_BYTES`, `RIVER_FLUSH_INTERVAL_SECS`)
+- **Grafana is dev tooling only** — not a permanent product component; anonymous admin access, no RBAC
+- **ClickHouse Grafana plugin:** `grafana-clickhouse-datasource` (Grafana Labs), installed via `GF_INSTALL_PLUGINS` at container start; connects on native port 9000
+- **Dashboard provisioning:** JSON files under `grafana/dashboards/`, mounted into the container; datasources under `grafana/provisioning/`
 
 ## Spec System
 `/po-spec-writer` → PR (spec + QUEUE) → merge(main) → `/dev-spec` → push (main)

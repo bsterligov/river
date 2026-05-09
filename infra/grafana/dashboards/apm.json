@@ -1,0 +1,81 @@
+{
+  "id": null,
+  "uid": "river-apm",
+  "title": "River APM",
+  "tags": ["river", "apm"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "annotations": { "list": [] },
+  "links": [],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+        "query": "SELECT DISTINCT service_name FROM traces ORDER BY service_name",
+        "refresh": 2,
+        "sort": 1,
+        "multi": false,
+        "includeAll": true,
+        "allValue": null,
+        "current": {},
+        "options": [],
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Traces",
+      "type": "table",
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false, "reducer": ["sum"], "countRows": false }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+          "rawSql": "SELECT fromUnixTimestamp64Nano(start_time_unix_nano) AS time, service_name, operation_name, round(duration_ns / 1000000.0, 2) AS duration_ms, status_code, trace_id, span_id FROM traces WHERE start_time_unix_nano >= $__from * 1000000 AND start_time_unix_nano <= $__to * 1000000 AND service_name IN (${service:singlequote}) ORDER BY time DESC LIMIT 500",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Logs",
+      "type": "table",
+      "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 12 },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "footer": { "show": false, "reducer": ["sum"], "countRows": false }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
+          "rawSql": "SELECT fromUnixTimestamp64Nano(timestamp) AS time, service_name, severity_text, body, trace_id FROM logs WHERE timestamp >= $__from * 1000000 AND timestamp <= $__to * 1000000 AND service_name IN (${service:singlequote}) ORDER BY time DESC LIMIT 500",
+          "format": 1
+        }
+      ]
+    }
+  ]
+}

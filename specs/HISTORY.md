@@ -39,3 +39,7 @@ Release job added to ci.yml: runs after SonarQube on pushes to main, creates a s
 ### 2026-05-09 — RIVER-10: implementation done
 
 Migration management added to the ingestion service: SQL files under `infra/migrations/clickhouse/` are embedded in the binary and applied at startup via a `Migrator` that tracks versions in a `schema_migrations` table. `ensure_tables()` and all inline DDL removed from `clickhouse.rs`.
+
+### 2026-05-09 — RIVER-12: implementation done
+
+Grafana added to docker-compose with anonymous admin access and plugin-based ClickHouse datasource (`grafana-clickhouse-datasource`). VictoriaMetrics and ClickHouse are provisioned as datasources automatically. Two dashboards provisioned as code: APM (traces + logs correlated by service and time) and Metrics (request rate and total for demo-app).

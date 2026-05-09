@@ -133,7 +133,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bucket = std::env::var("S3_BUCKET").unwrap_or_else(|_| "river-telemetry".to_string());
 
     let aws_cfg = aws_config::load_from_env().await;
-    let s3 = aws_sdk_s3::Client::new(&aws_cfg);
+    let s3 = aws_sdk_s3::Client::from_conf(
+        aws_sdk_s3::config::Builder::from(&aws_cfg)
+            .force_path_style(true)
+            .build(),
+    );
 
     let make = |prefix: &str| {
         Arc::new(Batcher::new(
@@ -164,9 +168,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tokio::spawn(async move {
             loop {
                 tokio::time::sleep(Duration::from_secs(1)).await;
-                let _ = t.tick().await;
-                let _ = m.tick().await;
-                let _ = l.tick().await;
+                if let Err(e) = t.tick().await {
+                    eprintln!("[tick] traces error: {e}");
+                }
+                if let Err(e) = m.tick().await {
+                    eprintln!("[tick] metrics error: {e}");
+                }
+                if let Err(e) = l.tick().await {
+                    eprintln!("[tick] logs error: {e}");
+                }
             }
         });
     }

@@ -41,11 +41,9 @@ When implementation is complete:
 
 Update `specs/SPEC.md` with any decisions from this spec.
 
-Do not run `/sync-spec` yourself.
+## Step 5 — Stage changes
 
-## Step 5 — Commit changes
-
-**Commit all tracking changes** in a single commit:
+**Stage all tracking changes** in a single commit:
    ```
    <type: fix, feat, docs ...>: RIVER-N message
    ```
