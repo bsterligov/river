@@ -6,6 +6,10 @@ Format: `- [RIVER-N] Question — **Resolved:** answer` once closed.
 
 ---
 
+## Open
+
+- [RIVER-14] How should parallel in-flight specs avoid conflicts when both target the same tracking files (QUEUE.md, HISTORY.md)?
+
 ## Resolved
 
 - [RIVER-2] ~~Should the Rust sidecar be the long-term ingestion entrypoint, or a temporary scaffold?~~ **Resolved:** permanent ingestion component.
