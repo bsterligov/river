@@ -85,6 +85,7 @@ impl Writer {
                 ("password", &self.password),
                 ("database", &self.db),
             ])
+            .body("")
             .send()
             .await?;
         if !resp.status().is_success() {
