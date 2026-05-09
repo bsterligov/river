@@ -1,4 +1,5 @@
 mod clickhouse;
+mod migrations;
 mod poller;
 mod router;
 mod victoriametrics;
@@ -45,7 +46,11 @@ impl Config {
 async fn main() -> Result<()> {
     let cfg = Config::from_env();
     let aws_cfg = aws_config::load_from_env().await;
-    let s3 = aws_sdk_s3::Client::new(&aws_cfg);
+    let s3 = aws_sdk_s3::Client::from_conf(
+        aws_sdk_s3::config::Builder::from(&aws_cfg)
+            .force_path_style(true)
+            .build(),
+    );
     let http = reqwest::Client::new();
 
     let vm = victoriametrics::Writer::new(http.clone(), cfg.victoriametrics_url.clone());
@@ -57,12 +62,18 @@ async fn main() -> Result<()> {
         cfg.clickhouse_password.clone(),
     );
 
-    ch.ensure_tables().await?;
+    let migrator = migrations::Migrator::new(
+        http.clone(),
+        cfg.clickhouse_url.clone(),
+        cfg.clickhouse_db.clone(),
+        cfg.clickhouse_user.clone(),
+        cfg.clickhouse_password.clone(),
+    );
+    migrator.run().await?;
 
     let mut seen: HashSet<String> = HashSet::new();
     let start_ts_ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .duration_since(UNIX_EPOCH)?
         .as_millis() as u64;
 
     println!(

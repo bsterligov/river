@@ -39,7 +39,7 @@ When implementation is complete:
 
 ## Step 4 — Prompt for sync
 
-Tell the user: implementation is complete. Run `/sync-spec` to update `specs/SPEC.md` with any decisions from this spec.
+Update `specs/SPEC.md` with any decisions from this spec.
 
 Do not run `/sync-spec` yourself.
 

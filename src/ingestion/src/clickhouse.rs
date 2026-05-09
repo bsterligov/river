@@ -6,30 +6,6 @@ use opentelemetry_proto::tonic::{
 use prost::Message;
 use serde_json::{json, Map, Value};
 
-const CREATE_LOGS: &str = "CREATE TABLE IF NOT EXISTS logs (\
-    timestamp UInt64, \
-    service_name String, \
-    severity_number Int32, \
-    severity_text String, \
-    body String, \
-    trace_id String, \
-    span_id String, \
-    attributes String\
-) ENGINE = MergeTree() ORDER BY (service_name, timestamp)";
-
-const CREATE_TRACES: &str = "CREATE TABLE IF NOT EXISTS traces (\
-    trace_id String, \
-    span_id String, \
-    parent_span_id String, \
-    service_name String, \
-    operation_name String, \
-    start_time_unix_nano UInt64, \
-    end_time_unix_nano UInt64, \
-    duration_ns UInt64, \
-    status_code Int32, \
-    attributes String\
-) ENGINE = MergeTree() ORDER BY (service_name, start_time_unix_nano)";
-
 pub struct Writer {
     client: reqwest::Client,
     base_url: String,
@@ -55,12 +31,6 @@ impl Writer {
         }
     }
 
-    pub async fn ensure_tables(&self) -> anyhow::Result<()> {
-        self.exec(CREATE_LOGS).await?;
-        self.exec(CREATE_TRACES).await?;
-        Ok(())
-    }
-
     pub async fn insert_logs(&self, rows: &[Value]) -> anyhow::Result<()> {
         if rows.is_empty() {
             return Ok(());
@@ -73,26 +43,6 @@ impl Writer {
             return Ok(());
         }
         self.insert("traces", rows).await
-    }
-
-    async fn exec(&self, ddl: &str) -> anyhow::Result<()> {
-        let resp = self
-            .client
-            .post(&self.base_url)
-            .query(&[
-                ("query", ddl),
-                ("user", &self.user),
-                ("password", &self.password),
-                ("database", &self.db),
-            ])
-            .body("")
-            .send()
-            .await?;
-        if !resp.status().is_success() {
-            let body = resp.text().await.unwrap_or_default();
-            anyhow::bail!("clickhouse exec failed: {body}");
-        }
-        Ok(())
     }
 
     async fn insert(&self, table: &str, rows: &[Value]) -> anyhow::Result<()> {
@@ -231,6 +181,7 @@ fn to_hex(bytes: &[u8]) -> String {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use opentelemetry_proto::tonic::{

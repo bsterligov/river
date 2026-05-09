@@ -201,10 +201,10 @@ async fn shutdown_signal() {
 
     #[cfg(unix)]
     let terminate = async {
-        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-            .expect("failed to register SIGTERM handler")
-            .recv()
-            .await
+        match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+            Ok(mut stream) => stream.recv().await,
+            Err(_) => None,
+        }
     };
 
     #[cfg(not(unix))]

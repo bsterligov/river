@@ -111,6 +111,7 @@ impl Batcher {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::type_complexity)]
 mod tests {
     use super::*;
     use std::sync::Mutex as StdMutex;

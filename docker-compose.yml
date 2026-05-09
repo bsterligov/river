@@ -20,7 +20,8 @@ services:
 
   sidecar:
     build:
-      context: src/sidecar
+      context: .
+      dockerfile: src/sidecar/Dockerfile
     ports:
       - "4317:4317"
     depends_on:
@@ -59,7 +60,8 @@ services:
 
   ingestion:
     build:
-      context: src/ingestion
+      context: .
+      dockerfile: src/ingestion/Dockerfile
     depends_on:
       localstack:
         condition: service_healthy

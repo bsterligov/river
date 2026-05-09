@@ -37,7 +37,7 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Env vars:** all prefixed `RIVER_` (e.g. `RIVER_BUFFER_MAX_BYTES`, `RIVER_FLUSH_INTERVAL_SECS`)
 
 ## Spec System
-`/po-spec-writer` → PR (spec + QUEUE) → merge → `/dev-spec` → `/sync-spec`
+`/po-spec-writer` → PR (spec + QUEUE) → merge(main) → `/dev-spec` → push (main)
 Path: `/specs/{priority}/{category}/RIVER-{issue_number}-title.md`
 Priorities: `must` `should` `could` `wont`
 Categories: `bugs` `docs` `features` `refactoring` `tools`

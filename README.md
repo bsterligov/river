@@ -64,13 +64,6 @@ Once merged, run:
 
 Reads the spec, implements **Scope In**, commits to main, updates `QUEUE.md` and `HISTORY.md`. No code review.
 
-### 5. Sync SPEC.md
-
-```
-/sync-spec
-```
-
-Patches `specs/SPEC.md` with architectural decisions from the completed spec. Read-only at all other times.
 
 ### Spec path
 

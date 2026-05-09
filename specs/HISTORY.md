@@ -35,3 +35,7 @@ Release job added to ci.yml: runs after SonarQube on pushes to main. Uses cocogi
 ### 2026-05-08 — RIVER-6: implementation done
 
 Release job added to ci.yml: runs after SonarQube on pushes to main, creates a semver tag via Conventional Commits (mathieudutour/github-tag-action), and publishes a GitHub release. No-op if no releasable commits.
+
+### 2026-05-09 — RIVER-10: implementation done
+
+Migration management added to the ingestion service: SQL files under `infra/migrations/clickhouse/` are embedded in the binary and applied at startup via a `Migrator` that tracks versions in a `schema_migrations` table. `ensure_tables()` and all inline DDL removed from `clickhouse.rs`.

@@ -1,8 +1,9 @@
 FROM rust:1.95-slim-trixie AS builder
 WORKDIR /app
-COPY Cargo.toml ./
+COPY Cargo.toml Cargo.lock ./
 COPY src ./src
-RUN cargo build --release
+COPY infra ./infra
+RUN cargo build --release --package ingestion
 
 FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*

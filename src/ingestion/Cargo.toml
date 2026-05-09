@@ -3,6 +3,9 @@ name = "ingestion"
 version = "0.1.0"
 edition = "2021"
 
+[lints]
+workspace = true
+
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 aws-config = { version = "1", features = ["behavior-version-latest"] }
