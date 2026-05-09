@@ -192,6 +192,7 @@ mod tests {
         trace::v1::{status::StatusCode, ResourceSpans, ScopeSpans, Span, Status},
     };
     use prost::Message;
+    use wiremock::{matchers::method, Mock, MockServer, ResponseTemplate};
 
     fn make_resource(service: &str) -> Option<Resource> {
         Some(Resource {
@@ -203,6 +204,25 @@ mod tests {
             }],
             ..Default::default()
         })
+    }
+
+    fn make_writer(url: String) -> Writer {
+        Writer::new(
+            reqwest::Client::new(),
+            url,
+            "river".to_string(),
+            "river".to_string(),
+            "river".to_string(),
+        )
+    }
+
+    async fn post_server(status: u16, body: &str) -> MockServer {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(status).set_body_string(body))
+            .mount(&server)
+            .await;
+        server
     }
 
     #[test]
@@ -282,8 +302,9 @@ mod tests {
         let req = ExportLogsServiceRequest {
             resource_logs: vec![],
         };
-        let rows = parse_logs(&req.encode_length_delimited_to_vec()).unwrap();
-        assert!(rows.is_empty());
+        assert!(parse_logs(&req.encode_length_delimited_to_vec())
+            .unwrap()
+            .is_empty());
     }
 
     #[test]
@@ -291,7 +312,203 @@ mod tests {
         let req = ExportTraceServiceRequest {
             resource_spans: vec![],
         };
+        assert!(parse_traces(&req.encode_length_delimited_to_vec())
+            .unwrap()
+            .is_empty());
+    }
+
+    #[test]
+    fn parse_logs_returns_error_for_invalid_bytes() {
+        assert!(parse_logs(b"not valid protobuf!!!").is_err());
+    }
+
+    #[test]
+    fn parse_traces_returns_error_for_invalid_bytes() {
+        assert!(parse_traces(b"not valid protobuf!!!").is_err());
+    }
+
+    #[test]
+    fn service_name_returns_empty_when_resource_is_none() {
+        assert_eq!(service_name(&None), "");
+    }
+
+    #[test]
+    fn service_name_returns_empty_when_attr_missing() {
+        let resource = Some(Resource {
+            attributes: vec![KeyValue {
+                key: "host.name".to_string(),
+                value: Some(AnyValue {
+                    value: Some(AV::StringValue("host".to_string())),
+                }),
+            }],
+            ..Default::default()
+        });
+        assert_eq!(service_name(&resource), "");
+    }
+
+    #[test]
+    fn any_value_str_variants() {
+        assert_eq!(
+            any_value_str(&Some(AnyValue {
+                value: Some(AV::IntValue(42))
+            })),
+            "42"
+        );
+        assert_eq!(
+            any_value_str(&Some(AnyValue {
+                value: Some(AV::DoubleValue(3.14))
+            })),
+            "3.14"
+        );
+        assert_eq!(
+            any_value_str(&Some(AnyValue {
+                value: Some(AV::BoolValue(true))
+            })),
+            "true"
+        );
+        assert_eq!(
+            any_value_str(&Some(AnyValue {
+                value: Some(AV::BytesValue(vec![1, 2, 3]))
+            })),
+            ""
+        );
+        assert_eq!(any_value_str(&None), "");
+    }
+
+    #[test]
+    fn attrs_map_handles_multiple_value_types() {
+        let attrs = vec![
+            KeyValue {
+                key: "i".to_string(),
+                value: Some(AnyValue {
+                    value: Some(AV::IntValue(7)),
+                }),
+            },
+            KeyValue {
+                key: "d".to_string(),
+                value: Some(AnyValue {
+                    value: Some(AV::DoubleValue(1.5)),
+                }),
+            },
+            KeyValue {
+                key: "b".to_string(),
+                value: Some(AnyValue {
+                    value: Some(AV::BoolValue(false)),
+                }),
+            },
+            KeyValue {
+                key: "x".to_string(),
+                value: Some(AnyValue {
+                    value: Some(AV::BytesValue(vec![])),
+                }),
+            },
+            KeyValue {
+                key: "n".to_string(),
+                value: None,
+            },
+        ];
+        let m = attrs_map(&attrs);
+        assert_eq!(m["i"], serde_json::json!(7i64));
+        assert_eq!(m["d"], serde_json::json!(1.5f64));
+        assert_eq!(m["b"], serde_json::json!(false));
+        assert_eq!(m["x"], serde_json::Value::Null);
+        assert_eq!(m["n"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn parse_logs_without_resource_and_null_body() {
+        let req = ExportLogsServiceRequest {
+            resource_logs: vec![ResourceLogs {
+                resource: None,
+                scope_logs: vec![ScopeLogs {
+                    scope: None,
+                    log_records: vec![LogRecord {
+                        time_unix_nano: 1,
+                        body: None,
+                        trace_id: vec![],
+                        span_id: vec![],
+                        attributes: vec![],
+                        ..Default::default()
+                    }],
+                    schema_url: String::new(),
+                }],
+                schema_url: String::new(),
+            }],
+        };
+        let rows = parse_logs(&req.encode_length_delimited_to_vec()).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["service_name"], "");
+        assert_eq!(rows[0]["body"], "");
+        assert_eq!(rows[0]["trace_id"], "");
+    }
+
+    #[test]
+    fn parse_traces_without_resource_and_no_status() {
+        let req = ExportTraceServiceRequest {
+            resource_spans: vec![ResourceSpans {
+                resource: None,
+                scope_spans: vec![ScopeSpans {
+                    scope: None,
+                    spans: vec![Span {
+                        name: "op".to_string(),
+                        start_time_unix_nano: 100,
+                        end_time_unix_nano: 100,
+                        status: None,
+                        ..Default::default()
+                    }],
+                    schema_url: String::new(),
+                }],
+                schema_url: String::new(),
+            }],
+        };
         let rows = parse_traces(&req.encode_length_delimited_to_vec()).unwrap();
-        assert!(rows.is_empty());
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["service_name"], "");
+        assert_eq!(rows[0]["duration_ns"], 0u64);
+        assert_eq!(rows[0]["status_code"], 0);
+    }
+
+    #[tokio::test]
+    async fn insert_logs_noop_when_empty() {
+        make_writer("http://127.0.0.1:1".to_string())
+            .insert_logs(&[])
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn insert_traces_noop_when_empty() {
+        make_writer("http://127.0.0.1:1".to_string())
+            .insert_traces(&[])
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn insert_logs_sends_rows_to_clickhouse() {
+        let server = post_server(200, "").await;
+        make_writer(server.uri())
+            .insert_logs(&[serde_json::json!({"service_name": "svc", "body": "hi"})])
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn insert_traces_sends_rows_to_clickhouse() {
+        let server = post_server(200, "").await;
+        make_writer(server.uri())
+            .insert_traces(&[serde_json::json!({"trace_id": "abc"})])
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn insert_returns_error_on_clickhouse_failure() {
+        let server = post_server(500, "DB error").await;
+        let err = make_writer(server.uri())
+            .insert_logs(&[serde_json::json!({"a": 1})])
+            .await
+            .unwrap_err();
+        assert!(err.to_string().contains("500"));
     }
 }

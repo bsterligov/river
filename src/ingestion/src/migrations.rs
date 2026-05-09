@@ -113,6 +113,7 @@ impl Migrator {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use wiremock::{matchers::method, Mock, MockServer, ResponseTemplate};
 
     fn migrator_from_env() -> Option<Migrator> {
         let url = std::env::var("CLICKHOUSE_URL").ok()?;
@@ -219,5 +220,106 @@ mod tests {
             query_rows(&m, "SELECT version FROM schema_migrations ORDER BY version").await;
         assert!(versions.contains(&"V001__create_logs".to_string()));
         assert!(versions.contains(&"V002__create_traces".to_string()));
+    }
+
+    fn make_migrator(base_url: String) -> Migrator {
+        Migrator::new(
+            reqwest::Client::new(),
+            base_url,
+            "river".to_string(),
+            "river".to_string(),
+            "river".to_string(),
+        )
+    }
+
+    async fn mock_server(http_method: &str, status: u16, body: &str) -> MockServer {
+        let server = MockServer::start().await;
+        Mock::given(method(http_method))
+            .respond_with(ResponseTemplate::new(status).set_body_string(body))
+            .mount(&server)
+            .await;
+        server
+    }
+
+    #[tokio::test]
+    async fn exec_returns_ok_on_200() {
+        let server = mock_server("POST", 200, "").await;
+        make_migrator(server.uri())
+            .exec("CREATE TABLE foo (id UInt64) ENGINE = Memory")
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn exec_returns_error_on_500() {
+        let server = mock_server("POST", 500, "DB error").await;
+        let err = make_migrator(server.uri())
+            .exec("bad sql")
+            .await
+            .unwrap_err();
+        assert!(err.to_string().contains("clickhouse exec failed"));
+    }
+
+    #[tokio::test]
+    async fn applied_versions_returns_lines() {
+        let server = mock_server("GET", 200, "V001__create_logs\nV002__create_traces\n").await;
+        let versions = make_migrator(server.uri())
+            .applied_versions()
+            .await
+            .unwrap();
+        assert_eq!(versions, vec!["V001__create_logs", "V002__create_traces"]);
+    }
+
+    #[tokio::test]
+    async fn applied_versions_returns_empty_for_blank_body() {
+        let server = mock_server("GET", 200, "").await;
+        assert!(make_migrator(server.uri())
+            .applied_versions()
+            .await
+            .unwrap()
+            .is_empty());
+    }
+
+    #[tokio::test]
+    async fn applied_versions_returns_error_on_500() {
+        let server = mock_server("GET", 500, "access denied").await;
+        let err = make_migrator(server.uri())
+            .applied_versions()
+            .await
+            .unwrap_err();
+        assert!(err
+            .to_string()
+            .contains("failed to query schema_migrations"));
+    }
+
+    #[tokio::test]
+    async fn run_applies_all_migrations_when_none_applied() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(""))
+            .mount(&server)
+            .await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200))
+            .mount(&server)
+            .await;
+        make_migrator(server.uri()).run().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn run_skips_already_applied_migrations() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string("V001__create_logs\nV002__create_traces\n"),
+            )
+            .mount(&server)
+            .await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200))
+            .mount(&server)
+            .await;
+        make_migrator(server.uri()).run().await.unwrap();
     }
 }
