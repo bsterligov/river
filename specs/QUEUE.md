@@ -15,4 +15,4 @@ Currently being implemented.
 
 ## Pending
 
-- RIVER-6: Setup DevOps Part 2 — `specs/must/tools/RIVER-6-setup-devops-part-2.md`
+- RIVER-10: Database Migration Management — `specs/must/features/RIVER-10-liquibase.md`
