@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#MISE description="Create implementation branch and draft PR from a merged spec branch"
+set -eu
+
+# Accept spec branch via env var, arg, or current branch
+SPEC_BRANCH="${SPEC_BRANCH:-${1:-$(git branch --show-current)}}"
+
+# Strip leading "spec/" prefix if present
+SPEC_BRANCH="${SPEC_BRANCH#spec/}"
+TASK=$(echo "$SPEC_BRANCH" | sed 's/river-/RIVER-/i')
+IMPL_BRANCH="impl/${SPEC_BRANCH}"
+
+git push origin HEAD:refs/heads/$IMPL_BRANCH
+
+PR_BODY="Implementation branch for ${TASK}."$'\n\n'
+PR_BODY+="Checkout this branch and run \`/dev-spec\` to implement the spec."$'\n\n'
+PR_BODY+='```'$'\n'
+PR_BODY+="git checkout ${IMPL_BRANCH}"$'\n'
+PR_BODY+='```'$'\n\n'
+PR_BODY+="Then open Claude Code and run \`/dev-spec\`."
+
+gh pr create \
+  --title "impl: ${TASK}" \
+  --body "$PR_BODY" \
+  --head "$IMPL_BRANCH" \
+  --base main \
+  --draft

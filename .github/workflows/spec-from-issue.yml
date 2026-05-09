@@ -1,12 +1,14 @@
-name: Create Spec from Issue
+name: Spec Workflow
 
-# On every new issue: create a branch and open a draft PR
-# with a pre-filled spec prompt in specs/drafts/.
-# Checkout the branch and run /po-spec-writer to generate the real spec.
+# On new issue: create a spec branch and draft PR with a pre-filled prompt.
+# On spec PR merge: create an implementation branch and draft PR.
 
 on:
   issues:
     types: [opened]
+  pull_request:
+    types: [closed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       issue_number:
@@ -16,8 +18,9 @@ on:
 
 jobs:
   create-draft:
-    name: Create Draft PR
+    name: Create Spec Draft PR
     runs-on: ubuntu-latest
+    if: github.event_name == 'issues' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
       pull-requests: write
@@ -34,3 +37,25 @@ jobs:
         run: |
           mise run spec:draft
           mise run spec:publish
+
+  create-impl-draft:
+    name: Create Implementation Draft PR
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'spec/')
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: jdx/mise-action@v4
+
+      - name: Create implementation branch and draft PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SPEC_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: mise run spec:impl

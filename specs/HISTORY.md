@@ -43,3 +43,7 @@ Migration management added to the ingestion service: SQL files under `infra/migr
 ### 2026-05-09 — RIVER-12: implementation done
 
 Grafana added to docker-compose with anonymous admin access and plugin-based ClickHouse datasource (`grafana-clickhouse-datasource`). VictoriaMetrics and ClickHouse are provisioned as datasources automatically. Two dashboards provisioned as code: APM (traces + logs correlated by service and time) and Metrics (request rate and total for demo-app).
+
+### 2026-05-09 — RIVER-14: implementation done
+
+SDD process updated to a fully branch-based flow: spec authoring and implementation now both go through PRs. QUEUE.md redesigned as a flat persistent list with strikethrough for done items. GHA extended to auto-create an impl branch and draft PR on spec PR merge. dev-spec updated to infer the task from the current branch name.

@@ -11,8 +11,8 @@ Instructions for Claude Code when working in this repository.
 | `specs/HISTORY.md` | Changelog — what changed across specs and when. Append at bottom. |
 | `specs/UNRESOLVED.md` | Open questions — unresolved issues across all specs. |
 | `.claude/commands/po-spec-writer.md` | Skill — write and update specs. Opens a PR with spec only; implementation follows after merge. |
-| `.claude/commands/dev-spec.md` | Skill — implement the current in-progress spec, close tracking files, commit to main. |
-| `.github/workflows/spec-from-issue.yml` | GHA — fires on issue open; creates branch + draft prompt + draft PR. No API key needed. |
+| `.claude/commands/dev-spec.md` | Skill — implement the current in-progress spec, close tracking files, open impl PR. |
+| `.github/workflows/spec-from-issue.yml` | GHA — fires on issue open (spec draft) and on spec PR merge (impl branch + draft PR). No API key needed. |
 
 ## Running Commands
 

@@ -1,5 +1,5 @@
 # RIVER-14: Update SDD
-Status: In Progress
+Status: Done
 Priority: Must
 Test Approach: BDD
 Why: The current SDD process pushes implementation directly to main and has a confusing queue lifecycle, which creates merge risk and slows the team down.

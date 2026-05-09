@@ -39,7 +39,7 @@ State your recommendation in one sentence, give one line of reasoning, and ask t
 
 Search all subdirectories under `/specs/` for a file containing `RIVER-{issue_number}` in its name.
 
-- **New spec** → create the file under `specs/{priority}/{category}/`, write the full template below, add the task to **Pending** in `/specs/QUEUE.md`. Then go to Step 5.
+- **New spec** → create the file under `specs/{priority}/{category}/`, write the full template below, append `- {TASK_NUMBER}: {Title}` to the list in `/specs/QUEUE.md`. Then go to Step 5.
 - **Existing spec** → update the spec content, append a history entry to `/specs/HISTORY.md` (append at bottom: `### {DATE} — {TASK_NUMBER}: {what changed and why}`), and update `/specs/QUEUE.md` accordingly.
 
 ## Step 4 — File naming

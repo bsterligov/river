@@ -40,8 +40,9 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Dashboard provisioning:** JSON files under `grafana/dashboards/`, mounted into the container; datasources under `grafana/provisioning/`
 
 ## Spec System
-`/po-spec-writer` → PR (spec + QUEUE) → merge(main) → `/dev-spec` → push (main)
+`/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)
 Path: `/specs/{priority}/{category}/RIVER-{issue_number}-title.md`
 Priorities: `must` `should` `could` `wont`
 Categories: `bugs` `docs` `features` `refactoring` `tools`
 Status tracked in `specs/QUEUE.md` · History in `specs/HISTORY.md`
+Queue: flat list; done tasks stay, marked `~~strikethrough~~`
