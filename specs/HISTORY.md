@@ -51,3 +51,7 @@ SDD process updated to a fully branch-based flow: spec authoring and implementat
 ### 2026-05-10 — RIVER-16: implementation done
 
 Query API implemented as a new `api` Rust binary (`src/api/`) using axum 0.8 with routes `GET /v1/logs`, `GET /v1/traces`, `GET /v1/metrics`, `GET /health`, and `GET /openapi.json`. A filter DSL parser translates `key:value`, comparison operators, `AND`/`OR`/`NOT`, and wildcards to ClickHouse SQL or VictoriaMetrics label selectors. OpenAPI 3.0 spec is generated from code using `utoipa`. `api` service added to docker-compose, listening on port 8080 via `RIVER_API_PORT`.
+
+### 2026-05-10 — RIVER-16: Swagger UI added
+
+Swagger UI mounted at `GET /swagger-ui/` via `utoipa-swagger-ui 9` (axum 0.8-compatible). The bundled UI fetches the spec from the existing `/openapi.json` endpoint.

@@ -49,24 +49,35 @@ impl Reader {
         }
 
         let body: serde_json::Value = resp.json().await?;
-        let mut points = Vec::new();
-
-        if let Some(results) = body["data"]["result"].as_array() {
-            for series in results {
-                if let Some(values) = series["values"].as_array() {
-                    for pair in values {
-                        if let (Some(ts), Some(val)) = (pair[0].as_f64(), pair[1].as_str()) {
-                            let value: f64 = val.parse().unwrap_or(0.0);
-                            let timestamp = unix_secs_to_rfc3339(ts as i64);
-                            points.push(MetricPoint { timestamp, value });
-                        }
-                    }
-                }
-            }
-        }
-
-        Ok(points)
+        Ok(parse_vm_response(&body))
     }
+}
+
+fn parse_vm_response(body: &serde_json::Value) -> Vec<MetricPoint> {
+    body["data"]["result"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .flat_map(parse_vm_series)
+        .collect()
+}
+
+fn parse_vm_series(series: &serde_json::Value) -> Vec<MetricPoint> {
+    series["values"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(parse_vm_point)
+        .collect()
+}
+
+fn parse_vm_point(pair: &serde_json::Value) -> Option<MetricPoint> {
+    let ts = pair[0].as_f64()?;
+    let value: f64 = pair[1].as_str()?.parse().unwrap_or(0.0);
+    Some(MetricPoint {
+        timestamp: unix_secs_to_rfc3339(ts as i64),
+        value,
+    })
 }
 
 fn build_vm_query(filter: &str) -> Result<String> {

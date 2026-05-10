@@ -64,29 +64,8 @@ impl Reader {
         to: Option<&str>,
         limit: u32,
     ) -> Result<Vec<LogRow>> {
-        let mut clauses: Vec<String> = Vec::new();
-
-        if let Some(f) = filter {
-            let expr = filter::parse(f).map_err(|e| anyhow::anyhow!("filter parse error: {e}"))?;
-            if let Some(expr) = expr {
-                clauses.push(
-                    filter::to_clickhouse_logs(&expr)
-                        .map_err(|e| anyhow::anyhow!("filter translate error: {e}"))?,
-                );
-            }
-        }
-        if let Some(ts) = from {
-            clauses.push(format!("timestamp >= {}", rfc3339_to_ns(ts)?));
-        }
-        if let Some(ts) = to {
-            clauses.push(format!("timestamp <= {}", rfc3339_to_ns(ts)?));
-        }
-
-        let where_clause = if clauses.is_empty() {
-            String::new()
-        } else {
-            format!(" WHERE {}", clauses.join(" AND "))
-        };
+        let where_clause =
+            build_where_clause(filter, from, to, filter::to_clickhouse_logs, "timestamp")?;
 
         let sql = format!(
             "SELECT timestamp, severity_text, service_name, body, trace_id \
@@ -120,29 +99,13 @@ impl Reader {
         to: Option<&str>,
         limit: u32,
     ) -> Result<Vec<TraceGroup>> {
-        let mut clauses: Vec<String> = Vec::new();
-
-        if let Some(f) = filter {
-            let expr = filter::parse(f).map_err(|e| anyhow::anyhow!("filter parse error: {e}"))?;
-            if let Some(expr) = expr {
-                clauses.push(
-                    filter::to_clickhouse_traces(&expr)
-                        .map_err(|e| anyhow::anyhow!("filter translate error: {e}"))?,
-                );
-            }
-        }
-        if let Some(ts) = from {
-            clauses.push(format!("start_time_unix_nano >= {}", rfc3339_to_ns(ts)?));
-        }
-        if let Some(ts) = to {
-            clauses.push(format!("start_time_unix_nano <= {}", rfc3339_to_ns(ts)?));
-        }
-
-        let where_clause = if clauses.is_empty() {
-            String::new()
-        } else {
-            format!(" WHERE {}", clauses.join(" AND "))
-        };
+        let where_clause = build_where_clause(
+            filter,
+            from,
+            to,
+            filter::to_clickhouse_traces,
+            "start_time_unix_nano",
+        )?;
 
         let sql = format!(
             "SELECT trace_id, span_id, parent_span_id, service_name, operation_name, \
@@ -211,6 +174,37 @@ impl Reader {
             .filter(|l| !l.trim().is_empty())
             .map(|l| serde_json::from_str(l).map_err(Into::into))
             .collect()
+    }
+}
+
+fn build_where_clause(
+    filter: Option<&str>,
+    from: Option<&str>,
+    to: Option<&str>,
+    filter_to_sql: fn(&filter::Expr) -> Result<String, String>,
+    time_field: &str,
+) -> Result<String> {
+    let mut clauses: Vec<String> = Vec::new();
+
+    if let Some(f) = filter {
+        let expr = filter::parse(f).map_err(|e| anyhow::anyhow!("filter parse error: {e}"))?;
+        if let Some(expr) = expr {
+            clauses.push(
+                filter_to_sql(&expr).map_err(|e| anyhow::anyhow!("filter translate error: {e}"))?,
+            );
+        }
+    }
+    if let Some(ts) = from {
+        clauses.push(format!("{time_field} >= {}", rfc3339_to_ns(ts)?));
+    }
+    if let Some(ts) = to {
+        clauses.push(format!("{time_field} <= {}", rfc3339_to_ns(ts)?));
+    }
+
+    if clauses.is_empty() {
+        Ok(String::new())
+    } else {
+        Ok(format!(" WHERE {}", clauses.join(" AND ")))
     }
 }
 

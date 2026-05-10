@@ -8,7 +8,7 @@
 ///   not_expr := NOT not_expr | primary
 ///   primary  := FILTER | LPAREN expr RPAREN
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Op {
     Eq,
     Gt,
@@ -169,13 +169,7 @@ impl Parser {
                 if let Some(Tok::Filter(key, op, value)) = self.next() {
                     Ok(Expr::Cmp {
                         key: key.clone(),
-                        op: match op {
-                            Op::Eq => Op::Eq,
-                            Op::Gt => Op::Gt,
-                            Op::Lt => Op::Lt,
-                            Op::Gte => Op::Gte,
-                            Op::Lte => Op::Lte,
-                        },
+                        op: op.clone(),
                         value: value.clone(),
                     })
                 } else {

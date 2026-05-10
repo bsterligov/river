@@ -12,6 +12,7 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 use utoipa_axum::router::OpenApiRouter;
+use utoipa_swagger_ui::SwaggerUi;
 
 use clickhouse::Reader as ChReader;
 use victoriametrics::Reader as VmReader;
@@ -77,7 +78,7 @@ impl IntoResponse for ApiError {
 
 fn map_backend_error(err: anyhow::Error) -> ApiError {
     let msg = err.to_string();
-    if msg.contains("filter parse error") || msg.contains("invalid RFC 3339") {
+    if msg.contains("filter") || msg.contains("invalid RFC 3339") {
         ApiError::BadRequest(msg)
     } else {
         ApiError::ServiceUnavailable(msg)
@@ -85,15 +86,7 @@ fn map_backend_error(err: anyhow::Error) -> ApiError {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-struct LogsParams {
-    filter: Option<String>,
-    from: Option<String>,
-    to: Option<String>,
-    limit: Option<u32>,
-}
-
-#[derive(Debug, Deserialize, ToSchema)]
-struct TracesParams {
+struct RangeParams {
     filter: Option<String>,
     from: Option<String>,
     to: Option<String>,
@@ -125,7 +118,7 @@ struct MetricsParams {
 )]
 async fn get_logs(
     State(state): State<Arc<AppState>>,
-    Query(params): Query<LogsParams>,
+    Query(params): Query<RangeParams>,
 ) -> Result<Json<Vec<clickhouse::LogRow>>, ApiError> {
     let limit = params.limit.unwrap_or(100).min(1000);
     state
@@ -158,7 +151,7 @@ async fn get_logs(
 )]
 async fn get_traces(
     State(state): State<Arc<AppState>>,
-    Query(params): Query<TracesParams>,
+    Query(params): Query<RangeParams>,
 ) -> Result<Json<Vec<clickhouse::TraceGroup>>, ApiError> {
     let limit = params.limit.unwrap_or(100).min(1000);
     state
@@ -209,14 +202,7 @@ async fn get_metrics(
         .query_metrics(filter, from, to, step)
         .await
         .map(Json)
-        .map_err(|e| {
-            let msg = e.to_string();
-            if msg.contains("filter") {
-                ApiError::BadRequest(msg)
-            } else {
-                ApiError::ServiceUnavailable(msg)
-            }
-        })
+        .map_err(map_backend_error)
 }
 
 #[utoipa::path(
@@ -243,9 +229,17 @@ async fn get_health() -> StatusCode {
 )]
 struct ApiDoc;
 
-async fn get_openapi() -> Json<serde_json::Value> {
-    let spec = ApiDoc::openapi();
-    Json(serde_json::to_value(spec).unwrap_or_default())
+fn build_router(state: Arc<AppState>) -> axum::Router {
+    let (api_router, _) = OpenApiRouter::with_openapi(ApiDoc::openapi())
+        .routes(utoipa_axum::routes!(get_logs))
+        .routes(utoipa_axum::routes!(get_traces))
+        .routes(utoipa_axum::routes!(get_metrics))
+        .split_for_parts();
+    axum::Router::new()
+        .merge(api_router)
+        .route("/health", get(get_health))
+        .merge(SwaggerUi::new("/swagger-ui").url("/openapi.json", ApiDoc::openapi()))
+        .with_state(state)
 }
 
 #[tokio::main]
@@ -264,17 +258,7 @@ async fn main() -> anyhow::Result<()> {
         vm: VmReader::new(http, cfg.victoriametrics_url),
     });
 
-    let (api_router, _) = OpenApiRouter::with_openapi(ApiDoc::openapi())
-        .routes(utoipa_axum::routes!(get_logs))
-        .routes(utoipa_axum::routes!(get_traces))
-        .routes(utoipa_axum::routes!(get_metrics))
-        .split_for_parts();
-
-    let app = axum::Router::new()
-        .merge(api_router)
-        .route("/health", get(get_health))
-        .route("/openapi.json", get(get_openapi))
-        .with_state(state);
+    let app = build_router(state);
 
     let addr = format!("0.0.0.0:{}", cfg.port);
     println!("river api listening on {addr}");
@@ -308,20 +292,10 @@ mod tests {
     }
 
     fn build_app(ch_url: String, vm_url: String) -> axum::Router {
-        let state = make_state(ch_url, vm_url);
-        let (api_router, _) = OpenApiRouter::with_openapi(ApiDoc::openapi())
-            .routes(utoipa_axum::routes!(get_logs))
-            .routes(utoipa_axum::routes!(get_traces))
-            .routes(utoipa_axum::routes!(get_metrics))
-            .split_for_parts();
-        axum::Router::new()
-            .merge(api_router)
-            .route("/health", get(get_health))
-            .route("/openapi.json", get(get_openapi))
-            .with_state(state)
+        build_router(make_state(ch_url, vm_url))
     }
 
-    async fn ch_server(status: u16, body: &str) -> MockServer {
+    async fn mock_server(status: u16, body: &str) -> MockServer {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .respond_with(ResponseTemplate::new(status).set_body_string(body))
@@ -330,13 +304,11 @@ mod tests {
         server
     }
 
-    async fn vm_server(status: u16, body: &str) -> MockServer {
-        let server = MockServer::start().await;
-        Mock::given(method("GET"))
-            .respond_with(ResponseTemplate::new(status).set_body_string(body))
-            .mount(&server)
-            .await;
-        server
+    async fn body_json(resp: axum::response::Response) -> serde_json::Value {
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        serde_json::from_slice(&bytes).unwrap()
     }
 
     // Scenario: GET /health returns 200
@@ -375,20 +347,36 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(resp.status(), 200);
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let val: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let val = body_json(resp).await;
         assert!(val.get("openapi").is_some());
         assert!(val.get("paths").is_some());
+    }
+
+    // Scenario: GET /swagger-ui/ serves the Swagger UI HTML
+    #[tokio::test]
+    async fn swagger_ui_is_accessible() {
+        let app = build_app(
+            "http://127.0.0.1:1".to_string(),
+            "http://127.0.0.1:1".to_string(),
+        );
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/swagger-ui/")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), 200);
     }
 
     // Scenario: query logs with filter — returns matching log entries
     #[tokio::test]
     async fn get_logs_with_filter_returns_200() {
         let body = r#"{"timestamp":1000000000,"severity_text":"ERROR","service_name":"myapp","body":"err","trace_id":""}"#;
-        let ch = ch_server(200, body).await;
-        let vm = vm_server(200, "").await;
+        let ch = mock_server(200, body).await;
+        let vm = mock_server(200, "").await;
         let app = build_app(ch.uri(), vm.uri());
         let resp = app
             .oneshot(
@@ -400,18 +388,15 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(resp.status(), 200);
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let rows: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let rows = body_json(resp).await;
         assert!(rows.is_array());
     }
 
     // Scenario: invalid filter syntax — returns 400 with human-readable error
     #[tokio::test]
     async fn get_logs_invalid_filter_returns_400() {
-        let ch = ch_server(200, "").await;
-        let vm = vm_server(200, "").await;
+        let ch = mock_server(200, "").await;
+        let vm = mock_server(200, "").await;
         let app = build_app(ch.uri(), vm.uri());
         let resp = app
             .oneshot(
@@ -423,18 +408,15 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(resp.status(), 400);
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let body = body_json(resp).await;
         assert!(body["error"].as_str().is_some());
     }
 
     // Scenario: unhealthy backend — ClickHouse returns 503
     #[tokio::test]
     async fn get_logs_clickhouse_down_returns_503() {
-        let ch = ch_server(500, "connection refused").await;
-        let vm = vm_server(200, "").await;
+        let ch = mock_server(500, "connection refused").await;
+        let vm = mock_server(200, "").await;
         let app = build_app(ch.uri(), vm.uri());
         let resp = app
             .oneshot(
@@ -446,10 +428,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(resp.status(), 503);
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let body = body_json(resp).await;
         assert!(body["error"].as_str().is_some());
     }
 
@@ -457,8 +436,8 @@ mod tests {
     #[tokio::test]
     async fn get_traces_with_filter_returns_200() {
         let body = r#"{"trace_id":"t1","span_id":"s1","parent_span_id":"","service_name":"myapp","operation_name":"op","start_time_unix_nano":0,"end_time_unix_nano":600000000,"duration_ns":600000000,"status_code":0}"#;
-        let ch = ch_server(200, body).await;
-        let vm = vm_server(200, "").await;
+        let ch = mock_server(200, body).await;
+        let vm = mock_server(200, "").await;
         let app = build_app(ch.uri(), vm.uri());
         let resp = app
             .oneshot(
@@ -470,10 +449,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(resp.status(), 200);
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let groups: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let groups = body_json(resp).await;
         assert!(groups.is_array());
         assert_eq!(groups[0]["trace_id"], "t1");
     }
@@ -482,8 +458,8 @@ mod tests {
     #[tokio::test]
     async fn get_metrics_returns_points() {
         let body = r#"{"status":"success","data":{"resultType":"matrix","result":[{"metric":{},"values":[[1704067200,"42"],[1704067260,"43"]]}]}}"#;
-        let ch = ch_server(200, "").await;
-        let vm = vm_server(200, body).await;
+        let ch = mock_server(200, "").await;
+        let vm = mock_server(200, body).await;
         let app = build_app(ch.uri(), vm.uri());
         let resp = app
             .oneshot(
@@ -495,10 +471,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(resp.status(), 200);
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let points: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let points = body_json(resp).await;
         assert!(points.is_array());
         assert_eq!(points.as_array().unwrap().len(), 2);
     }
@@ -506,8 +479,8 @@ mod tests {
     // Scenario: unhealthy VictoriaMetrics — returns 503
     #[tokio::test]
     async fn get_metrics_vm_down_returns_503() {
-        let ch = ch_server(200, "").await;
-        let vm = vm_server(503, "unavailable").await;
+        let ch = mock_server(200, "").await;
+        let vm = mock_server(503, "unavailable").await;
         let app = build_app(ch.uri(), vm.uri());
         let resp = app
             .oneshot(
@@ -524,8 +497,8 @@ mod tests {
     // Scenario: metrics missing from/to — returns 400
     #[tokio::test]
     async fn get_metrics_missing_from_to_returns_400() {
-        let ch = ch_server(200, "").await;
-        let vm = vm_server(200, "").await;
+        let ch = mock_server(200, "").await;
+        let vm = mock_server(200, "").await;
         let app = build_app(ch.uri(), vm.uri());
         let resp = app
             .oneshot(
@@ -542,8 +515,8 @@ mod tests {
     // Scenario: limit is capped at 1000
     #[tokio::test]
     async fn get_logs_limit_capped_at_1000() {
-        let ch = ch_server(200, "").await;
-        let vm = vm_server(200, "").await;
+        let ch = mock_server(200, "").await;
+        let vm = mock_server(200, "").await;
         let app = build_app(ch.uri(), vm.uri());
         let resp = app
             .oneshot(
