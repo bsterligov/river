@@ -7,6 +7,7 @@ jobs:
   version:
     name: Calculate Version
     runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.head_ref, 'spec/') }}
     outputs:
       version: ${{ steps.version.outputs.version }}
 
