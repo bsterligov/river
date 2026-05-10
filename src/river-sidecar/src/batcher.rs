@@ -94,19 +94,36 @@ impl Batcher {
         let data = std::mem::take(&mut state.buffer);
         let service = std::mem::replace(&mut state.service_name, "unknown".to_string());
         state.last_flush = Instant::now();
-        let ts = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis();
-        let key = format!(
-            "{}/{}/{}-{}.pb",
-            self.config.key_prefix,
-            service,
-            ts,
-            uuid::Uuid::new_v4()
-        );
+        let key = make_s3_key(&self.config.key_prefix, &service);
         println!("[flush] key={key} bytes={}", data.len());
         (key, data)
+    }
+}
+
+pub(crate) fn make_s3_key(prefix: &str, service: &str) -> String {
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    format!("{prefix}/{service}/{ts}-{}.pb", uuid::Uuid::new_v4())
+}
+
+#[cfg(test)]
+pub(crate) mod test_utils {
+    use std::sync::{Arc, Mutex as StdMutex};
+
+    use async_trait::async_trait;
+
+    use super::Sink;
+
+    pub(crate) struct CaptureSink(pub(crate) Arc<StdMutex<Vec<(String, Vec<u8>)>>>);
+
+    #[async_trait]
+    impl Sink for CaptureSink {
+        async fn write(&self, key: String, data: Vec<u8>) -> anyhow::Result<()> {
+            self.0.lock().unwrap().push((key, data));
+            Ok(())
+        }
     }
 }
 
@@ -116,15 +133,7 @@ mod tests {
     use super::*;
     use std::sync::Mutex as StdMutex;
 
-    struct CaptureSink(Arc<StdMutex<Vec<(String, Vec<u8>)>>>);
-
-    #[async_trait]
-    impl Sink for CaptureSink {
-        async fn write(&self, key: String, data: Vec<u8>) -> anyhow::Result<()> {
-            self.0.lock().unwrap().push((key, data));
-            Ok(())
-        }
-    }
+    use test_utils::CaptureSink;
 
     fn make_batcher(
         max_bytes: usize,

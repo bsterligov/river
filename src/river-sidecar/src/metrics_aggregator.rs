@@ -1,6 +1,6 @@
 use std::collections::{hash_map::Entry, HashMap};
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 use prost::Message;
 use tokio::sync::Mutex;
@@ -131,17 +131,7 @@ impl MetricsAggregator {
         state.last_flush = Instant::now();
 
         let buf = build_request(series).encode_length_delimited_to_vec();
-        let ts = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis();
-        let key = format!(
-            "{}/{}/{}-{}.pb",
-            self.config.key_prefix,
-            service,
-            ts,
-            uuid::Uuid::new_v4()
-        );
+        let key = crate::batcher::make_s3_key(&self.config.key_prefix, &service);
         println!(
             "[flush:metrics] key={key} bytes={} series={series_count}",
             buf.len()
@@ -396,22 +386,11 @@ mod tests {
     use super::*;
     use std::sync::Mutex as StdMutex;
 
-    use async_trait::async_trait;
-
+    use crate::batcher::test_utils::CaptureSink;
     use opentelemetry_proto::tonic::{
         common::v1::{any_value::Value as AV, AnyValue},
         metrics::v1::number_data_point::Value,
     };
-
-    struct CaptureSink(Arc<StdMutex<Vec<(String, Vec<u8>)>>>);
-
-    #[async_trait]
-    impl Sink for CaptureSink {
-        async fn write(&self, key: String, data: Vec<u8>) -> anyhow::Result<()> {
-            self.0.lock().unwrap().push((key, data));
-            Ok(())
-        }
-    }
 
     fn make_agg(
         interval: Duration,

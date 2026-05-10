@@ -52,7 +52,7 @@ After implementation, review for:
 python3 - <<'PYEOF'
 import os, hashlib, collections, sys
 
-WINDOW = 5
+WINDOW = 8
 
 def rs_files(root="src"):
     for dp, _, fs in os.walk(root):
