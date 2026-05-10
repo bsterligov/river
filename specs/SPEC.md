@@ -12,8 +12,9 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 |-----------|------|----|------|
 | river-sidecar | Rust | done | OTLP/gRPC receiver, in-memory buffer, S3 batch writer |
 | demo-app | .NET 10 | done | Continuous OTel emitter (dev/validation) |
-| river-ingestion | Rust | planned | S3 → ClickHouse / VictoriaMetrics |
-| api | Rust | done | Unified HTTP query layer (axum, utoipa, filter DSL) |
+| river-ingestion | Rust | done | S3 poll loop → ClickHouse (logs/traces) + VictoriaMetrics (metrics); runs migrations at startup |
+| river-query-api | Rust | done | Unified HTTP query layer (axum, utoipa, filter DSL) |
+| river-config | Rust | done | Shared config library used by all Rust crates |
 | ui | Flutter | planned | Cross-platform dashboard |
 
 ## Tech Stack
@@ -42,6 +43,7 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Query API port:** `8080`, configurable via `RIVER_API_PORT`
 - **Filter DSL:** `key:value` (eq), `key:>value` / `key:<value` / `key:>=value` / `key:<=value`, `AND`/`OR`/`NOT`, wildcard `*` suffix; translates to ClickHouse SQL or VictoriaMetrics label selectors
 - **OpenAPI spec:** generated from code via `utoipa` 5, served at `GET /openapi.json`
+- **Swagger UI:** mounted at `GET /swagger-ui/` via `utoipa-swagger-ui 9` (axum 0.8-compatible); fetches the spec from `/openapi.json`
 - **`duration_ms` filter field:** converted to `duration_ns` (×1 000 000) when targeting ClickHouse traces table
 - **Grafana trace config:** ClickHouse datasource provisioning includes `traces` block with `defaultDatabase: river`, `defaultTable: traces`, and column mappings matching the schema (`trace_id`, `span_id`, `parent_span_id`, `service_name`, `operation_name`, `start_time_unix_nano`, `duration_ns`, unit `nanoseconds`)
 

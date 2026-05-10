@@ -1,5 +1,19 @@
 # Hybrid AI-Augmented Development — Experiment
 
+## ⚠️ Usage notice ⚠️
+
+This experiment uses Claude Code interactively under an individual Claude Pro subscription.
+
+The purpose of the experiment is to explore and validate a structured, cost-effective AI-assisted development workflow. Claude Code Pro is used here as a practical execution environment during the research phase, with the expectation that similar workflows could later be migrated to API-based infrastructure and standard token billing if needed.
+
+A key dimension being studied is the tradeoff between autonomy and cost efficiency. More autonomous execution loops reduce the amount of human intervention required per development cycle, improving throughput and consistency, but typically increase token usage due to longer agentic sessions, higher context retention, and iterative reasoning overhead.
+
+Any use of Claude Code should comply with Anthropic’s Terms of Service, subscription limits, acceptable use policies, and any applicable Claude Code usage guidelines. This repository does not endorse account sharing, unattended autonomous operation, rate-limit evasion, or using Pro subscriptions as a replacement for enterprise/API infrastructure outside the intended terms of use.
+
+---
+
+## Introduction
+
 This repo is a working experiment in a hybrid approach to AI-assisted software development.
 
 Two common extremes exist today:
@@ -8,24 +22,35 @@ Two common extremes exist today:
 
 - Ad hoc AI-augmented: AI is used opportunistically to solve immediate tasks without a broader workflow structure. Fast to adopt, but often difficult to scale and sustain.
 
-The hypothesis behind this project is that a structured middle ground can progressively move toward high autonomy while preserving stable quality, architectural continuity between iterations, and sustainable token economics. Humans remain responsible for key review and decision gates, while AI performs most of the execution within those constraints.
+The hypothesis behind this project is that a structured middle ground can progressively move toward high autonomy while preserving stable quality, architectural continuity between iterations, and sustainable token economics. Humans remain responsible for key review and decision gates, while AI performs most of the execution within those constraints under direct developer supervision.
+
+Existing tools like OpenSpec, SpecKit, and similar spec-authoring frameworks were considered. The deliberate choice here is to use Claude-native instruments like slash commands, memory, hooks, rather than external tooling. The goal is to understand what a fully Claude-native development workflow looks like, not to evaluate third-party spec tools. Of the available Claude Code integrations, only the [GitHub integration](https://github.github.com/gh-aw/) is used, as it provides the coordination base for the agentic workflow loops.
 
 ---
 
 ## How it works V0
 
-GitHub is the coordination layer. Claude Code (Pro plan, no API token costs) is the execution layer. No extra tools.
+GitHub is the coordination layer. Claude Code (interactive Pro plan) is the execution layer. This experiment intentionally stays human-supervised rather than fully autonomous.
 
 Roles (dev, QA, PO, etc.) interact only through GitHub issues. Two automated loops handle the rest.
 
 ```mermaid
 flowchart LR
-    A[GitHub Issue] -->|GHA: loop 1| B["spec/RIVER-N branch + draft PR"]
-    B --> C["run /po-spec-writer in Claude Code"]
-    C --> D[Spec PR reviewed and merged]
-    D -->|GHA: loop 2| E["impl/RIVER-N branch + draft PR"]
-    E --> F["run /dev-spec in Claude Code"]
-    F --> G[Impl PR merged]
+    A[GitHub Issue] -->|GHA fires| B
+
+    subgraph L1["Loop 1 — Spec"]
+        B["spec/RIVER-N branch + draft PR"]
+        B --> C["run /po-spec-writer"]
+        C --> D[Spec PR reviewed and merged]
+    end
+
+    D -->|GHA fires| E
+
+    subgraph L2["Loop 2 — Implementation"]
+        E["impl/RIVER-N branch + draft PR"]
+        E --> F["run /dev-spec"]
+        F --> G[Impl PR merged]
+    end
 ```
 
 ### Loop 1 — Spec
@@ -68,13 +93,17 @@ Full token breakdown: [docs/token-usage.md](docs/token-usage.md)
 
 | Token type | Volume | Cost | Share |
 |------------|--------|-----:|------:|
-| Cache reads | 180M | $54.10 | 49% |
-| Output | 2.3M | $33.93 | 31% |
-| Cache writes | 6.1M | $22.69 | 20% |
-| Input | 15K | $0.05 | <1% |
-| **Total** | | **$110.78** | |
+| Cache reads | 190M | $57.06 | 49% |
+| Output | 2.4M | $36.32 | 31% |
+| Cache writes | 6.4M | $23.86 | 20% |
+| Input | 16K | $0.05 | <1% |
+| **Total** | | **$117.29** | |
 
-Actual paid: **$20/month** flat (Claude Code Pro plan).
+[RTK](https://github.com/rtk-ai/rtk) was also used to compress tool results before they reached Claude — 210K additional input tokens avoided (~$0.63).
+
+Advanced models such as Opus (which I have used in production contexts) are intentionally avoided, as they may introduce additional usage overhead that is not consistent with the objectives of this experiment. 
+
+On the other hand, lower-tier models such as Haiku are also not fully optimal in terms of token efficiency and code quality for complex tasks; however, they will be evaluated in the second week of the experiment, specifically during the frontend application creation phase, to better understand their trade-offs in real-world usage scenarios.
 
 **By phase:**
 
@@ -96,8 +125,8 @@ MoSCoW labels are assigned when a spec is written. This makes it possible to see
 
 | Priority | Cost | Share |
 |----------|-----:|------:|
-| must | $78.31 | 71% |
-| should | $32.46 | 29% |
+| must | $88.89 | 76% |
+| should | $28.40 | 24% |
 | could | — | — |
 | wont | — | — |
 
@@ -105,13 +134,13 @@ MoSCoW labels are assigned when a spec is written. This makes it possible to see
 
 | Category | Cost | Share |
 |----------|-----:|------:|
-| tools | $42.79 | 39% |
-| features | $32.05 | 29% |
-| bugs | $22.06 | 20% |
-| docs | $12.73 | 11% |
-| refactoring | $1.14 | 1% |
+| tools | $63.14 | 54% |
+| features | $32.05 | 27% |
+| bugs | $17.31 | 15% |
+| docs | $2.95 | 3% |
+| refactoring | $1.83 | 2% |
 
-The tooling cost (39%) is high relative to features (29%) because the first week included bootstrapping the entire CI/CD pipeline, DevOps setup, and dev tooling from scratch — a one-time cost. Refactoring is cheapest because it was minimal; bugs are unexpectedly high, driven by the RIVER-22 error-linking spec which required deep context analysis.
+The tooling cost (54%) is high relative to features (27%) because the first week included bootstrapping the entire CI/CD pipeline, DevOps setup, and dev tooling from scratch — a one-time cost. Refactoring is cheapest because it was minimal; bugs are unexpectedly high, driven by the RIVER-22 error-linking spec which required deep context analysis.
 
 ---
 
