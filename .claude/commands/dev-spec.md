@@ -123,4 +123,4 @@ git commit -m "<type>: RIVER-N message"
 gh pr create --title "impl: RIVER-N -- Title" --base main --draft
 ```
 
-Do not push directly to main.
+Do not push.

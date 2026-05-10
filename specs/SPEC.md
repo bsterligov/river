@@ -43,6 +43,7 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Filter DSL:** `key:value` (eq), `key:>value` / `key:<value` / `key:>=value` / `key:<=value`, `AND`/`OR`/`NOT`, wildcard `*` suffix; translates to ClickHouse SQL or VictoriaMetrics label selectors
 - **OpenAPI spec:** generated from code via `utoipa` 5, served at `GET /openapi.json`
 - **`duration_ms` filter field:** converted to `duration_ns` (×1 000 000) when targeting ClickHouse traces table
+- **Grafana trace config:** ClickHouse datasource provisioning includes `traces` block with `defaultDatabase: river`, `defaultTable: traces`, and column mappings matching the schema (`trace_id`, `span_id`, `parent_span_id`, `service_name`, `operation_name`, `start_time_unix_nano`, `duration_ns`, unit `nanoseconds`)
 
 ## Spec System
 `/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)

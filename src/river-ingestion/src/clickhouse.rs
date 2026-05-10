@@ -103,6 +103,32 @@ pub fn parse_traces(data: &[u8]) -> anyhow::Result<Vec<Value>> {
         let service = service_name(&rs.resource);
         for ss in &rs.scope_spans {
             for span in &ss.spans {
+                let event_names: Vec<Value> = span.events.iter().map(|e| json!(e.name)).collect();
+                let event_timestamps: Vec<Value> = span
+                    .events
+                    .iter()
+                    .map(|e| json!(e.time_unix_nano))
+                    .collect();
+                let event_attributes: Vec<Value> = span
+                    .events
+                    .iter()
+                    .map(|e| attrs_as_string_map(&e.attributes))
+                    .collect();
+                let link_trace_ids: Vec<Value> = span
+                    .links
+                    .iter()
+                    .map(|l| json!(to_hex(&l.trace_id)))
+                    .collect();
+                let link_span_ids: Vec<Value> = span
+                    .links
+                    .iter()
+                    .map(|l| json!(to_hex(&l.span_id)))
+                    .collect();
+                let link_attributes: Vec<Value> = span
+                    .links
+                    .iter()
+                    .map(|l| attrs_as_string_map(&l.attributes))
+                    .collect();
                 rows.push(json!({
                     "trace_id": to_hex(&span.trace_id),
                     "span_id": to_hex(&span.span_id),
@@ -114,6 +140,12 @@ pub fn parse_traces(data: &[u8]) -> anyhow::Result<Vec<Value>> {
                     "duration_ns": span.end_time_unix_nano.saturating_sub(span.start_time_unix_nano),
                     "status_code": span.status.as_ref().map(|s| s.code).unwrap_or(0),
                     "attributes": attrs_map(&span.attributes).to_string(),
+                    "Events.Name": event_names,
+                    "Events.Timestamp": event_timestamps,
+                    "Events.Attributes": event_attributes,
+                    "Links.TraceId": link_trace_ids,
+                    "Links.SpanId": link_span_ids,
+                    "Links.Attributes": link_attributes,
                 }));
             }
         }
@@ -176,6 +208,28 @@ fn attrs_map(attrs: &[KeyValue]) -> Value {
     Value::Object(map)
 }
 
+fn attrs_as_string_map(attrs: &[KeyValue]) -> Value {
+    let map: Map<String, Value> = attrs
+        .iter()
+        .map(|kv| {
+            let v = kv
+                .value
+                .as_ref()
+                .and_then(|av| av.value.as_ref())
+                .map(|val| match val {
+                    AV::StringValue(s) => Value::String(s.clone()),
+                    AV::IntValue(i) => Value::String(i.to_string()),
+                    AV::DoubleValue(d) => Value::String(d.to_string()),
+                    AV::BoolValue(b) => Value::String(b.to_string()),
+                    _ => Value::String(String::new()),
+                })
+                .unwrap_or(Value::String(String::new()));
+            (kv.key.clone(), v)
+        })
+        .collect();
+    Value::Object(map)
+}
+
 fn to_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
@@ -193,6 +247,27 @@ mod tests {
     };
     use prost::Message;
     use wiremock::{matchers::method, Mock, MockServer, ResponseTemplate};
+
+    fn make_kv(key: &str, val: AV) -> KeyValue {
+        KeyValue {
+            key: key.to_string(),
+            value: Some(AnyValue { value: Some(val) }),
+        }
+    }
+
+    fn all_type_attrs() -> Vec<KeyValue> {
+        vec![
+            make_kv("s", AV::StringValue("hello".to_string())),
+            make_kv("i", AV::IntValue(42)),
+            make_kv("d", AV::DoubleValue(2.5)),
+            make_kv("b", AV::BoolValue(true)),
+            make_kv("x", AV::BytesValue(vec![1])),
+            KeyValue {
+                key: "n".to_string(),
+                value: None,
+            },
+        ]
+    }
 
     fn make_resource(service: &str) -> Option<Resource> {
         Some(Resource {
@@ -377,42 +452,33 @@ mod tests {
 
     #[test]
     fn attrs_map_handles_multiple_value_types() {
-        let attrs = vec![
-            KeyValue {
-                key: "i".to_string(),
-                value: Some(AnyValue {
-                    value: Some(AV::IntValue(7)),
-                }),
-            },
-            KeyValue {
-                key: "d".to_string(),
-                value: Some(AnyValue {
-                    value: Some(AV::DoubleValue(1.5)),
-                }),
-            },
-            KeyValue {
-                key: "b".to_string(),
-                value: Some(AnyValue {
-                    value: Some(AV::BoolValue(false)),
-                }),
-            },
-            KeyValue {
-                key: "x".to_string(),
-                value: Some(AnyValue {
-                    value: Some(AV::BytesValue(vec![])),
-                }),
-            },
-            KeyValue {
-                key: "n".to_string(),
-                value: None,
-            },
-        ];
-        let m = attrs_map(&attrs);
-        assert_eq!(m["i"], serde_json::json!(7i64));
-        assert_eq!(m["d"], serde_json::json!(1.5f64));
-        assert_eq!(m["b"], serde_json::json!(false));
+        let m = attrs_map(&all_type_attrs());
+        assert_eq!(m["s"], serde_json::json!("hello"));
+        assert_eq!(m["i"], serde_json::json!(42i64));
+        assert_eq!(m["d"], serde_json::json!(2.5f64));
+        assert_eq!(m["b"], serde_json::json!(true));
         assert_eq!(m["x"], serde_json::Value::Null);
         assert_eq!(m["n"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn attrs_as_string_map_converts_all_types() {
+        let m = attrs_as_string_map(&all_type_attrs());
+        assert_eq!(m["s"], serde_json::json!("hello"));
+        assert_eq!(m["i"], serde_json::json!("42"));
+        assert_eq!(m["d"], serde_json::json!("2.5"));
+        assert_eq!(m["b"], serde_json::json!("true"));
+        assert_eq!(m["x"], serde_json::json!(""));
+        assert_eq!(m["n"], serde_json::json!(""));
+    }
+
+    #[test]
+    fn service_name_returns_empty_when_value_is_non_string() {
+        let resource = Some(Resource {
+            attributes: vec![make_kv("service.name", AV::IntValue(99))],
+            ..Default::default()
+        });
+        assert_eq!(service_name(&resource), "");
     }
 
     #[test]

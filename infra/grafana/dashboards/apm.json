@@ -49,7 +49,7 @@
         {
           "refId": "A",
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-          "rawSql": "SELECT fromUnixTimestamp64Nano(start_time_unix_nano) AS time, service_name, operation_name, round(duration_ns / 1000000.0, 2) AS duration_ms, status_code, trace_id, span_id FROM traces WHERE start_time_unix_nano >= $__from * 1000000 AND start_time_unix_nano <= $__to * 1000000 AND service_name IN (${service:singlequote}) ORDER BY time DESC LIMIT 500",
+          "rawSql": "SELECT start_time_unix_nano AS time, service_name, operation_name, round(duration_ns / 1000000.0, 2) AS duration_ms, status_code, trace_id, span_id FROM traces WHERE start_time_unix_nano >= fromUnixTimestamp64Milli($__from) AND start_time_unix_nano <= fromUnixTimestamp64Milli($__to) AND service_name IN (${service:singlequote}) ORDER BY time DESC LIMIT 500",
           "format": 1
         }
       ]
@@ -72,7 +72,7 @@
         {
           "refId": "A",
           "datasource": { "type": "grafana-clickhouse-datasource", "uid": "clickhouse" },
-          "rawSql": "SELECT fromUnixTimestamp64Nano(timestamp) AS time, service_name, severity_text, body, trace_id FROM logs WHERE timestamp >= $__from * 1000000 AND timestamp <= $__to * 1000000 AND service_name IN (${service:singlequote}) ORDER BY time DESC LIMIT 500",
+          "rawSql": "SELECT timestamp AS time, service_name, severity_text, body, trace_id FROM logs WHERE timestamp >= fromUnixTimestamp64Milli($__from) AND timestamp <= fromUnixTimestamp64Milli($__to) AND service_name IN (${service:singlequote}) ORDER BY time DESC LIMIT 500",
           "format": 1
         }
       ]
