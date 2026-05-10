@@ -59,3 +59,7 @@ Swagger UI mounted at `GET /swagger-ui/` via `utoipa-swagger-ui 9` (axum 0.8-com
 ### 2026-05-10 — RIVER-19: implementation done
 
 Each crate (`api`, `river-ingestion`, `river-sidecar`) now has a `config.rs` module backed by the `config` crate. All env vars are standardised to the `RIVER_` prefix; `RIVER_CLICKHOUSE_USER` and `RIVER_CLICKHOUSE_PASSWORD` are required and cause an immediate startup failure if absent. docker-compose updated to use the new names.
+
+### 2026-05-10 — RIVER-22: spec created
+
+PO spec written for fixing Grafana trace linking. Root cause is a missing trace configuration in the ClickHouse datasource provisioning YAML; Grafana generates queries against the database name instead of the `traces` table and uses camelCase column names that don't match the schema.
