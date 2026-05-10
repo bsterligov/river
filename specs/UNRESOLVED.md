@@ -9,6 +9,7 @@ Format: `- [RIVER-N] Question — **Resolved:** answer` once closed.
 ## Open
 
 - [RIVER-14] How should parallel in-flight specs avoid conflicts when both target the same tracking files (QUEUE.md, HISTORY.md)?
+- [RIVER-16] What is the exact filter DSL grammar? Specifically: field name set for each signal type (logs/traces/metrics), whether free-text body search is supported, and how nested attribute paths are expressed (e.g. `attributes.http.status:200`).
 
 ## Resolved
 
