@@ -44,6 +44,11 @@ mise exec -- cargo clippy -- -D warnings
 mise exec -- cargo test
 ```
 
+After implementation, review for:
+
+- **Code duplication** — if two functions share a repeated block (e.g. building a WHERE clause, parsing a filter, constructing the same struct), extract a shared helper. Three similar lines is a signal; near-identical 10-line blocks are always a bug.
+- **Cognitive Complexity ≤ 15** — SonarQube enforces a maximum of 15 per function. Each level of nesting adds to the score (nested `if`/`for`/`match` compounds quickly). When a function exceeds 15, extract the inner logic into a named helper; do not just flatten with early returns if nesting is the root cause.
+
 ## Step 4 — Close out tracking files
 
 When implementation is complete:

@@ -99,6 +99,26 @@ services:
       - victoriametrics
       - clickhouse
 
+  api:
+    build:
+      context: .
+      dockerfile: src/api/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      victoriametrics:
+        condition: service_started
+    environment:
+      RIVER_API_PORT: "8080"
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_DB: river
+      CLICKHOUSE_USER: river
+      CLICKHOUSE_PASSWORD: river
+      VICTORIAMETRICS_URL: http://victoriametrics:8428
+    restart: unless-stopped
+
   demo-app:
     build:
       context: src/demo-app

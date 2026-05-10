@@ -13,7 +13,7 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 | sidecar | Rust | done | OTLP/gRPC receiver, in-memory buffer, S3 batch writer |
 | demo-app | .NET 10 | done | Continuous OTel emitter (dev/validation) |
 | ingestion | Rust | planned | S3 → ClickHouse / VictoriaMetrics |
-| api | Rust | planned | Unified HTTP/gRPC query layer |
+| api | Rust | done | Unified HTTP query layer (axum, utoipa, filter DSL) |
 | ui | Flutter | planned | Cross-platform dashboard |
 
 ## Tech Stack
@@ -38,6 +38,10 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Grafana is dev tooling only** — not a permanent product component; anonymous admin access, no RBAC
 - **ClickHouse Grafana plugin:** `grafana-clickhouse-datasource` (Grafana Labs), installed via `GF_INSTALL_PLUGINS` at container start; connects on native port 9000
 - **Dashboard provisioning:** JSON files under `grafana/dashboards/`, mounted into the container; datasources under `grafana/provisioning/`
+- **Query API port:** `8080`, configurable via `RIVER_API_PORT`
+- **Filter DSL:** `key:value` (eq), `key:>value` / `key:<value` / `key:>=value` / `key:<=value`, `AND`/`OR`/`NOT`, wildcard `*` suffix; translates to ClickHouse SQL or VictoriaMetrics label selectors
+- **OpenAPI spec:** generated from code via `utoipa` 5, served at `GET /openapi.json`
+- **`duration_ms` filter field:** converted to `duration_ns` (×1 000 000) when targeting ClickHouse traces table
 
 ## Spec System
 `/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)
