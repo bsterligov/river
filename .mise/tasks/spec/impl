@@ -12,6 +12,14 @@ IMPL_BRANCH="impl/${SPEC_BRANCH}"
 
 git push origin HEAD:refs/heads/$IMPL_BRANCH
 
+# GitHub requires at least one commit ahead of base to open a PR.
+# Create an empty placeholder commit on the impl branch.
+git fetch origin "$IMPL_BRANCH"
+git checkout -B "$IMPL_BRANCH" "origin/$IMPL_BRANCH"
+git commit --allow-empty -m "chore: start ${TASK} implementation"
+git push origin "$IMPL_BRANCH"
+git checkout -
+
 PR_BODY="Implementation branch for ${TASK}."$'\n\n'
 PR_BODY+="Checkout this branch and run \`/dev-spec\` to implement the spec."$'\n\n'
 PR_BODY+='```'$'\n'
