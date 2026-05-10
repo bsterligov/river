@@ -22,21 +22,21 @@ async fn main() -> Result<()> {
     );
     let http = reqwest::Client::new();
 
-    let vm = victoriametrics::Writer::new(http.clone(), cfg.victoriametrics_url.clone());
+    let vm = victoriametrics::Writer::new(http.clone(), cfg.storage.victoriametrics_url.clone());
     let ch = clickhouse::Writer::new(
         http.clone(),
-        cfg.clickhouse_url.clone(),
-        cfg.clickhouse_db.clone(),
-        cfg.clickhouse_user.clone(),
-        cfg.clickhouse_password.clone(),
+        cfg.storage.clickhouse_url.clone(),
+        cfg.storage.clickhouse_db.clone(),
+        cfg.storage.clickhouse_user.clone(),
+        cfg.storage.clickhouse_password.clone(),
     );
 
     let migrator = migrations::Migrator::new(
         http.clone(),
-        cfg.clickhouse_url.clone(),
-        cfg.clickhouse_db.clone(),
-        cfg.clickhouse_user.clone(),
-        cfg.clickhouse_password.clone(),
+        cfg.storage.clickhouse_url.clone(),
+        cfg.storage.clickhouse_db.clone(),
+        cfg.storage.clickhouse_user.clone(),
+        cfg.storage.clickhouse_password.clone(),
     );
     migrator.run().await?;
 
@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     let start_ts_ms = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis() as u64;
 
     println!(
-        "river ingestion starting bucket={} interval={:?}",
+        "river river-ingestion starting bucket={} interval={:?}",
         cfg.s3_bucket, poll_interval
     );
 

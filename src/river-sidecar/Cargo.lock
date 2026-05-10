@@ -718,7 +718,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sidecar"
+name = "river-sidecar"
 version = "0.1.0"
 dependencies = [
  "opentelemetry-proto",

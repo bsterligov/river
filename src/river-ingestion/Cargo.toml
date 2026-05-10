@@ -1,5 +1,5 @@
 [package]
-name = "ingestion"
+name = "river-ingestion"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 workspace = true
 
 [dependencies]
-config = "0.14"
+river-config = { path = "../river-config" }
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 aws-config = { version = "1", features = ["behavior-version-latest"] }

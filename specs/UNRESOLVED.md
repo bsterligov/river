@@ -13,5 +13,5 @@ Format: `- [RIVER-N] Question — **Resolved:** answer` once closed.
 
 ## Resolved
 
-- [RIVER-2] ~~Should the Rust sidecar be the long-term ingestion entrypoint, or a temporary scaffold?~~ **Resolved:** permanent ingestion component.
+- [RIVER-2] ~~Should the Rust river-sidecar be the long-term river-ingestion entrypoint, or a temporary scaffold?~~ **Resolved:** permanent river-ingestion component.
 - [RIVER-2] ~~What signal volume does the .NET demo app need to produce?~~ **Resolved:** continuous background emission.

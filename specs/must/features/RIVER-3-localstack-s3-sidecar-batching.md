@@ -5,11 +5,11 @@ Why: Telemetry data has no durable storage today, so anything in-flight is lost 
 
 ## Problem
 
-The sidecar currently receives OTLP spans and has nowhere to persist them. If the sidecar restarts or the downstream pipeline isn't ready, data is dropped. Local dev has no storage layer at all, making it impossible to test the full ingest → store → process flow end-to-end.
+The river-sidecar currently receives OTLP spans and has nowhere to persist them. If the river-sidecar restarts or the downstream pipeline isn't ready, data is dropped. Local dev has no storage layer at all, making it impossible to test the full ingest → store → process flow end-to-end.
 
 ## Goal
 
-Spans received by the sidecar are reliably written to S3 (LocalStack in local dev) before any downstream processing. An operator can tune how aggressively data is flushed by adjusting buffer size and flush interval without recompiling.
+Spans received by the river-sidecar are reliably written to S3 (LocalStack in local dev) before any downstream processing. An operator can tune how aggressively data is flushed by adjusting buffer size and flush interval without recompiling.
 
 ## Scope
 
@@ -20,7 +20,7 @@ Spans received by the sidecar are reliably written to S3 (LocalStack in local de
 - Metrics/log line emitted on each flush (bytes written, object key)
 - Graceful shutdown flushes remaining buffer before exit
 - TDD: unit tests covering buffer-full flush, interval flush, and the race between the two
-- TDD: integration test that sends spans to sidecar and asserts objects appear in LocalStack bucket
+- TDD: integration test that sends spans to river-sidecar and asserts objects appear in LocalStack bucket
 
 **Out**
 - Real AWS S3 configuration or credentials management
@@ -31,4 +31,4 @@ Spans received by the sidecar are reliably written to S3 (LocalStack in local de
 ## Decisions
 
 - **Payload format:** raw OTLP protobuf bytes (no envelope wrapping)
-- **Object key format:** `spans/{service_name}/{timestamp}-{uuid}.pb` — service name injected by the sidecar from the OTLP resource attributes
+- **Object key format:** `spans/{service_name}/{timestamp}-{uuid}.pb` — service name injected by the river-sidecar from the OTLP resource attributes

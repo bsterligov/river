@@ -180,7 +180,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let addr: SocketAddr = "0.0.0.0:4317".parse()?;
-    println!("river sidecar listening on {addr}");
+    println!("river river-sidecar listening on {addr}");
 
     Server::builder()
         .add_service(TraceServiceServer::new(receiver.clone()))

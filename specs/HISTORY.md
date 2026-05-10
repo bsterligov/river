@@ -6,7 +6,7 @@ Oldest first. Append new entries at the bottom.
 
 ### 2026-05-06 — RIVER-2: Open questions resolved
 
-Rust sidecar confirmed as a permanent ingestion component (not a dev scaffold). .NET demo app will emit signals on a continuous background loop.
+Rust river-sidecar confirmed as a permanent river-ingestion component (not a dev scaffold). .NET demo app will emit signals on a continuous background loop.
 
 ### 2026-05-07 — RIVER-3: Decisions recorded
 
@@ -22,7 +22,7 @@ Ingestion service implemented in Rust: S3 poll loop routing OTLP protobuf files 
 
 ### 2026-05-08 — RIVER-4: implementation done
 
-GitHub Actions CI workflow added: fmt-check, clippy (-D warnings), and test via mise tasks, followed by SonarQube scan and quality gate. Two pre-existing clippy issues in sidecar fixed as part of rollout.
+GitHub Actions CI workflow added: fmt-check, clippy (-D warnings), and test via mise tasks, followed by SonarQube scan and quality gate. Two pre-existing clippy issues in river-sidecar fixed as part of rollout.
 
 ### 2026-05-08 — RIVER-6: spec created
 
@@ -38,7 +38,7 @@ Release job added to ci.yml: runs after SonarQube on pushes to main, creates a s
 
 ### 2026-05-09 — RIVER-10: implementation done
 
-Migration management added to the ingestion service: SQL files under `infra/migrations/clickhouse/` are embedded in the binary and applied at startup via a `Migrator` that tracks versions in a `schema_migrations` table. `ensure_tables()` and all inline DDL removed from `clickhouse.rs`.
+Migration management added to the river-ingestion service: SQL files under `infra/migrations/clickhouse/` are embedded in the binary and applied at startup via a `Migrator` that tracks versions in a `schema_migrations` table. `ensure_tables()` and all inline DDL removed from `clickhouse.rs`.
 
 ### 2026-05-09 — RIVER-12: implementation done
 
@@ -50,7 +50,7 @@ SDD process updated to a fully branch-based flow: spec authoring and implementat
 
 ### 2026-05-10 — RIVER-16: implementation done
 
-Query API implemented as a new `api` Rust binary (`src/api/`) using axum 0.8 with routes `GET /v1/logs`, `GET /v1/traces`, `GET /v1/metrics`, `GET /health`, and `GET /openapi.json`. A filter DSL parser translates `key:value`, comparison operators, `AND`/`OR`/`NOT`, and wildcards to ClickHouse SQL or VictoriaMetrics label selectors. OpenAPI 3.0 spec is generated from code using `utoipa`. `api` service added to docker-compose, listening on port 8080 via `RIVER_API_PORT`.
+Query API implemented as a new `api` Rust binary (`src/river-query-api/`) using axum 0.8 with routes `GET /v1/logs`, `GET /v1/traces`, `GET /v1/metrics`, `GET /health`, and `GET /openapi.json`. A filter DSL parser translates `key:value`, comparison operators, `AND`/`OR`/`NOT`, and wildcards to ClickHouse SQL or VictoriaMetrics label selectors. OpenAPI 3.0 spec is generated from code using `utoipa`. `api` service added to docker-compose, listening on port 8080 via `RIVER_API_PORT`.
 
 ### 2026-05-10 — RIVER-16: Swagger UI added
 
@@ -58,4 +58,4 @@ Swagger UI mounted at `GET /swagger-ui/` via `utoipa-swagger-ui 9` (axum 0.8-com
 
 ### 2026-05-10 — RIVER-19: implementation done
 
-Each crate (`api`, `ingestion`, `sidecar`) now has a `config.rs` module backed by the `config` crate. All env vars are standardised to the `RIVER_` prefix; `RIVER_CLICKHOUSE_USER` and `RIVER_CLICKHOUSE_PASSWORD` are required and cause an immediate startup failure if absent. docker-compose updated to use the new names.
+Each crate (`api`, `river-ingestion`, `river-sidecar`) now has a `config.rs` module backed by the `config` crate. All env vars are standardised to the `RIVER_` prefix; `RIVER_CLICKHOUSE_USER` and `RIVER_CLICKHOUSE_PASSWORD` are required and cause an immediate startup failure if absent. docker-compose updated to use the new names.

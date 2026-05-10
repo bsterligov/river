@@ -222,12 +222,12 @@ async fn main() -> anyhow::Result<()> {
     let state = Arc::new(AppState {
         ch: ChReader::new(
             http.clone(),
-            cfg.clickhouse_url,
-            cfg.clickhouse_db,
-            cfg.clickhouse_user,
-            cfg.clickhouse_password,
+            cfg.storage.clickhouse_url,
+            cfg.storage.clickhouse_db,
+            cfg.storage.clickhouse_user,
+            cfg.storage.clickhouse_password,
         ),
-        vm: VmReader::new(http, cfg.victoriametrics_url),
+        vm: VmReader::new(http, cfg.storage.victoriametrics_url),
     });
 
     let app = build_router(state);

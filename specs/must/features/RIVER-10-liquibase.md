@@ -7,7 +7,7 @@ Why: Schema changes are embedded in application code with no versioning, rollbac
 
 ## Problem
 
-The ingestion service creates the `logs` and `traces` tables via hardcoded DDL strings in `clickhouse.rs` that run at startup. There is no record of when a schema changed, no way to apply a change independently of a deploy, and no recovery path if a migration partially fails. As the schema evolves, this approach will cause silent drift between environments.
+The river-ingestion service creates the `logs` and `traces` tables via hardcoded DDL strings in `clickhouse.rs` that run at startup. There is no record of when a schema changed, no way to apply a change independently of a deploy, and no recovery path if a migration partially fails. As the schema evolves, this approach will cause silent drift between environments.
 
 ## Goal
 

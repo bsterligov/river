@@ -18,10 +18,10 @@ services:
     command: s3 mb s3://river-telemetry --endpoint-url http://localstack:4566
     restart: on-failure
 
-  sidecar:
+  river-sidecar:
     build:
       context: .
-      dockerfile: src/sidecar/Dockerfile
+      dockerfile: src/river-sidecar/Dockerfile
     ports:
       - "4317:4317"
     depends_on:
@@ -47,7 +47,7 @@ services:
       CLICKHOUSE_USER: river
       CLICKHOUSE_PASSWORD: river
     healthcheck:
-      test: ["CMD", "clickhouse-client", "--user", "river", "--password", "river", "--query", "SELECT 1"]
+      test: [ "CMD", "clickhouse-client", "--user", "river", "--password", "river", "--query", "SELECT 1" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -58,10 +58,10 @@ services:
       - "8428:8428"
     command: -retentionPeriod=30d
 
-  ingestion:
+  river-ingestion:
     build:
       context: .
-      dockerfile: src/ingestion/Dockerfile
+      dockerfile: src/river-ingestion/Dockerfile
     depends_on:
       localstack:
         condition: service_healthy
@@ -102,7 +102,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: src/api/Dockerfile
+      dockerfile: src/river-query-api/Dockerfile
     ports:
       - "8080:8080"
     depends_on:
@@ -123,9 +123,9 @@ services:
     build:
       context: src/demo-app
     depends_on:
-      - sidecar
+      - river-sidecar
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://sidecar:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://river-sidecar:4317
       OTEL_EXPORTER_OTLP_PROTOCOL: grpc
       OTEL_SERVICE_NAME: demo-app
     restart: on-failure

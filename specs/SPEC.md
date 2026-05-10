@@ -10,9 +10,9 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 ## Components
 | Component | Lang | St | Role |
 |-----------|------|----|------|
-| sidecar | Rust | done | OTLP/gRPC receiver, in-memory buffer, S3 batch writer |
+| river-sidecar | Rust | done | OTLP/gRPC receiver, in-memory buffer, S3 batch writer |
 | demo-app | .NET 10 | done | Continuous OTel emitter (dev/validation) |
-| ingestion | Rust | planned | S3 → ClickHouse / VictoriaMetrics |
+| river-ingestion | Rust | planned | S3 → ClickHouse / VictoriaMetrics |
 | api | Rust | done | Unified HTTP query layer (axum, utoipa, filter DSL) |
 | ui | Flutter | planned | Cross-platform dashboard |
 
@@ -28,7 +28,7 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 | Toolchain mgmt | mise |
 
 ## Decisions
-- **S3 buffer** — decouples ingestion from processing; survives restarts
+- **S3 buffer** — decouples river-ingestion from processing; survives restarts
 - **Raw OTLP protobuf** — no envelope; wire format preserved for downstream
 - **Sidecar is permanent** — production entrypoint, not a scaffold
 - **ClickHouse + VictoriaMetrics** — best-of-breed per signal type
