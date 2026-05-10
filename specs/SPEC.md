@@ -34,7 +34,8 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **ClickHouse + VictoriaMetrics** — best-of-breed per signal type
 - **Flutter UI** — one codebase for web + desktop
 - **S3 key schema:** `{signal}/{service}/{timestamp}-{uuid}.pb`
-- **Env vars:** all prefixed `RIVER_` (e.g. `RIVER_BUFFER_MAX_BYTES`, `RIVER_FLUSH_INTERVAL_SECS`)
+- **Env vars:** all prefixed `RIVER_` (e.g. `RIVER_BUFFER_MAX_BYTES`, `RIVER_FLUSH_INTERVAL_SECS`); `RIVER_CLICKHOUSE_USER` and `RIVER_CLICKHOUSE_PASSWORD` are required (no default) — startup fails if absent
+- **Config loading:** each crate has a `config.rs` module backed by the `config` crate (env-only source; file-based config is out of scope)
 - **Grafana is dev tooling only** — not a permanent product component; anonymous admin access, no RBAC
 - **ClickHouse Grafana plugin:** `grafana-clickhouse-datasource` (Grafana Labs), installed via `GF_INSTALL_PLUGINS` at container start; connects on native port 9000
 - **Dashboard provisioning:** JSON files under `grafana/dashboards/`, mounted into the container; datasources under `grafana/provisioning/`

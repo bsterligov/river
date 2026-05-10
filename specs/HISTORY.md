@@ -55,3 +55,7 @@ Query API implemented as a new `api` Rust binary (`src/api/`) using axum 0.8 wit
 ### 2026-05-10 — RIVER-16: Swagger UI added
 
 Swagger UI mounted at `GET /swagger-ui/` via `utoipa-swagger-ui 9` (axum 0.8-compatible). The bundled UI fetches the spec from the existing `/openapi.json` endpoint.
+
+### 2026-05-10 — RIVER-19: implementation done
+
+Each crate (`api`, `ingestion`, `sidecar`) now has a `config.rs` module backed by the `config` crate. All env vars are standardised to the `RIVER_` prefix; `RIVER_CLICKHOUSE_USER` and `RIVER_CLICKHOUSE_PASSWORD` are required and cause an immediate startup failure if absent. docker-compose updated to use the new names.

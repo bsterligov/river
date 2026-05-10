@@ -1,4 +1,5 @@
 mod clickhouse;
+mod config;
 mod migrations;
 mod poller;
 mod router;
@@ -9,42 +10,10 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 
-struct Config {
-    bucket: String,
-    poll_interval: Duration,
-    victoriametrics_url: String,
-    clickhouse_url: String,
-    clickhouse_db: String,
-    clickhouse_user: String,
-    clickhouse_password: String,
-}
-
-impl Config {
-    fn from_env() -> Self {
-        Config {
-            bucket: std::env::var("S3_BUCKET").unwrap_or_else(|_| "river-telemetry".to_string()),
-            poll_interval: Duration::from_secs(
-                std::env::var("RIVER_POLL_INTERVAL_SECS")
-                    .ok()
-                    .and_then(|v| v.parse().ok())
-                    .unwrap_or(10u64),
-            ),
-            victoriametrics_url: std::env::var("VICTORIAMETRICS_URL")
-                .unwrap_or_else(|_| "http://victoriametrics:8428".to_string()),
-            clickhouse_url: std::env::var("CLICKHOUSE_URL")
-                .unwrap_or_else(|_| "http://clickhouse:8123".to_string()),
-            clickhouse_db: std::env::var("CLICKHOUSE_DB").unwrap_or_else(|_| "river".to_string()),
-            clickhouse_user: std::env::var("CLICKHOUSE_USER")
-                .unwrap_or_else(|_| "river".to_string()),
-            clickhouse_password: std::env::var("CLICKHOUSE_PASSWORD")
-                .unwrap_or_else(|_| "river".to_string()),
-        }
-    }
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
-    let cfg = Config::from_env();
+    let cfg = config::Config::from_env()?;
+    let poll_interval = Duration::from_secs(cfg.poll_interval_secs);
     let aws_cfg = aws_config::load_from_env().await;
     let s3 = aws_sdk_s3::Client::from_conf(
         aws_sdk_s3::config::Builder::from(&aws_cfg)
@@ -76,16 +45,16 @@ async fn main() -> Result<()> {
 
     println!(
         "river ingestion starting bucket={} interval={:?}",
-        cfg.bucket, cfg.poll_interval
+        cfg.s3_bucket, poll_interval
     );
 
     loop {
-        match run_poll(&s3, &cfg.bucket, start_ts_ms, &mut seen, &vm, &ch).await {
+        match run_poll(&s3, &cfg.s3_bucket, start_ts_ms, &mut seen, &vm, &ch).await {
             Ok(0) => {}
             Ok(n) => println!("[poll] processed {n} files"),
             Err(e) => eprintln!("[poll] error: {e}"),
         }
-        tokio::time::sleep(cfg.poll_interval).await;
+        tokio::time::sleep(poll_interval).await;
     }
 }
 
