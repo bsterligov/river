@@ -123,3 +123,96 @@ Table columns: **Input**, **CacheC** (cache_creation), **CacheR** (cache_read), 
 **RTKSaved** = tokens that would have been fed back to Claude as tool results but were removed by RTK compression. This is additional context consumption that was avoided, on top of the billed input tokens.
 
 Format numbers with thousands separators.
+
+## Step 6 — Calculate cost breakdown by MoSCoW priority and category
+
+Using Sonnet 4.6 pricing: $3.00/1M input, $3.75/1M cache write, $0.30/1M cache read, $15.00/1M output.
+
+```python
+import re, os
+
+PRICING = {
+    "input":        3.00 / 1e6,
+    "cache_create": 3.75 / 1e6,
+    "cache_read":   0.30 / 1e6,
+    "output":      15.00 / 1e6,
+}
+
+def row_cost(row):
+    return (
+        row["input"]        * PRICING["input"]
+        + row["cache_create"] * PRICING["cache_create"]
+        + row["cache_read"]   * PRICING["cache_read"]
+        + row["output"]       * PRICING["output"]
+    )
+
+# Build RIVER-N -> (priority, category) from spec file paths
+river_map = {}
+for root, _, files in os.walk("specs"):
+    parts = root.replace("\\", "/").split("/")
+    if len(parts) >= 3:
+        priority, category = parts[1], parts[2]
+        for fname in files:
+            m = re.match(r"RIVER-(\d+)-", fname)
+            if m:
+                river_map[int(m.group(1))] = (priority, category)
+
+priority_costs = {}
+category_costs = {}
+
+for row in rows:
+    m = re.search(r"RIVER-(\d+)", row["subject"], re.IGNORECASE)
+    if m:
+        pri, cat = river_map.get(int(m.group(1)), ("must", "tools"))
+    else:
+        pri, cat = "must", "tools"  # day-0 setup, fixes, workflow changes
+
+    c = row_cost(row)
+    priority_costs[pri] = priority_costs.get(pri, 0) + c
+    category_costs[cat] = category_costs.get(cat, 0) + c
+
+total_cost = sum(row_cost(r) for r in rows)
+```
+
+## Step 7 — Update README.md priority and category tables
+
+Replace the two cost tables in `README.md` (under "By MoSCoW priority" and "By category") with freshly computed values. Do not touch any other part of the file.
+
+```python
+readme_path = "README.md"
+with open(readme_path) as f:
+    readme = f.read()
+
+# MoSCoW priority table
+all_priorities = ["must", "should", "could", "wont"]
+pri_lines = ""
+for p in all_priorities:
+    c = priority_costs.get(p, 0)
+    pri_lines += f"| {p} | ${c:.2f} | {c/total_cost*100:.0f}% |\n" if c > 0 else f"| {p} | — | — |\n"
+
+new_priority_table = f"| Priority | Cost | Share |\n|----------|-----:|------:|\n{pri_lines}"
+
+# Category table (sorted by cost descending)
+cat_lines = ""
+for cat, c in sorted(category_costs.items(), key=lambda x: -x[1]):
+    cat_lines += f"| {cat} | ${c:.2f} | {c/total_cost*100:.0f}% |\n"
+
+new_category_table = f"| Category | Cost | Share |\n|----------|-----:|------:|\n{cat_lines}"
+
+# Replace tables using header row as anchor
+readme = re.sub(
+    r"\| Priority \| Cost \| Share \|\n\|[-|: ]+\|\n(?:\|.*\|\n)+",
+    new_priority_table,
+    readme,
+)
+readme = re.sub(
+    r"\| Category \| Cost \| Share \|\n\|[-|: ]+\|\n(?:\|.*\|\n)+",
+    new_category_table,
+    readme,
+)
+
+with open(readme_path, "w") as f:
+    f.write(readme)
+
+print("README.md priority/category tables updated.")
+```

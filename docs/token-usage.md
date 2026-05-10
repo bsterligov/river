@@ -1,6 +1,6 @@
 # Claude Token Usage by Commit
 
-Generated 2026-05-09. Source: Claude Code session JSONL files (`~/.claude/projects/`), 1,996 assistant turns correlated with `git log` by timestamp. RTK savings from `~/.local/share/rtk/history.db`, scoped to this project.
+Generated 2026-05-10. Source: Claude Code session JSONL files (`~/.claude/projects/`), 2,762 assistant turns correlated with `git log` by timestamp. RTK savings from `~/Library/Application Support/rtk/history.db`, scoped to this project.
 
 Columns: **Input** = fresh input tokens billed; **CacheC** = tokens written to prompt cache; **CacheR** = tokens read from prompt cache (cheap); **Output** = generated tokens; **Turns** = assistant API calls; **RTKSaved** = tokens removed by RTK compression before reaching Claude.
 
@@ -28,13 +28,21 @@ Columns: **Input** = fresh input tokens billed; **CacheC** = tokens written to p
 | c6edbd9e | 05-09 11:13 | 70 | 99,533 | 1,309,634 | 22,677 | 42 | 195,783 | feat: skill to calculate tokens usage |
 | 92ed37ee | 05-09 19:00 | 32 | 38,532 | 567,185 | 7,313 | 25 | 99 | spec: RIVER-14 -- Update SDD (#15) |
 | 784acc7b | 05-09 19:16 | 128 | 154,275 | 4,071,664 | 48,442 | 91 | 636 | docs: RIVER-14 update SDD to branch-based impl flow |
-| **TOTAL** | | **7,270** | **3,213,976** | **130,341,212** | **1,540,812** | **1,996** | **202,214** | |
+| a924443a | 05-09 19:22 | 36 | 32,183 | 1,734,437 | 15,957 | 24 | 79 | feat: update calculate usage command |
+| b115c81c | 05-10 05:54 | 58 | 246,172 | 2,571,346 | 14,240 | 31 | 120 | spec: RIVER-16 -- Query API (#17) |
+| 89a5791a | 05-10 06:01 | 15 | 24,315 | 152,673 | 4,276 | 9 | 0 | fix: update workflow |
+| b38c0ff0 | 05-10 08:32 | 6,868 | 856,149 | 14,680,514 | 177,094 | 231 | 1,349 | impl: RIVER-16 -- Query API (#18) |
+| bdfccb53 | 05-10 11:58 | 82 | 76,417 | 1,495,651 | 27,138 | 52 | 407 | spec: RIVER-19 -- Configuration (#20) |
+| ee2857f4 | 05-10 12:52 | 269 | 1,159,442 | 17,912,819 | 238,706 | 217 | 475 | spec: RIVER-22 -- Error linking traces (#23) |
+| (current) | 05-10 17:08 | 766 | 442,727 | 11,450,956 | 244,087 | 202 | 1,524 | (current session — RIVER-22 impl) |
+| **TOTAL** | | **15,364** | **6,051,381** | **180,339,608** | **2,262,310** | **2,762** | **206,168** | |
 
 ## Notes
 
-- **Input tokens are tiny** (7K total) because virtually everything is served from prompt cache (130M CacheR). Fresh context per turn is minimal.
-- **RTKSaved (202K total)** = tool result tokens removed before reaching Claude. Zero for early commits — RTK tracking only started from RIVER-6 onward. The spike on `c6edbd9e` (195K) is from reading and compressing large JSONL session files during the first calculate-usage run.
-- **CacheC tracks context growth**: sessions that write a lot to cache (RIVER-6 at 702K, RIVER-12 at 312K, RIVER-4 at 232K) were doing heavy iterative work.
-- **Heaviest sessions by output**: RIVER-6 spec/DevOps (391K), RIVER-4 docs (153K), RIVER-12 pipeline (149K).
-- **Heaviest by turns**: RIVER-6 (421 turns), RIVER-4 (299 turns), RIVER-12 (233 turns).
+- **Input tokens are tiny** (15K total) because virtually everything is served from prompt cache (180M CacheR). Fresh context per turn averages ~6 tokens — essentially zero.
+- **RTKSaved (206K total)** = tool result tokens compressed before reaching Claude. Zero for early commits — RTK was not yet active. The spike on `c6edbd9e` (195K) is from reading large JSONL files during the first calculate-usage run.
+- **CacheC tracks context growth**: RIVER-22 spec (1.16M) and RIVER-16 impl (856K) are the two heaviest cache-writing sessions — long iterative loops with large growing context. RIVER-6 (702K) was previously the heaviest.
+- **Heaviest sessions by output**: current RIVER-22 impl session (244K), RIVER-22 spec (238K), RIVER-6 (391K), RIVER-16 impl (177K), RIVER-4 docs (153K).
+- **Heaviest by turns**: RIVER-6 (421), RIVER-4 docs (299), RIVER-16 impl (231), RIVER-22 spec (217).
 - The first commit (`20dacb7b`) and `cd621e48` (refactor dotnet slnx) show no data — done outside Claude Code.
+- Since the previous table (2026-05-09): added 7 committed sessions + 1 in-progress, +766 turns, CacheR grew by 50M tokens, CacheC nearly doubled (3.2M → 6.1M).
