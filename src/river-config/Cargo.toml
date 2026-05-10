@@ -1,0 +1,15 @@
+[package]
+name = "river-config"
+version = "0.1.0"
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = "1"
+config = "0.14"
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+temp-env = "0.3"

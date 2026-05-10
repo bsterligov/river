@@ -41,7 +41,7 @@ A developer (or the future Flutter UI) can query logs, traces, and metrics over 
 ## Scope
 
 **In**
-- New `api` Rust binary under `src/api/`
+- New `api` Rust binary under `src/river-query-api/`
 - All routes versioned under `/v1/`: `GET /v1/logs`, `GET /v1/traces`, `GET /v1/metrics`
 - `GET /v1/logs?filter=&from=&to=&limit=` → queries ClickHouse
 - `GET /v1/traces?filter=&from=&to=&limit=` → queries ClickHouse

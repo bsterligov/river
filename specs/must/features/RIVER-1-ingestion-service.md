@@ -7,25 +7,25 @@ Why: Signals accumulate in S3 but nothing reads them — the pipeline has no pat
 
 ## Problem
 
-The sidecar batches and writes OTLP protobuf files to S3, but no component consumes them. Metrics never reach VictoriaMetrics; logs and traces never reach ClickHouse. The observability pipeline is broken at the handoff from buffer to storage.
+The river-sidecar batches and writes OTLP protobuf files to S3, but no component consumes them. Metrics never reach VictoriaMetrics; logs and traces never reach ClickHouse. The observability pipeline is broken at the handoff from buffer to storage.
 
 ## Goal
 
-An ingestion service runs continuously, polls S3 every 10 seconds for unprocessed files, parses each file's raw OTLP protobuf, and writes the signals to the correct backend — metrics to VictoriaMetrics, logs and traces to ClickHouse. After a run, each processed file is not reprocessed on the next poll.
+An river-ingestion service runs continuously, polls S3 every 10 seconds for unprocessed files, parses each file's raw OTLP protobuf, and writes the signals to the correct backend — metrics to VictoriaMetrics, logs and traces to ClickHouse. After a run, each processed file is not reprocessed on the next poll.
 
 ## Scope
 
 **In**
 - S3 poll loop with a 10-second interval, configurable via `RIVER_POLL_INTERVAL_SECS`
 - Process only new S3 objects (cursor or marker to track last-seen key)
-- Parse raw OTLP protobuf (same format written by the sidecar)
+- Parse raw OTLP protobuf (same format written by the river-sidecar)
 - Write metrics to VictoriaMetrics via remote-write
 - Write logs and traces to ClickHouse via HTTP insert
 - LocalStack-compatible (dev environment only for now)
 
 **Out**
 - Production/cloud S3 support
-- Streaming ingestion (Kafka, SQS, etc.)
+- Streaming river-ingestion (Kafka, SQS, etc.)
 - Backfill or replay of already-processed files
 - API or query layer
 - UI

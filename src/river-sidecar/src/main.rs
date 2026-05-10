@@ -20,6 +20,7 @@ use prost::Message;
 use tonic::{transport::Server, Request, Response, Status};
 
 mod batcher;
+mod config;
 mod metrics_aggregator;
 mod sink;
 
@@ -118,19 +119,10 @@ impl LogsService for Receiver {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let max_bytes: usize = std::env::var("SIDECAR_BUFFER_MAX_BYTES")
-        .ok()
-        .and_then(|v| v.parse().ok())
-        .unwrap_or(10 * 1024 * 1024);
-
-    let flush_interval = Duration::from_secs(
-        std::env::var("SIDECAR_FLUSH_INTERVAL_SECS")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(10u64),
-    );
-
-    let bucket = std::env::var("S3_BUCKET").unwrap_or_else(|_| "river-telemetry".to_string());
+    let cfg = config::Config::from_env()?;
+    let max_bytes = cfg.buffer_max_bytes as usize;
+    let flush_interval = Duration::from_secs(cfg.flush_interval_secs);
+    let bucket = cfg.s3_bucket;
 
     let aws_cfg = aws_config::load_from_env().await;
     let s3 = aws_sdk_s3::Client::from_conf(
@@ -188,7 +180,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let addr: SocketAddr = "0.0.0.0:4317".parse()?;
-    println!("river sidecar listening on {addr}");
+    println!("river river-sidecar listening on {addr}");
 
     Server::builder()
         .add_service(TraceServiceServer::new(receiver.clone()))

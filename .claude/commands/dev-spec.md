@@ -46,7 +46,55 @@ mise exec -- cargo test
 
 After implementation, review for:
 
-- **Code duplication** — if two functions share a repeated block (e.g. building a WHERE clause, parsing a filter, constructing the same struct), extract a shared helper. Three similar lines is a signal; near-identical 10-line blocks are always a bug.
+- **Code duplication** — run the script below; fix anything it flags before opening the PR. Target: overall < 3%.
+
+```bash
+python3 - <<'PYEOF'
+import os, hashlib, collections, sys
+
+WINDOW = 8
+
+def rs_files(root="src"):
+    for dp, _, fs in os.walk(root):
+        if "target" in dp:
+            continue
+        for f in fs:
+            if f.endswith(".rs"):
+                yield os.path.join(dp, f)
+
+def read_normalized(path):
+    with open(path) as fh:
+        return [ln.strip() for ln in fh
+                if ln.strip() and not ln.strip().startswith("//")]
+
+files = {p: read_normalized(p) for p in rs_files()}
+
+windows = collections.defaultdict(list)
+for path, lines in files.items():
+    for i in range(len(lines) - WINDOW + 1):
+        h = hashlib.md5("\n".join(lines[i:i+WINDOW]).encode()).hexdigest()
+        windows[h].append((path, i))
+
+dup = collections.defaultdict(set)
+for h, locs in windows.items():
+    if len({p for p, _ in locs}) < 2:
+        continue
+    for path, start in locs:
+        for j in range(WINDOW):
+            dup[path].add(start + j)
+
+total = sum(len(v) for v in files.values())
+total_dup = sum(len(v) for v in dup.values())
+pct = 100 * total_dup / total if total else 0
+
+print(f"Overall: {total_dup}/{total} lines = {pct:.1f}%")
+for path in sorted(dup, key=lambda p: -len(dup[p]))[:10]:
+    fp = 100 * len(dup[path]) / max(len(files[path]), 1)
+    print(f"  {path}: {fp:.1f}% ({len(dup[path])} lines)")
+
+sys.exit(0 if pct < 3 else 1)
+PYEOF
+```
 - **Cognitive Complexity ≤ 15** — SonarQube enforces a maximum of 15 per function. Each level of nesting adds to the score (nested `if`/`for`/`match` compounds quickly). When a function exceeds 15, extract the inner logic into a named helper; do not just flatten with early returns if nesting is the root cause.
 
 ## Step 4 — Close out tracking files

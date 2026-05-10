@@ -10,9 +10,9 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 ## Components
 | Component | Lang | St | Role |
 |-----------|------|----|------|
-| sidecar | Rust | done | OTLP/gRPC receiver, in-memory buffer, S3 batch writer |
+| river-sidecar | Rust | done | OTLP/gRPC receiver, in-memory buffer, S3 batch writer |
 | demo-app | .NET 10 | done | Continuous OTel emitter (dev/validation) |
-| ingestion | Rust | planned | S3 → ClickHouse / VictoriaMetrics |
+| river-ingestion | Rust | planned | S3 → ClickHouse / VictoriaMetrics |
 | api | Rust | done | Unified HTTP query layer (axum, utoipa, filter DSL) |
 | ui | Flutter | planned | Cross-platform dashboard |
 
@@ -28,13 +28,14 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 | Toolchain mgmt | mise |
 
 ## Decisions
-- **S3 buffer** — decouples ingestion from processing; survives restarts
+- **S3 buffer** — decouples river-ingestion from processing; survives restarts
 - **Raw OTLP protobuf** — no envelope; wire format preserved for downstream
 - **Sidecar is permanent** — production entrypoint, not a scaffold
 - **ClickHouse + VictoriaMetrics** — best-of-breed per signal type
 - **Flutter UI** — one codebase for web + desktop
 - **S3 key schema:** `{signal}/{service}/{timestamp}-{uuid}.pb`
-- **Env vars:** all prefixed `RIVER_` (e.g. `RIVER_BUFFER_MAX_BYTES`, `RIVER_FLUSH_INTERVAL_SECS`)
+- **Env vars:** all prefixed `RIVER_` (e.g. `RIVER_BUFFER_MAX_BYTES`, `RIVER_FLUSH_INTERVAL_SECS`); `RIVER_CLICKHOUSE_USER` and `RIVER_CLICKHOUSE_PASSWORD` are required (no default) — startup fails if absent
+- **Config loading:** each crate has a `config.rs` module backed by the `config` crate (env-only source; file-based config is out of scope)
 - **Grafana is dev tooling only** — not a permanent product component; anonymous admin access, no RBAC
 - **ClickHouse Grafana plugin:** `grafana-clickhouse-datasource` (Grafana Labs), installed via `GF_INSTALL_PLUGINS` at container start; connects on native port 9000
 - **Dashboard provisioning:** JSON files under `grafana/dashboards/`, mounted into the container; datasources under `grafana/provisioning/`

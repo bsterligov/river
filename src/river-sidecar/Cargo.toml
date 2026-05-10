@@ -1,5 +1,5 @@
 [package]
-name = "sidecar"
+name = "river-sidecar"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,8 @@ edition = "2021"
 workspace = true
 
 [dependencies]
+config = "0.14"
+serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 tonic = "0.14"
 opentelemetry-proto = { version = "0.31", features = ["gen-tonic", "trace", "metrics", "logs"] }
@@ -16,3 +18,6 @@ aws-sdk-s3 = "1"
 uuid = { version = "1", features = ["v4"] }
 async-trait = "0.1"
 anyhow = "1"
+
+[dev-dependencies]
+temp-env = "0.3"
