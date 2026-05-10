@@ -19,5 +19,24 @@ datasources:
       port: 9000
       username: river
       defaultDatabase: river
+      traces:
+        defaultDatabase: river
+        defaultTable: traces
+        traceIdColumn: trace_id
+        spanIdColumn: span_id
+        parentSpanIdColumn: parent_span_id
+        serviceNameColumn: service_name
+        operationNameColumn: operation_name
+        startTimeColumn: start_time_unix_nano
+        durationColumn: duration_ns
+        durationUnit: nanoseconds
+      logs:
+        defaultDatabase: river
+        defaultTable: logs
+        traceIdColumn: trace_id
+        spanIdColumn: span_id
+        timeColumn: timestamp
+        levelColumn: severity_text
+        messageColumn: body
     secureJsonData:
       password: river

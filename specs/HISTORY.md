@@ -63,3 +63,7 @@ Each crate (`api`, `river-ingestion`, `river-sidecar`) now has a `config.rs` mod
 ### 2026-05-10 — RIVER-22: spec created
 
 PO spec written for fixing Grafana trace linking. Root cause is a missing trace configuration in the ClickHouse datasource provisioning YAML; Grafana generates queries against the database name instead of the `traces` table and uses camelCase column names that don't match the schema.
+
+### 2026-05-10 — RIVER-22: implementation done
+
+Added trace configuration to the ClickHouse datasource provisioning YAML: database `river`, table `traces`, and all column mappings (`trace_id`, `span_id`, `parent_span_id`, `service_name`, `operation_name`, `start_time_unix_nano`, `duration_ns`). Grafana can now resolve trace links without SQL errors or configuration warnings.

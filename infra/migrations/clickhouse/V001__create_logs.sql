@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS logs (
-    timestamp UInt64,
+    timestamp DateTime64(9),
     service_name String,
     severity_number Int32,
     severity_text String,

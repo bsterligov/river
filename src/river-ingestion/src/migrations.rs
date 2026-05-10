@@ -9,6 +9,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
         "V002__create_traces",
         include_str!("../../../infra/migrations/clickhouse/V002__create_traces.sql"),
     ),
+    (
+        "V003__alter_logs_timestamp",
+        include_str!("../../../infra/migrations/clickhouse/V003__alter_logs_timestamp.sql"),
+    ),
 ];
 
 pub struct Migrator {
@@ -187,6 +191,12 @@ mod tests {
         )
         .await;
         let expected_traces = [
+            "Events.Attributes",
+            "Events.Name",
+            "Events.Timestamp",
+            "Links.Attributes",
+            "Links.SpanId",
+            "Links.TraceId",
             "attributes",
             "duration_ns",
             "end_time_unix_nano",
@@ -220,6 +230,7 @@ mod tests {
             query_rows(&m, "SELECT version FROM schema_migrations ORDER BY version").await;
         assert!(versions.contains(&"V001__create_logs".to_string()));
         assert!(versions.contains(&"V002__create_traces".to_string()));
+        assert!(versions.contains(&"V003__alter_logs_timestamp".to_string()));
     }
 
     fn make_migrator(base_url: String) -> Migrator {
