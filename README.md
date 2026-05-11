@@ -36,7 +36,7 @@ Roles (dev, QA, PO, etc.) interact only through GitHub issues. Two automated loo
 
 ```mermaid
 flowchart LR
-    A[GitHub Issue] -->|GHA fires| B
+    A["run /issue-create"] -->|GHA fires| B
 
     subgraph L1["Loop 1 — Spec"]
         B["spec/RIVER-N branch + draft PR"]
@@ -55,12 +55,11 @@ flowchart LR
 
 ### Loop 1 — Spec
 
-Anyone opens a GitHub issue with a title and a one-sentence problem statement. A GitHub Action fires immediately: it creates a `spec/RIVER-{N}` branch and a draft PR. No API key or labels needed.
+A developer runs `/issue-create` in Claude Code. The skill prompts for category, priority, title, and body, then creates the GitHub issue with the correct labels. A GitHub Action fires immediately: it creates a `spec/RIVER-{N}` branch and a draft PR. The skill waits 30 seconds, finds the draft PR, and checks out the branch automatically.
 
-A developer checks out the branch and runs:
+The developer then runs:
 
 ```bash
-git checkout spec/RIVER-{N}
 /po-spec-writer
 ```
 
