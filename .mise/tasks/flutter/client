@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#MISE description="Regenerate Flutter API client from the running query-api service"
+
+set -euo pipefail
+
+API_URL="${API_URL:-http://localhost:8080}"
+
+openapi-generator generate \
+  -i "${API_URL}/openapi.json" \
+  -g dart \
+  -o src/ui/lib/api/generated \
+  --package-name river_api \
+  --skip-validate-spec

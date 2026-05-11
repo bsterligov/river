@@ -15,7 +15,7 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 | river-ingestion | Rust | done | S3 poll loop → ClickHouse (logs/traces) + VictoriaMetrics (metrics); runs migrations at startup |
 | river-query-api | Rust | done | Unified HTTP query layer (axum, utoipa, filter DSL) |
 | river-config | Rust | done | Shared config library used by all Rust crates |
-| ui | Flutter | planned | Cross-platform dashboard |
+| ui | Flutter | done | macOS dashboard — sidebar nav, Logs page, generated API client |
 
 ## Tech Stack
 | Concern | Choice |
@@ -46,6 +46,10 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Swagger UI:** mounted at `GET /swagger-ui/` via `utoipa-swagger-ui 9` (axum 0.8-compatible); fetches the spec from `/openapi.json`
 - **`duration_ms` filter field:** converted to `duration_ns` (×1 000 000) when targeting ClickHouse traces table
 - **Grafana trace config:** ClickHouse datasource provisioning includes `traces` block with `defaultDatabase: river`, `defaultTable: traces`, and column mappings matching the schema (`trace_id`, `span_id`, `parent_span_id`, `service_name`, `operation_name`, `start_time_unix_nano`, `duration_ns`, unit `nanoseconds`)
+- **Flutter UI location:** `src/ui/` — macOS-only; no iOS/Android/web targets
+- **Dart API client:** generated from `/openapi.json` via `openapi-generator 7` into `src/ui/lib/api/generated/`; referenced as a path dependency named `river_api`
+- **Flutter theme tokens:** `lib/theme/app_theme.dart` — extends to all pages; light theme only at this stage
+- **Navigation:** custom sidebar widget (no third-party library); pages enumerated via `_Page` enum in `main.dart`
 
 ## Spec System
 `/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)

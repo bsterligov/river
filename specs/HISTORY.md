@@ -67,3 +67,7 @@ PO spec written for fixing Grafana trace linking. Root cause is a missing trace 
 ### 2026-05-10 — RIVER-22: implementation done
 
 Added trace configuration to the ClickHouse datasource provisioning YAML: database `river`, table `traces`, and all column mappings (`trace_id`, `span_id`, `parent_span_id`, `service_name`, `operation_name`, `start_time_unix_nano`, `duration_ns`). Grafana can now resolve trace links without SQL errors or configuration warnings.
+
+### 2026-05-11 — RIVER-25: implementation done
+
+Flutter MVP app created at `src/ui/` (macOS-only). Includes a dark sidebar with NavigationRail-style navigation, a Logs page with search bar and stub-data table, a theme module under `lib/theme/`, and a Dart API client generated from the query-api's OpenAPI spec. Four BDD widget tests pass; `flutter analyze` reports zero issues.

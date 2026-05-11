@@ -2,3 +2,5 @@
 rust = { version = "1.95.0", components = "rustfmt,clippy,rust-src,llvm-tools" }
 "cargo:cargo-llvm-cov" = "0.8.5"
 cocogitto = "7.0.0"
+flutter = "3.41.0"
+"ubi:OpenAPITools/openapi-generator" = "7.22.0"
