@@ -1,0 +1,165 @@
+import 'package:flutter/material.dart';
+import 'package:river_api/api.dart';
+
+import 'pages/logs_page.dart';
+import 'theme/app_theme.dart';
+
+void main() {
+  runApp(const RiverApp());
+}
+
+class RiverApp extends StatelessWidget {
+  const RiverApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'River',
+      theme: appTheme,
+      home: const _Shell(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+enum _Page { logs }
+
+class _Shell extends StatefulWidget {
+  const _Shell();
+
+  @override
+  State<_Shell> createState() => _ShellState();
+}
+
+class _ShellState extends State<_Shell> {
+  _Page _selected = _Page.logs;
+
+  late final DefaultApi _api = DefaultApi(
+    ApiClient(basePath: 'http://localhost:8080'),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          _Sidebar(
+            selected: _selected,
+            onSelect: (page) => setState(() => _selected = page),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: _pageFor(_selected),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pageFor(_Page page) {
+    return switch (page) {
+      _Page.logs => LogsPage(apiClient: _api),
+    };
+  }
+}
+
+class _Sidebar extends StatelessWidget {
+  const _Sidebar({required this.selected, required this.onSelect});
+
+  final _Page selected;
+  final void Function(_Page) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 200,
+      color: AppColors.sidebar,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _SidebarHeader(),
+          _NavItem(
+            icon: Icons.list_alt_outlined,
+            label: 'Logs',
+            page: _Page.logs,
+            selected: selected,
+            onTap: onSelect,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SidebarHeader extends StatelessWidget {
+  const _SidebarHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      child: Text(
+        'River',
+        style: const TextStyle(
+          color: AppColors.sidebarSelected,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.page,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final _Page page;
+  final _Page selected;
+  final void Function(_Page) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = page == selected;
+    return GestureDetector(
+      onTap: () => onTap(page),
+      child: Container(
+        color: isSelected ? AppColors.sidebarSelectedBg : Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected
+                  ? AppColors.sidebarSelected
+                  : AppColors.sidebarText,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? AppColors.sidebarSelected
+                    : AppColors.sidebarText,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

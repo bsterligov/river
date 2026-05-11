@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#MISE description="Set Xcode developer path required for Flutter macOS/iOS builds"
+
+set -euo pipefail
+
+XCODE_PATH="/Applications/Xcode.app/Contents/Developer"
+
+if [ ! -d "$XCODE_PATH" ]; then
+  echo "Xcode not found at $XCODE_PATH — install Xcode from the App Store first"
+  exit 1
+fi
+
+current=$(xcode-select -p 2>/dev/null || true)
+if [ "$current" = "$XCODE_PATH" ]; then
+  echo "xcode-select already points to $XCODE_PATH"
+  exit 0
+fi
+
+sudo xcode-select -s "$XCODE_PATH"
+echo "xcode-select set to $XCODE_PATH"

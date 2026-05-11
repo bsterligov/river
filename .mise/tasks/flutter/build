@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Build the River dashboard for macOS"
+
+cd src/ui
+flutter build macos
