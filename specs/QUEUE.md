@@ -6,4 +6,5 @@ Status lives here — not in filenames. Done tasks stay in the list (marked with
 - ~~RIVER-16: Query API~~
 - ~~RIVER-19: Configuration~~
 - ~~RIVER-22: Error linking traces~~
+- RIVER-25: Setup Flutter MVP App
 
