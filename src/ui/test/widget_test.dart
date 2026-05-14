@@ -264,7 +264,7 @@ void main() {
     await tester.tap(find.text('svc-b'));
     await tester.pumpAndSettle();
 
-    expect(api.calls.last['filter'], equals('service_name:svc-a AND service_name:svc-b'));
+    expect(api.calls.last['filter'], equals('service_name:(svc-a OR svc-b)'));
   });
 
   testWidgets(

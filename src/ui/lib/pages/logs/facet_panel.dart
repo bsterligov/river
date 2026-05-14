@@ -72,6 +72,23 @@ class _FacetPanelState extends State<FacetPanel> {
     }
   }
 
+  String _buildFilter() {
+    // Group selected tokens by field, then emit field:(v1 OR v2) per group
+    final byField = <String, List<String>>{};
+    for (final token in _selected) {
+      final colon = token.indexOf(':');
+      final f = token.substring(0, colon);
+      final v = token.substring(colon + 1);
+      byField.putIfAbsent(f, () => []).add(v);
+    }
+    return byField.entries.map((e) {
+      final values = e.value;
+      return values.length == 1
+          ? '${e.key}:${values.first}'
+          : '${e.key}:(${values.join(' OR ')})';
+    }).join(' AND ');
+  }
+
   Future<void> _onToggle(String field, String value) async {
     final token = '$field:$value';
     setState(() {
@@ -82,7 +99,7 @@ class _FacetPanelState extends State<FacetPanel> {
       }
     });
 
-    final newFilter = _selected.join(' AND ');
+    final newFilter = _buildFilter();
     _selfUpdateDepth++;
     try {
       widget.controller.setFilter(newFilter);
