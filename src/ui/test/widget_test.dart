@@ -36,7 +36,7 @@ void main() {
   });
 
   testWidgets(
-      'Given Logs page is open, Then toolbar and facet placeholder are visible',
+      'Given Logs page is open, Then search bar, time picker trigger, and table area are visible',
       (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -48,15 +48,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('logs_search')), findsOneWidget);
-    expect(find.text('Last 1h'), findsOneWidget);
+    expect(find.text('Last 1 hour'), findsOneWidget);
     expect(find.text('No logs found.'), findsOneWidget);
   });
 
-  // Scenario: clicking a preset refreshes logs with the selected time range
+  // Scenario: open picker, click preset -> API call with that range
   testWidgets(
       'Given Logs page is open with default range, '
-      'When operator clicks "Last 1h", '
-      'Then controller issues API call with that range and button is active',
+      'When operator opens picker and clicks "Last 1 hour", '
+      'Then controller issues API call with that range',
       (tester) async {
     final api = _FakeApi(rows: []);
 
@@ -69,16 +69,37 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Submit a filter first so the controller has a non-empty _filter
-    await tester.enterText(find.byKey(const Key('logs_search')), 'service:svc');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    // Open the picker and click the preset (trigger shows "Last 1 hour", list also has it)
+    await tester.tap(find.text('Last 1 hour'));
     await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Last 1h'));
+    await tester.tap(find.text('Last 1 hour').last);
     await tester.pumpAndSettle();
 
     expect(api.calls, isNotEmpty);
-    expect(api.calls.last['filter'], equals('service:svc'));
+  });
+
+  // Scenario: empty search bar submitted -> API called with no filter (returns all logs)
+  testWidgets(
+      'Given operator submits an empty search bar, '
+      'Then API is called without a filter parameter',
+      (tester) async {
+    final api = _FakeApi();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: LogsPage(apiClient: api),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('logs_search')));
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(api.calls, isNotEmpty);
+    expect(api.calls.last['filter'], isNull);
   });
 
   // Scenario: valid filter submitted -> API called and table updated
@@ -116,39 +137,11 @@ void main() {
     expect(api.calls.last['filter'], equals('service:svc'));
   });
 
-  // Scenario: empty filter -> no API call, inline validation message shown
-  testWidgets(
-      'Given operator submits an empty search bar, '
-      'Then no API call is made and inline validation message appears',
-      (tester) async {
-    final api = _FakeApi();
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: LogsPage(apiClient: api),
-        ),
-      ),
-    );
-
-    // Focus the field then submit with empty text
-    await tester.tap(find.byKey(const Key('logs_search')));
-    await tester.pump();
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pumpAndSettle();
-
-    expect(api.calls, isEmpty);
-    expect(
-      find.text('Filter expression cannot be empty.'),
-      findsOneWidget,
-    );
-  });
-
-  // Scenario: API returns 400 -> inline error below search bar
+  // Scenario: API returns 400 -> inline error shown below the search bar
   testWidgets(
       'Given API returns HTTP 400 for submitted filter, '
       'When response arrives, '
-      'Then inline error appears with server message',
+      'Then inline error appears below the search bar',
       (tester) async {
     final api =
         _FakeApi(error: ApiException(400, '{"error":"invalid filter"}'));

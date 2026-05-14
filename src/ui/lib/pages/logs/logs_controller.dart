@@ -18,19 +18,14 @@ class LogsController extends ChangeNotifier {
   List<LogRow> _rows = [];
   bool _loading = false;
   String? _error;
-  String? _filterError;
-
   String get filter => _filter;
   DateTime get from => _from;
   DateTime get to => _to;
   List<LogRow> get rows => _rows;
   bool get loading => _loading;
   String? get error => _error;
-  String? get filterError => _filterError;
-
   void setFilter(String value) {
     _filter = value;
-    _filterError = null;
     notifyListeners();
   }
 
@@ -42,19 +37,13 @@ class LogsController extends ChangeNotifier {
   }
 
   Future<void> reload() async {
-    if (_filter.isEmpty) {
-      _filterError = 'Filter expression cannot be empty.';
-      notifyListeners();
-      return;
-    }
-    _filterError = null;
     _loading = true;
     _error = null;
     notifyListeners();
 
     try {
       final results = await apiClient.getLogs(
-        filter: _filter,
+        filter: _filter.isEmpty ? null : _filter,
         from: _from.toIso8601String(),
         to: _to.toIso8601String(),
       );

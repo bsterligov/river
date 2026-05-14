@@ -73,14 +73,6 @@ class _LogsPageState extends State<LogsPage> {
     if (_controller.loading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (_controller.error != null) {
-      return Center(
-        child: Text(
-          _controller.error!,
-          style: const TextStyle(color: AppColors.error),
-        ),
-      );
-    }
     return SelectionArea(child: _LogsTable(rows: _controller.rows));
   }
 }
@@ -101,18 +93,16 @@ class _Toolbar extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Flexible(
-          child: TimeRangePicker(
-            onRange: controller.setRange,
-          ),
-        ),
-        const SizedBox(width: 12),
         Expanded(
           child: LogSearchBar(
             controller: searchController,
             onSubmit: onSubmit,
-            errorText: controller.filterError,
+            errorText: controller.error,
           ),
+        ),
+        const SizedBox(width: 12),
+        TimeRangePicker(
+          onRange: controller.setRange,
         ),
       ],
     );
@@ -214,7 +204,7 @@ class _LogRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(flex: 3, child: Text(row.timestamp, style: AppText.mono)),
+          Expanded(flex: 3, child: Text(_fmtTs(row.timestamp), style: AppText.mono)),
           Expanded(
             flex: 1,
             child: Text(
@@ -229,6 +219,18 @@ class _LogRow extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _fmtTs(String ts) {
+    final dt = DateTime.tryParse(ts);
+    if (dt == null) return ts;
+    final local = dt.toLocal();
+    final mon = const ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][local.month - 1];
+    final ms = (local.millisecond).toString().padLeft(3, '0');
+    return '$mon ${local.day.toString().padLeft(2)} '
+        '${local.hour.toString().padLeft(2, '0')}:'
+        '${local.minute.toString().padLeft(2, '0')}:'
+        '${local.second.toString().padLeft(2, '0')}.$ms';
   }
 
   Color _severityColor(String severity) {
