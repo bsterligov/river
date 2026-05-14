@@ -15,17 +15,19 @@ Ask the user for the following if not already provided:
 
 ## Step 2 — Decompose into phases
 
-Break the feature into sequential phases. A phase is a coherent chunk of work that can be reviewed and merged independently. Rules:
+Break the feature into phases. A phase is a coherent chunk of work that can be reviewed and merged independently. Rules:
 
 - Each phase must be deliverable on its own (no half-finished states merged)
 - Later phases must not require rewriting earlier ones
 - Aim for 3–6 phases; fewer for simple features, more only if genuinely needed
+- Phases with no shared dependencies can run in parallel; phases that depend on each other must run sequentially
 
 For each phase, define:
 - **Name** — short label
 - **Goal** — what is true after this phase ships that was not true before
 - **Steps** — ordered list of concrete implementation tasks (code to write, schemas to change, configs to add); be specific enough that a developer can start immediately
-- **Dependencies** — other phases or external things that must be complete first
+- **Depends on** — phase numbers that must be complete before this phase can start; `none` if independent
+- **Execution** — `parallel` (can run alongside other independent phases) or `sequential` (must wait for its dependencies to land first)
 - **Done criteria** — observable, testable signal that this phase is complete (tests pass, endpoint returns X, UI shows Y)
 
 ## Step 3 — Identify risks and open questions
@@ -50,6 +52,10 @@ Save the plan to `specs/plans/{kebab-case-feature-name}.md` using this exact for
 Date: {YYYY-MM-DD}
 Why: {One sentence — the problem or goal this solves.}
 
+## Execution order
+
+Describe the overall dependency graph in plain English before the phase list. Example: "Phases 1 and 2 are independent and run in parallel. Phase 3 depends on both and runs after they land. Phases 4 and 5 depend only on Phase 3 and run in parallel."
+
 ## Phases
 
 ### Phase 1 — {Name}
@@ -59,11 +65,19 @@ Why: {One sentence — the problem or goal this solves.}
 1. …
 2. …
 
-**Dependencies:** {None | list}
+**Depends on:** none
+**Execution:** parallel
 **Done when:** {Observable, testable signal.}
 
 ### Phase 2 — {Name}
-…
+**Goal:** …
+
+**Steps:**
+1. …
+
+**Depends on:** Phase 1
+**Execution:** sequential
+**Done when:** …
 
 ## Risks
 

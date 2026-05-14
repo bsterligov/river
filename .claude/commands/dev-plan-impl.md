@@ -12,6 +12,9 @@ Read the plan file fully. Extract:
 - The plan name (file stem, e.g. `logs-ui-full-page`)
 - The human-readable title from the first `# Plan:` heading
 - Every `### Phase N — {Name}` section (number + name)
+- For each phase: the **Depends on** list and the **Execution** value (`parallel` or `sequential`)
+
+Build an execution graph: group phases into sequential waves. A wave is a set of phases whose dependencies are all satisfied by previous waves. Phases in the same wave can run in parallel. Example: if Phase 1 and 2 have no deps, they form Wave 1. Phase 3 depends on Phase 1, Phase 4 depends on Phase 2 — they form Wave 2 (parallel). Phase 5 depends on Phase 3 and 4 — it forms Wave 3 alone.
 
 ## Step 2 — Find related spec PRs
 
@@ -50,8 +53,16 @@ Phase | Issue | PR    | Branch           | Review status
 
 If any PR is **not** `APPROVED`, stop and tell the user which PRs still need approval. Do not proceed until all are approved — re-running the command after approvals is the intended flow.
 
-If all PRs are approved, confirm with the user before merging:
-> "All N spec PRs are approved. Merge them now and then spawn N subagents to implement each spec?"
+If all PRs are approved, print the resolved execution plan before confirming:
+
+```
+Wave 1 (parallel):  Phase 1 — {Name}, Phase 2 — {Name}
+Wave 2 (parallel):  Phase 3 — {Name}, Phase 4 — {Name}
+Wave 3 (sequential): Phase 5 — {Name}
+```
+
+Then confirm with the user:
+> "All N spec PRs are approved. Merge and implement in the order above?"
 
 Do not proceed without confirmation.
 
@@ -98,11 +109,15 @@ git branch -r | grep "origin/impl/river-"
 
 For each expected impl branch (derived from the issue numbers found in Step 2), confirm it is present. If a branch is still missing after 3 attempts, report it and skip that phase — do not block the others.
 
-## Step 6 — Spawn one subagent per phase
+## Step 6 — Spawn subagents wave by wave
 
-For each phase whose impl branch exists, call the Agent tool with `isolation: "worktree"` and `run_in_background: true`.
+Process the execution waves in order. For each wave:
 
-Use this prompt template (fill in placeholders):
+1. Spawn one subagent per phase in the wave simultaneously (all Agent calls in a single message with `isolation: "worktree"` and `run_in_background: true`).
+2. Wait for all subagents in the wave to complete before starting the next wave.
+3. If a subagent in the wave fails, report it but continue the wave — do not block other phases in the same wave. Do block dependent phases in subsequent waves: remove them from their wave and mark them as skipped with the reason.
+
+Use this prompt template for each subagent (fill in placeholders):
 
 ---
 
