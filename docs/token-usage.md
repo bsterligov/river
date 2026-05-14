@@ -1,6 +1,6 @@
 # Claude Token Usage by Commit
 
-Generated 2026-05-10. Source: Claude Code session JSONL files (`~/.claude/projects/`), 2,934 assistant turns correlated with `git log` by timestamp. RTK savings from `~/Library/Application Support/rtk/history.db`, scoped to this project.
+Generated 2026-05-14. Source: Claude Code session JSONL files (`~/.claude/projects/`), 3,618 assistant turns correlated with `git log` by timestamp. RTK savings from `~/Library/Application Support/rtk/history.db`, scoped to this project.
 
 Columns: **Input** = fresh input tokens billed; **CacheC** = tokens written to prompt cache; **CacheR** = tokens read from prompt cache (cheap); **Output** = generated tokens; **Turns** = assistant API calls; **RTKSaved** = tokens removed by RTK compression before reaching Claude.
 
@@ -37,16 +37,29 @@ Columns: **Input** = fresh input tokens billed; **CacheC** = tokens written to p
 | 0f9ce69f | 05-10 13:15 | 517 | 50,604 | 966,890 | 13,776 | 35 | 410 | impl: RIVER-19 -- Configuration (#21) |
 | 0b561544 | 05-10 17:27 | 309 | 493,544 | 12,410,167 | 295,154 | 209 | 1,461 | docs: update readme & tools |
 | 7e90aedb | 05-10 18:13 | 139 | 137,955 | 7,482,433 | 83,153 | 107 | 3,022 | impl: RIVER-22 -- Grafana trace links (#21) (#24) |
-| ff582696 | 05-10 19:31 | 46 | 62,864 | 383,211 | 7,470 | 20 | 0 | docs: add usage notice |
-| uncommitted | pending | 5 | 10,255 | 79,824 | 3,252 | 3 | 0 | (uncommitted work) |
-| **TOTAL** | | **15,614** | **6,363,876** | **190,211,177** | **2,421,028** | **2,934** | **209,537** | |
+| ede8b859 | 05-10 19:42 | 111 | 158,061 | 1,564,576 | 27,842 | 61 | 0 | docs: add usage notice & update usage & spec |
+| f077ac06 | 05-11 18:05 | 45 | 46,684 | 474,031 | 7,780 | 23 | 64 | docs: add issue create command |
+| 513bc58a | 05-11 18:13 | 74 | 36,245 | 884,638 | 8,410 | 40 | 152 | spec: RIVER-25 -- Setup flutter MVP app (#26) |
+| a3ee929b | 05-11 19:31 | 906 | 446,346 | 14,000,612 | 106,742 | 274 | 7,825 | impl: RIVER-25 -- Setup Flutter MVP app (#27) |
+| 7ae1441f | 05-14 06:29 | 86 | 106,809 | 1,579,038 | 40,177 | 50 | 509 | docs: feature plan |
+| d77e9f73 | 05-14 06:38 | 136 | 90,667 | 942,413 | 30,325 | 32 | 164 | docs: ui-logs-page |
+| 8628b823 | 05-14 06:56 | 160 | 409,733 | 6,054,879 | 250,221 | 123 | 515 | docs: feat v1 process |
+| db1896a0 | 05-14 06:57 | 29 | 60,346 | 611,358 | 6,157 | 23 | 86 | spec: RIVER-28 -- API: Histogram & Facets + Extend LogRow (#33) |
+| 5c060e2d | 05-14 06:59 | 24 | 10,095 | 777,788 | 5,643 | 24 | 163 | spec: RIVER-29 -- UI: Page Layout + Time Range Selector + Search Bar (#32) |
+| a1aa0730 | 05-14 07:00 | 8 | 2,892 | 294,537 | 1,022 | 8 | 0 | spec: RIVER-30 -- UI: Facet Panel (#34) |
+| 04eab962 | 05-14 07:01 | 9 | 4,106 | 361,288 | 1,167 | 9 | 0 | spec: RIVER-31 -- UI: Log Distribution Histogram (#36) |
+| 96ac016b | 05-14 07:01 | 7 | 3,261 | 304,612 | 1,070 | 7 | 0 | spec: RIVER-35 -- UI: Logs Table with Column Management and Sort (#38) |
+| d0d09f1a | 05-14 07:02 | 7 | 3,230 | 324,703 | 1,097 | 7 | 0 | spec: RIVER-37 -- UI: Log Detail Panel (#39) |
+| d1f2600b | 05-14 07:10 | 17 | 7,106 | 736,577 | 16,642 | 15 | 0 | fix: clean workspace |
+| uncommitted | pending | 14 | 61,191 | 224,475 | 11,829 | 11 | 0 | (uncommitted work) |
+| **TOTAL** | | **17,196** | **7,737,529** | **218,883,667** | **2,926,430** | **3,618** | **219,015** | |
 
 ## Notes
 
-- **Input tokens are tiny** (15,614 total) because virtually everything is served from prompt cache (190,211,177 CacheR). Fresh context per turn averages ~5 tokens — essentially zero.
-- **RTKSaved (209,537 total)** = tool result tokens compressed before reaching Claude. Zero for early commits — RTK was not yet active. The spike on `c6edbd9e` (195K) is from reading large JSONL files during the first calculate-usage run.
-- **CacheC tracks context growth**: RIVER-22 spec (1.16M) and RIVER-16 impl (856K) are the two heaviest cache-writing sessions — long iterative loops with large growing context. RIVER-6 (702K) was previously the heaviest.
-- **Heaviest sessions by output**: RIVER-6 (391K), RIVER-22 spec (238K), RIVER-22 impl (244K), RIVER-16 impl (177K), RIVER-19 impl (163K).
-- **Heaviest by turns**: RIVER-6 (421), RIVER-4 docs (299), RIVER-16 impl (231), RIVER-22 spec (217).
+- **Input tokens are tiny** (17,196 total) because virtually everything is served from prompt cache (218,883,667 CacheR). Fresh context per turn averages ~5 tokens — essentially zero.
+- **RTKSaved (219,015 total)** = tool result tokens compressed before reaching Claude. Zero for early commits — RTK was not yet active. The spike on `c6edbd9e` (195K) is from reading large JSONL files during the first calculate-usage run.
+- **CacheC tracks context growth**: RIVER-22 spec (1.16M) and RIVER-16 impl (856K) are the two heaviest cache-writing sessions — long iterative loops with large growing context. The `docs: feat v1 process` session (409K) and RIVER-6 (702K) are also significant.
+- **Heaviest sessions by output**: RIVER-6 (391K), `docs: feat v1 process` (250K), RIVER-22 spec (238K), RIVER-22 impl (244K), RIVER-16 impl (177K).
+- **Heaviest by turns**: RIVER-6 (421), RIVER-4 docs (299), RIVER-25 impl (274), RIVER-16 impl (231), RIVER-22 spec (217).
 - The first commit (`20dacb7b`) and `cd621e48` (refactor dotnet slnx) show no data — done outside Claude Code.
-- Total API-equivalent cost: $117.29 across 2,934 turns.
+- Total API-equivalent cost: $138.63 across 3,618 turns.

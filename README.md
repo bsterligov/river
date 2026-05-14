@@ -223,8 +223,8 @@ MoSCoW labels are assigned when a spec is written. This makes it possible to see
 
 | Priority | Cost | Share |
 |----------|-----:|------:|
-| must | $88.89 | 76% |
-| should | $28.40 | 24% |
+| must | $110.23 | 80% |
+| should | $28.40 | 20% |
 | could | — | — |
 | wont | — | — |
 
@@ -232,11 +232,11 @@ MoSCoW labels are assigned when a spec is written. This makes it possible to see
 
 | Category | Cost | Share |
 |----------|-----:|------:|
-| tools | $63.14 | 54% |
-| features | $32.05 | 27% |
-| bugs | $17.31 | 15% |
-| docs | $2.95 | 3% |
-| refactoring | $1.83 | 2% |
+| tools | $75.12 | 54% |
+| features | $41.42 | 30% |
+| bugs | $17.31 | 12% |
+| docs | $2.95 | 2% |
+| refactoring | $1.83 | 1% |
 
 The tooling cost (54%) is high relative to features (27%) because the first week included bootstrapping the entire CI/CD pipeline, DevOps setup, and dev tooling from scratch — a one-time cost. Refactoring is cheapest because it was minimal; bugs are unexpectedly high, driven by the RIVER-22 error-linking spec which required deep context analysis.
 
