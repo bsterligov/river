@@ -75,3 +75,7 @@ Flutter MVP app created at `src/ui/` (macOS-only). Includes a dark sidebar with 
 ### 2026-05-14 — RIVER-28: implementation done
 
 Extended `LogRow` with `severity_number`, `span_id`, and `attributes` (JSON parsed on read). Added `GET /v1/logs/histogram` (configurable time buckets, auto-step targeting ~30 buckets) and `GET /v1/logs/facets` (top-20 values for `service_name` and `severity_text`, silent skip on field error). Dart client regenerated and committed with new `HistogramBucket`, `FacetField`, and `FacetValue` models.
+
+### 2026-05-14 — RIVER-29: implementation done
+
+Restructured the Logs page into `src/ui/lib/pages/logs/`: added `LogsController` (ChangeNotifier owning filter, time range, rows, and error state), `TimeRangePicker` (7 preset buttons + Custom via date/time dialogs), and `LogSearchBar` (inline validation for empty input, shows API 400 errors). Updated `main.dart` to use the new barrel file. Six BDD widget tests cover all four spec scenarios.

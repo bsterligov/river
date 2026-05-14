@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/io_client.dart';
 import 'package:river_api/api.dart';
 
-import 'pages/logs_page.dart';
+import 'pages/logs/logs.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -34,9 +36,15 @@ class _Shell extends StatefulWidget {
 class _ShellState extends State<_Shell> {
   _Page _selected = _Page.logs;
 
-  late final DefaultApi _api = DefaultApi(
-    ApiClient(basePath: 'http://localhost:8080'),
-  );
+  late final DefaultApi _api = _buildApi();
+
+  static DefaultApi _buildApi() {
+    final inner = HttpClient()..findProxy = (_) => 'DIRECT';
+    return DefaultApi(ApiClient(
+      basePath: 'http://localhost:8080',
+      authentication: null,
+    )..client = IOClient(inner));
+  }
 
   @override
   Widget build(BuildContext context) {
