@@ -18,14 +18,31 @@ class LogsController extends ChangeNotifier {
   List<LogRow> _rows = [];
   bool _loading = false;
   String? _error;
+  LogRow? _selectedRow;
+  // Incremented only when time range changes; facet panel uses this to skip
+  // re-fetches caused by selection or loading notifications.
+  int _rangeVersion = 0;
   String get filter => _filter;
   DateTime get from => _from;
   DateTime get to => _to;
   List<LogRow> get rows => _rows;
   bool get loading => _loading;
   String? get error => _error;
+  LogRow? get selectedRow => _selectedRow;
+  int get rangeVersion => _rangeVersion;
+
+  void selectRow(LogRow row) {
+    _selectedRow = row;
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedRow = null;
+    notifyListeners();
+  }
   void setFilter(String value) {
     _filter = value;
+    _selectedRow = null;
     notifyListeners();
   }
 
@@ -38,6 +55,7 @@ class LogsController extends ChangeNotifier {
   void setRange(DateTime from, DateTime to) {
     _from = from;
     _to = to;
+    _rangeVersion++;
     notifyListeners();
     reload();
   }

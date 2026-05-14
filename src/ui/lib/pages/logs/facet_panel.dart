@@ -9,10 +9,12 @@ class FacetPanel extends StatefulWidget {
     super.key,
     required this.controller,
     required this.searchController,
+    required this.manualFilter,
   });
 
   final LogsController controller;
   final TextEditingController searchController;
+  final String manualFilter;
 
   @override
   State<FacetPanel> createState() => _FacetPanelState();
@@ -22,8 +24,11 @@ class _FacetPanelState extends State<FacetPanel> {
   List<FacetField> _facets = [];
   bool _loading = false;
 
-  // Tokens the user has checked, e.g. {"service_name:svc-a", "severity_text:ERROR"}
+  // Tokens checked via the facet panel checkboxes.
+  // Also pre-populated from manualFilter on init/update.
   final Set<String> _selected = {};
+
+  int _lastRangeVersion = -1;
 
   // Counts pending self-initiated controller updates to suppress re-fetch
   int _selfUpdateDepth = 0;
@@ -31,8 +36,23 @@ class _FacetPanelState extends State<FacetPanel> {
   @override
   void initState() {
     super.initState();
+    _selected.addAll(_tokensFromFilter(widget.manualFilter));
+    _lastRangeVersion = widget.controller.rangeVersion;
     widget.controller.addListener(_onControllerChanged);
     _fetch();
+  }
+
+  @override
+  void didUpdateWidget(FacetPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.manualFilter != widget.manualFilter) {
+      // User submitted a new manual filter — re-derive checked state from it.
+      setState(() {
+        _selected
+          ..clear()
+          ..addAll(_tokensFromFilter(widget.manualFilter));
+      });
+    }
   }
 
   @override
@@ -41,8 +61,25 @@ class _FacetPanelState extends State<FacetPanel> {
     super.dispose();
   }
 
+  // Parse simple "field:value" tokens from a filter string.
+  // Ignores AND/OR/NOT keywords and parentheses.
+  static Set<String> _tokensFromFilter(String filter) {
+    final result = <String>{};
+    for (final part in filter.split(RegExp(r'\s+'))) {
+      final clean = part.replaceAll(RegExp(r'[()]'), '');
+      if (clean.contains(':') &&
+          !const {'AND', 'OR', 'NOT'}.contains(clean.toUpperCase())) {
+        result.add(clean);
+      }
+    }
+    return result;
+  }
+
   void _onControllerChanged() {
     if (_selfUpdateDepth > 0) return;
+    final v = widget.controller.rangeVersion;
+    if (v == _lastRangeVersion) return;
+    _lastRangeVersion = v;
     _fetch();
   }
 
@@ -50,9 +87,7 @@ class _FacetPanelState extends State<FacetPanel> {
     setState(() => _loading = true);
     try {
       final results = await widget.controller.apiClient.getLogsFacets(
-        filter: widget.controller.filter.isEmpty
-            ? null
-            : widget.controller.filter,
+        filter: widget.manualFilter.isEmpty ? null : widget.manualFilter,
         from: widget.controller.from.toIso8601String(),
         to: widget.controller.to.toIso8601String(),
       );
@@ -72,9 +107,7 @@ class _FacetPanelState extends State<FacetPanel> {
     }
   }
 
-  String _buildFilter() {
-    // Group by field; within a field use OR between key:value pairs,
-    // then AND across fields. e.g. severity_text:ERROR OR severity_text:WARN
+  String _buildFacetFilter() {
     final byField = <String, List<String>>{};
     for (final token in _selected) {
       final colon = token.indexOf(':');
@@ -89,6 +122,12 @@ class _FacetPanelState extends State<FacetPanel> {
     return groups.join(' AND ');
   }
 
+  String _combineFilters(String manual, String facets) {
+    if (manual.isEmpty) return facets;
+    if (facets.isEmpty) return manual;
+    return '$manual AND $facets';
+  }
+
   Future<void> _onToggle(String field, String value) async {
     final token = '$field:$value';
     setState(() {
@@ -99,11 +138,12 @@ class _FacetPanelState extends State<FacetPanel> {
       }
     });
 
-    final newFilter = _buildFilter();
+    final facetFilter = _buildFacetFilter();
+    final combined = _combineFilters(widget.manualFilter, facetFilter);
     _selfUpdateDepth++;
     try {
-      widget.controller.setFilter(newFilter);
-      widget.searchController.text = newFilter;
+      widget.controller.setFilter(combined);
+      widget.searchController.text = combined;
       await widget.controller.reload();
     } finally {
       _selfUpdateDepth--;
@@ -114,10 +154,10 @@ class _FacetPanelState extends State<FacetPanel> {
   Widget build(BuildContext context) {
     return Container(
       key: const Key('facet_panel'),
-      width: 220,
+      width: AppLayout.facetPanelWidth,
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppLayout.radius),
       ),
       child: _loading
           ? _Shimmer()
@@ -137,7 +177,7 @@ class _Shimmer extends StatelessWidget {
       key: const Key('facet_shimmer'),
       decoration: BoxDecoration(
         color: const Color(0xFFE0E0E0),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppLayout.radius),
       ),
     );
   }
@@ -158,7 +198,7 @@ class _FacetList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (facets.isEmpty) return const SizedBox.shrink();
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppLayout.radius),
       child: ListView(
         children: facets
             .map((f) => _FacetGroup(field: f, selected: selected, onToggle: onToggle))
@@ -183,7 +223,7 @@ class _FacetGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return ExpansionTile(
       initiallyExpanded: true,
-      tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+      tilePadding: AppLayout.tilePadding,
       title: Text(field.field, style: AppText.label),
       children: field.values
           .map((v) => _FacetValueRow(
@@ -215,7 +255,7 @@ class _FacetValueRow extends StatelessWidget {
     return InkWell(
       onTap: () => onToggle(field, facetValue.value),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: AppLayout.gapM, vertical: AppLayout.gapS),
         child: Row(
           children: [
             Checkbox(
@@ -232,10 +272,10 @@ class _FacetValueRow extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: AppLayout.gapM, vertical: AppLayout.gapS),
               decoration: BoxDecoration(
                 color: AppColors.tableHeader,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppLayout.radiusBadge),
               ),
               child: Text('${facetValue.count}', style: AppText.label),
             ),

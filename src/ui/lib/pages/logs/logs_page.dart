@@ -3,11 +3,13 @@ import 'package:river_api/api.dart';
 
 import '../../theme/app_theme.dart';
 import 'facet_panel.dart';
+import 'log_detail_panel.dart';
 import 'log_search_bar.dart';
 import 'logs_controller.dart';
 import 'time_range_picker.dart';
 
 export 'facet_panel.dart';
+export 'log_detail_panel.dart';
 export 'log_search_bar.dart';
 export 'logs_controller.dart';
 export 'time_range_picker.dart';
@@ -24,6 +26,7 @@ class LogsPage extends StatefulWidget {
 class _LogsPageState extends State<LogsPage> {
   late final LogsController _controller;
   final _searchController = TextEditingController();
+  String _manualFilter = '';
 
   @override
   void initState() {
@@ -39,15 +42,21 @@ class _LogsPageState extends State<LogsPage> {
   }
 
   void _onSubmit(String value) {
+    setState(() => _manualFilter = value);
     _controller.setFilter(value);
     _controller.reload();
   }
 
   @override
   Widget build(BuildContext context) {
+    final facetPanel = FacetPanel(
+      controller: _controller,
+      searchController: _searchController,
+      manualFilter: _manualFilter,
+    );
     return ListenableBuilder(
       listenable: _controller,
-      builder: (context, _) => Column(
+      builder: (context, child) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _Toolbar(
@@ -55,22 +64,20 @@ class _LogsPageState extends State<LogsPage> {
             searchController: _searchController,
             onSubmit: _onSubmit,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppLayout.gapL),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                FacetPanel(
-                  controller: _controller,
-                  searchController: _searchController,
-                ),
-                const SizedBox(width: 12),
+                child!,
+                const SizedBox(width: AppLayout.gapL),
                 Expanded(child: _buildMain()),
               ],
             ),
           ),
         ],
       ),
+      child: facetPanel,
     );
   }
 
@@ -78,7 +85,20 @@ class _LogsPageState extends State<LogsPage> {
     if (_controller.loading) {
       return const Center(child: CircularProgressIndicator());
     }
-    return SelectionArea(child: _LogsTable(rows: _controller.rows));
+    return Stack(
+      children: [
+        _LogsTable(
+          rows: _controller.rows,
+          controller: _controller,
+        ),
+        Positioned(
+          top: 0,
+          right: 0,
+          bottom: 0,
+          child: LogDetailPanel(controller: _controller),
+        ),
+      ],
+    );
   }
 }
 
@@ -105,7 +125,7 @@ class _Toolbar extends StatelessWidget {
             errorText: controller.error,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppLayout.gapL),
         TimeRangePicker(
           onRange: controller.setRange,
         ),
@@ -115,9 +135,10 @@ class _Toolbar extends StatelessWidget {
 }
 
 class _LogsTable extends StatelessWidget {
-  const _LogsTable({required this.rows});
+  const _LogsTable({required this.rows, required this.controller});
 
   final List<LogRow> rows;
+  final LogsController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +146,7 @@ class _LogsTable extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppLayout.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -138,9 +159,19 @@ class _LogsTable extends StatelessWidget {
                 : ListView.separated(
                     key: const Key('logs_table'),
                     itemCount: rows.length,
-                    separatorBuilder: (_, __) =>
-                        const Divider(height: 1, indent: 12, endIndent: 12),
-                    itemBuilder: (_, i) => _LogRow(row: rows[i]),
+                    separatorBuilder: (_, __) => const Divider(
+                      height: 1,
+                      indent: AppLayout.cellPaddingH,
+                      endIndent: AppLayout.cellPaddingH,
+                    ),
+                    itemBuilder: (_, i) => ListenableBuilder(
+                      listenable: controller,
+                      builder: (context, _) => _LogRow(
+                        row: rows[i],
+                        selected: controller.selectedRow == rows[i],
+                        onTap: () => controller.selectRow(rows[i]),
+                      ),
+                    ),
                   ),
           ),
         ],
@@ -154,7 +185,7 @@ class _TableHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.tableHeader,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: AppLayout.headerPadding,
       child: const Row(
         children: [
           _HeaderCell('Timestamp', flex: 3),
@@ -183,30 +214,37 @@ class _HeaderCell extends StatelessWidget {
 }
 
 class _LogRow extends StatelessWidget {
-  const _LogRow({required this.row});
+  const _LogRow({required this.row, required this.selected, required this.onTap});
 
   final LogRow row;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(flex: 3, child: Text(_fmtTs(row.timestamp), style: AppText.mono)),
-          Expanded(
-            flex: 1,
-            child: Text(
-              row.severity,
-              style: AppText.label.copyWith(
-                color: _severityColor(row.severity),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        color: selected ? AppColors.rowSelected : null,
+        padding: AppLayout.cellPadding,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 3, child: Text(_fmtTs(row.timestamp), style: AppText.mono)),
+            Expanded(
+              flex: 1,
+              child: Text(
+                row.severity,
+                style: AppText.label.copyWith(
+                  color: _severityColor(row.severity),
+                ),
               ),
             ),
-          ),
-          Expanded(flex: 2, child: Text(row.service, style: AppText.mono)),
-          Expanded(flex: 5, child: Text(row.body, style: AppText.body)),
-        ],
+            Expanded(flex: 2, child: Text(row.service, style: AppText.mono)),
+            Expanded(flex: 5, child: Text(row.body, style: AppText.body)),
+          ],
+        ),
       ),
     );
   }

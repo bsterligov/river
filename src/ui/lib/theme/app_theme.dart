@@ -10,12 +10,53 @@ abstract final class AppColors {
   static const border = Color(0xFFE2E8F0);
   static const tableHeader = Color(0xFFF1F3F5);
   static const error = Color(0xFFE53E3E);
+  static const rowSelected = Color(0x144F74E8); // primary @ 8%
 }
 
 abstract final class AppText {
   static const body = TextStyle(fontSize: 13, height: 1.5);
   static const label = TextStyle(fontSize: 12, fontWeight: FontWeight.w500);
   static const mono = TextStyle(fontSize: 12, fontFamily: 'monospace');
+}
+
+abstract final class AppLayout {
+  // Border radius used on cards, panels, and inputs
+  static const radius = 6.0;
+  static const radiusBadge = 10.0;
+
+  // Gaps between major layout sections
+  static const gapS = 4.0;
+  static const gapM = 8.0;
+  static const gapL = 12.0;
+  static const gapXL = 16.0;
+
+  // Panel widths
+  static const facetPanelWidth = 220.0;
+  static const detailPanelWidth = 420.0;
+  static const detailLabelWidth = 130.0;
+
+  // Cell / tile padding
+  static const cellPaddingH = 12.0;
+  static const cellPaddingV = 6.0;
+  static const tilePadding = EdgeInsets.symmetric(horizontal: cellPaddingH);
+  static const cellPadding = EdgeInsets.symmetric(
+    horizontal: cellPaddingH,
+    vertical: cellPaddingV,
+  );
+  static const sectionPadding = EdgeInsets.symmetric(
+    horizontal: gapXL,
+    vertical: gapM,
+  );
+  static const headerPadding = EdgeInsets.symmetric(
+    horizontal: cellPaddingH,
+    vertical: gapM,
+  );
+}
+
+abstract final class AppIcons {
+  static const sizeS = 14.0;
+  static const sizeM = 16.0;
+  static const sizeL = 18.0;
 }
 
 final appTheme = ThemeData(
