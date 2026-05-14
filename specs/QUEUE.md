@@ -10,4 +10,5 @@ Status lives here — not in filenames. Done tasks stay in the list (marked with
 - RIVER-28: API: Histogram & Facets + Extend LogRow
 - RIVER-29: UI: Page Layout + Time Range Selector + Search Bar
 - RIVER-30: UI: Facet Panel
+- RIVER-31: UI: Log Distribution Histogram
 
