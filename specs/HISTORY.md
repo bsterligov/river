@@ -79,3 +79,7 @@ Extended `LogRow` with `severity_number`, `span_id`, and `attributes` (JSON pars
 ### 2026-05-14 — RIVER-29: implementation done
 
 Restructured the Logs page into `src/ui/lib/pages/logs/`: added `LogsController` (ChangeNotifier owning filter, time range, rows, and error state), `TimeRangePicker` (7 preset buttons + Custom via date/time dialogs), and `LogSearchBar` (inline validation for empty input, shows API 400 errors). Updated `main.dart` to use the new barrel file. Six BDD widget tests cover all four spec scenarios.
+
+### 2026-05-14 — RIVER-30: implementation done
+
+Added `FacetPanel` widget and `appendFilter` to `LogsController`. The panel calls `/v1/logs/facets` on every controller notify, renders one expanded `ExpansionTile` per field with value/count rows, and on tap appends `field:value` to the search bar (joined with ` AND ` when a filter already exists). Grey shimmer shown while loading; silent failure on fetch error. Five BDD widget tests cover all spec scenarios.

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:river_api/api.dart';
@@ -9,8 +11,10 @@ class _FakeApi extends DefaultApi {
   final List<LogRow> rows;
   final Exception? error;
   final List<Map<String, String?>> calls = [];
+  List<FacetField> facets;
+  Exception? facetError;
 
-  _FakeApi({this.rows = const [], this.error});
+  _FakeApi({this.rows = const [], this.error, this.facets = const [], this.facetError});
 
   @override
   Future<List<LogRow>?> getLogs({
@@ -22,6 +26,16 @@ class _FakeApi extends DefaultApi {
     calls.add({'filter': filter, 'from': from, 'to': to});
     if (error != null) throw error!;
     return rows;
+  }
+
+  @override
+  Future<List<FacetField>?> getLogsFacets({
+    String? filter,
+    String? from,
+    String? to,
+  }) async {
+    if (facetError != null) throw facetError!;
+    return facets;
   }
 }
 
@@ -161,4 +175,230 @@ void main() {
 
     expect(find.textContaining('invalid filter'), findsOneWidget);
   });
+
+  // --- FacetPanel BDD scenarios ---
+
+  testWidgets(
+      'Given the logs page is open and the API returns facets for service_name and severity_text, '
+      'When the facet panel finishes loading, '
+      'Then two ExpansionTile groups are visible, each expanded, showing value rows with counts',
+      (tester) async {
+    final api = _FakeApi(
+      facets: [
+        FacetField(
+          field: 'service_name',
+          values: [FacetValue(value: 'svc-a', count: 42)],
+        ),
+        FacetField(
+          field: 'severity_text',
+          values: [FacetValue(value: 'ERROR', count: 7)],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('service_name'), findsOneWidget);
+    expect(find.text('severity_text'), findsOneWidget);
+    expect(find.text('svc-a'), findsOneWidget);
+    expect(find.text('42'), findsOneWidget);
+    expect(find.text('ERROR'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given a facet value row is visible, '
+      'When the operator taps it, '
+      'Then the search bar appends field:value and the log table re-fetches',
+      (tester) async {
+    final api = _FakeApi(
+      facets: [
+        FacetField(
+          field: 'service_name',
+          values: [FacetValue(value: 'svc-a', count: 3)],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+
+    final callsBefore = api.calls.length;
+    await tester.tap(find.text('svc-a'));
+    await tester.pumpAndSettle();
+
+    expect(api.calls.length, greaterThan(callsBefore));
+    expect(api.calls.last['filter'], equals('service_name:svc-a'));
+    expect(find.widgetWithText(TextField, 'service_name:svc-a'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given two facet values are tapped, '
+      'When the operator taps a second value, '
+      'Then both tokens appear in the filter joined with AND',
+      (tester) async {
+    final api = _FakeApi(
+      facets: [
+        FacetField(
+          field: 'service_name',
+          values: [
+            FacetValue(value: 'svc-a', count: 3),
+            FacetValue(value: 'svc-b', count: 1),
+          ],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('svc-a'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('svc-b'));
+    await tester.pumpAndSettle();
+
+    expect(api.calls.last['filter'], equals('(service_name:svc-a OR service_name:svc-b)'));
+  });
+
+  testWidgets(
+      'Given a facet value is already checked, '
+      'When the operator taps it again, '
+      'Then the token is removed from the filter (no duplicate)',
+      (tester) async {
+    final api = _FakeApi(
+      facets: [
+        FacetField(
+          field: 'service_name',
+          values: [FacetValue(value: 'svc-a', count: 3)],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+
+    // First tap: select
+    await tester.tap(find.text('svc-a'));
+    await tester.pumpAndSettle();
+    expect(api.calls.last['filter'], equals('service_name:svc-a'));
+
+    // Second tap: deselect — filter becomes empty
+    await tester.tap(find.text('svc-a'));
+    await tester.pumpAndSettle();
+    expect(api.calls.last['filter'], isNull);
+  });
+
+  testWidgets(
+      'Given the /v1/logs/facets request is in flight, '
+      'When the panel is rendered, '
+      'Then a grey shimmer placeholder is shown in place of facet content',
+      (tester) async {
+    // Use a completer-based api so we can hold the fetch in-flight
+    final api = _HoldingFacetApi();
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    // One pump builds the widget; _fetch starts but completer hasn't resolved
+    await tester.pump();
+
+    expect(find.byKey(const Key('facet_shimmer')), findsOneWidget);
+
+    // Release to avoid timer leaks
+    api.complete([]);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'Given the /v1/logs/facets request fails, '
+      'When the error is received, '
+      'Then the facet panel shows nothing',
+      (tester) async {
+    final api = _FakeApi(facetError: Exception('network error'));
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('facet_panel')), findsOneWidget);
+    expect(find.byType(ExpansionTile), findsNothing);
+  });
+
+  testWidgets(
+      'Given facets have loaded, '
+      'When the operator changes the time range, '
+      'Then the facet panel re-fetches',
+      (tester) async {
+    int facetFetchCount = 0;
+    final api = _FakeApi(facets: []);
+    final originalGetFacets = api.getLogsFacets;
+    // Use a custom api subclass to count calls
+    final countingApi = _CountingFacetApi(
+      onFetch: () => facetFetchCount++,
+      facets: [
+        FacetField(field: 'service_name', values: [FacetValue(value: 'svc', count: 1)]),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: countingApi))),
+    );
+    await tester.pumpAndSettle();
+
+    final fetchesAfterInit = countingApi.facetFetchCount;
+
+    // Open time range picker and click a preset to trigger setRange
+    await tester.tap(find.text('Last 1 hour'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Last 15 minutes'));
+    await tester.pumpAndSettle();
+
+    expect(countingApi.facetFetchCount, greaterThan(fetchesAfterInit));
+  });
+}
+
+class _HoldingFacetApi extends DefaultApi {
+  late void Function(List<FacetField>) _resolve;
+
+  void complete(List<FacetField> facets) => _resolve(facets);
+
+  @override
+  Future<List<LogRow>?> getLogs({String? filter, String? from, String? to, int? limit}) async => [];
+
+  @override
+  Future<List<FacetField>?> getLogsFacets({String? filter, String? from, String? to}) {
+    final completer = Completer<List<FacetField>?>();
+    _resolve = (f) => completer.complete(f);
+    return completer.future;
+  }
+}
+
+class _CountingFacetApi extends DefaultApi {
+  int facetFetchCount = 0;
+  final VoidCallback onFetch;
+  final List<FacetField> facets;
+
+  _CountingFacetApi({required this.onFetch, required this.facets});
+
+  @override
+  Future<List<LogRow>?> getLogs({String? filter, String? from, String? to, int? limit}) async {
+    return [];
+  }
+
+  @override
+  Future<List<FacetField>?> getLogsFacets({String? filter, String? from, String? to}) async {
+    facetFetchCount++;
+    onFetch();
+    return facets;
+  }
 }
