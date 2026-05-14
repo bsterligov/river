@@ -73,7 +73,8 @@ class _FacetPanelState extends State<FacetPanel> {
   }
 
   String _buildFilter() {
-    // Group selected tokens by field, then emit field:(v1 OR v2) per group
+    // Group by field; within a field use OR between key:value pairs,
+    // then AND across fields. e.g. severity_text:ERROR OR severity_text:WARN
     final byField = <String, List<String>>{};
     for (final token in _selected) {
       final colon = token.indexOf(':');
@@ -81,12 +82,11 @@ class _FacetPanelState extends State<FacetPanel> {
       final v = token.substring(colon + 1);
       byField.putIfAbsent(f, () => []).add(v);
     }
-    return byField.entries.map((e) {
-      final values = e.value;
-      return values.length == 1
-          ? '${e.key}:${values.first}'
-          : '${e.key}:(${values.join(' OR ')})';
-    }).join(' AND ');
+    final groups = byField.entries.map((e) {
+      final parts = e.value.map((v) => '${e.key}:$v').join(' OR ');
+      return e.value.length > 1 ? '($parts)' : parts;
+    }).toList();
+    return groups.join(' AND ');
   }
 
   Future<void> _onToggle(String field, String value) async {
