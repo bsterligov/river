@@ -28,7 +28,7 @@ Existing tools like OpenSpec, SpecKit, and similar spec-authoring frameworks wer
 
 ---
 
-## How it works V0
+## How it works V0 — Single task
 
 GitHub is the coordination layer. Claude Code (interactive Pro plan) is the execution layer. This experiment intentionally stays human-supervised rather than fully autonomous.
 
@@ -78,7 +78,91 @@ Claude reads the merged spec, implements exactly what is in scope, writes tests,
 
 ---
 
+## How it works V1 — Ambitious features
+
+For large, multi-part features, V1 adds two commands that sit above the V0 loops and drive them in parallel.
+
+```mermaid
+flowchart TD
+    A[User describes ambitious feature] --> B["run /feature-plan"]
+    B --> C["specs/plans/name.md\nphases · risks · open questions"]
+    C --> D["run /dev-plan name"]
+
+    D --> SA["Subagent — Phase 1<br/>git work tree"]
+    D --> SB["Subagent — Phase 2<br/>git work tree"]
+    D --> SC["Subagent — Phase N<br/>git work tree"]
+
+    SA --> IA["/issue-create\nGHA: spec/RIVER-N1"]
+    SB --> IB["/issue-create\nGHA: spec/RIVER-N2"]
+    SC --> IC["/issue-create\nGHA: spec/RIVER-N3"]
+
+    IA --> PA["/po-spec-writer\nSpec PR N1"]
+    IB --> PB["/po-spec-writer\nSpec PR N2"]
+    IC --> PC["/po-spec-writer\nSpec PR N3"]
+
+    PA --> R[Review and merge each spec PR]
+    PB --> R
+    PC --> R
+
+    R -->|GHA fires per merge| I["impl/RIVER-N branch per phase"]
+    I --> DS["/dev-spec\none session per phase"]
+    DS --> M[Impl PR merged]
+```
+
+### Step 1 — Plan the feature
+
+```bash
+/feature-plan
+```
+
+Claude asks for the feature name, why it matters, scope boundaries, and constraints. It then decomposes the feature into 3–6 phases — each independently shippable — with goals, ordered steps, dependencies, and done criteria. Risks and open questions are surfaced before any code is written. The plan is saved to `specs/plans/{name}.md`.
+
+### Step 2 — Execute the plan
+
+```bash
+/dev-plan {name}
+```
+
+Claude reads the plan, shows all phases, and asks which to process and at what priority. It then spawns one parallel subagent per phase, each isolated in its own git work tree. Every subagent independently:
+
+1. Creates a GitHub issue with the phase details
+2. Waits for the GHA to create the `spec/RIVER-{N}` branch
+3. Checks out the branch in its worktree
+4. Runs `/po-spec-writer` to write the spec and open a PR
+
+The result is one spec PR per phase, all open simultaneously, ready for review.
+
+### Step 3 — Implement
+
+Each spec PR follows the existing V0 Loop 2: merge triggers GHA, impl branch is created, developer runs `/dev-spec`. Phases can be implemented sequentially or in parallel depending on their declared dependencies.
+
+---
+
 ## Results
+
+### Week 2 — In progress: from linear tasks to plan-driven multi-agent mode
+
+Week 1 validated that the V0 spec-first loop works well for single, well-scoped tasks. The bottleneck that emerged: ambitious features with 3–6 moving parts still required the developer to manually decompose the work, create one issue at a time, and run each spec session sequentially. The workflow was sound but not scalable to larger initiatives.
+
+Week 2 focus: lift the workflow one level up. Instead of driving individual tasks, the developer now drives a plan — and agents do the decomposition, issue creation, and spec writing in parallel.
+
+**What changed:**
+
+Two new commands were added above the existing V0 loops:
+
+- `/feature-plan` — interactive session that produces a phase-by-phase plan in `specs/plans/`. Claude asks for the why, scope boundaries, and constraints, then decomposes the feature into independently shippable phases with goals, steps, dependencies, done criteria, risks, and open questions.
+
+- `/dev-plan {name}` — reads a saved plan and spawns one parallel subagent per phase. Each subagent runs in an isolated git work tree, creates the GitHub issue, waits for the GHA spec branch, and runs `/po-spec-writer`. The result: all spec PRs for a feature open simultaneously rather than one at a time.
+
+**Routing guidance** was also added to `CLAUDE.md` so Claude proactively suggests the right command based on task size — `/issue-create` for small self-contained tasks, `/feature-plan` for anything that spans multiple components or requires design decisions first.
+
+**Open questions being studied in week 2:**
+
+- Token cost of parallel agentic sessions vs. sequential: does parallelism increase total spend or shift it?
+- Quality of subagent-written specs vs. interactive specs: does removing the human from the loop in spec writing degrade the output?
+- Merge conflict rate in tracking files (`QUEUE.md`, `HISTORY.md`) when multiple spec branches land close together.
+
+---
 
 ### Week 1 — MVP done
 
