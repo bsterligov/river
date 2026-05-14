@@ -29,6 +29,12 @@ class LogsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void appendFilter(String token) {
+    _filter = _filter.isEmpty ? token : '$_filter AND $token';
+    notifyListeners();
+    reload();
+  }
+
   void setRange(DateTime from, DateTime to) {
     _from = from;
     _to = to;

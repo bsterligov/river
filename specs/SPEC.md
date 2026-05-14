@@ -57,6 +57,8 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Facet panel placeholder:** plain Container with fixed 220px width; no behavior
 - **Logs page module:** lib/pages/logs/ with barrel file logs.dart exporting all page symbols
 - **`LogRow` attributes field:** stored as a JSON string in ClickHouse; parsed to `serde_json::Value` on read, falls back to `{}` on parse failure
+- **FacetPanel:** stateful widget in `lib/pages/logs/facet_panel.dart`; listens to `LogsController`, re-fetches `/v1/logs/facets` on every notify; shows grey shimmer while loading, silent failure on error; tap appends `field:value` token to filter (joined with ` AND ` if non-empty) and syncs `TextEditingController`
+- **`appendFilter(String token)`:** method on `LogsController`; sets filter if empty, otherwise appends ` AND token`, then calls `reload()`
 
 ## Spec System
 `/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)

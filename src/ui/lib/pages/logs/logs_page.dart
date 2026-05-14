@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
 import '../../theme/app_theme.dart';
+import 'facet_panel.dart';
 import 'log_search_bar.dart';
 import 'logs_controller.dart';
 import 'time_range_picker.dart';
 
+export 'facet_panel.dart';
 export 'log_search_bar.dart';
 export 'logs_controller.dart';
 export 'time_range_picker.dart';
@@ -58,7 +60,10 @@ class _LogsPageState extends State<LogsPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _FacetPlaceholder(),
+                FacetPanel(
+                  controller: _controller,
+                  searchController: _searchController,
+                ),
                 const SizedBox(width: 12),
                 Expanded(child: _buildMain()),
               ],
@@ -105,21 +110,6 @@ class _Toolbar extends StatelessWidget {
           onRange: controller.setRange,
         ),
       ],
-    );
-  }
-}
-
-class _FacetPlaceholder extends StatelessWidget {
-  const _FacetPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 220,
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(6),
-      ),
     );
   }
 }
