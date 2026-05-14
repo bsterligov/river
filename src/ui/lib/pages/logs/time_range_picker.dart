@@ -105,13 +105,13 @@ class _TriggerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppLayout.radius),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: AppLayout.cellPaddingH, vertical: 7),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppLayout.radius),
           border: Border.all(
             color: open ? AppColors.primary : AppColors.border,
             width: open ? 1.5 : 1,
@@ -120,13 +120,13 @@ class _TriggerButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.schedule, size: 14, color: Colors.black54),
-            const SizedBox(width: 6),
+            const Icon(Icons.schedule, size: AppIcons.sizeS, color: Colors.black54),
+            const SizedBox(width: AppLayout.gapM - 2),
             Text(label, style: AppText.label),
-            const SizedBox(width: 6),
+            const SizedBox(width: AppLayout.gapM - 2),
             Icon(
               open ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-              size: 14,
+              size: AppIcons.sizeS,
               color: Colors.black54,
             ),
           ],
@@ -159,7 +159,6 @@ class _DropdownOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Tap-outside dismissal
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
@@ -174,12 +173,12 @@ class _DropdownOverlay extends StatelessWidget {
           followerAnchor: Alignment.topRight,
           child: Material(
             elevation: 4,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppLayout.radius + 2),
             child: Container(
               width: 480,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppLayout.radius + 2),
                 border: Border.all(color: AppColors.border),
               ),
               child: Row(
@@ -222,7 +221,12 @@ class _PresetList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+            padding: const EdgeInsets.fromLTRB(
+              AppLayout.cellPaddingH,
+              AppLayout.cellPaddingV + 4,
+              AppLayout.cellPaddingH,
+              AppLayout.gapM - 2,
+            ),
             child: Text('Suggested', style: AppText.label.copyWith(color: Colors.black45)),
           ),
           for (int i = 0; i < presets.length; i++)
@@ -231,7 +235,7 @@ class _PresetList extends StatelessWidget {
               active: activeIndex == i,
               onTap: () => onSelect(i),
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppLayout.gapM),
         ],
       ),
     );
@@ -250,8 +254,8 @@ class _PresetRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        color: active ? AppColors.primary.withValues(alpha: 0.08) : null,
+        padding: AppLayout.headerPadding,
+        color: active ? AppColors.rowSelected : null,
         child: Text(
           label,
           style: AppText.body.copyWith(
@@ -339,28 +343,30 @@ class _CustomFormState extends State<_CustomForm> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppLayout.gapXL),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Custom range', style: AppText.label),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppLayout.gapL),
           _DateField(label: 'From', controller: _fromController),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppLayout.gapM),
           _DateField(label: 'To', controller: _toController),
           if (_error != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: AppLayout.gapM - 2),
             Text(_error!, style: AppText.label.copyWith(color: AppColors.error)),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: AppLayout.gapL),
           ElevatedButton(
             onPressed: _apply,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              padding: const EdgeInsets.symmetric(vertical: AppLayout.cellPaddingV + 4),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppLayout.radius),
+              ),
               elevation: 0,
             ),
             child: const Text('Apply', style: AppText.label),
@@ -384,7 +390,7 @@ class _DateField extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(label, style: AppText.label.copyWith(color: Colors.black54)),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppLayout.gapS),
         TextField(
           controller: controller,
           style: AppText.mono,

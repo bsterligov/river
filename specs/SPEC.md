@@ -59,6 +59,9 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **`LogRow` attributes field:** stored as a JSON string in ClickHouse; parsed to `serde_json::Value` on read, falls back to `{}` on parse failure
 - **FacetPanel:** stateful widget in `lib/pages/logs/facet_panel.dart`; listens to `LogsController`, re-fetches `/v1/logs/facets` on every notify; shows grey shimmer while loading, silent failure on error; tap appends `field:value` token to filter (joined with ` AND ` if non-empty) and syncs `TextEditingController`
 - **`appendFilter(String token)`:** method on `LogsController`; sets filter if empty, otherwise appends ` AND token`, then calls `reload()`
+- **LogDetailPanel:** 420px fixed-width panel, `AnimatedSize` (width 0 → 420, 200ms easeInOut); shown when `controller.selectedRow != null`; three `ExpansionTile` sections all expanded by default
+- **Log row selection:** `LogsController` holds `LogRow? selectedRow`; `selectRow(LogRow)` and `clearSelection()` notify listeners; table rows wrapped in `GestureDetector` with `AppColors.primary.withOpacity(0.08)` highlight
+- **Attributes parsing:** `jsonDecode` in try/catch in `_AttributesSection._parseAttributes`; falls back to empty list → "No attributes" label
 
 ## Spec System
 `/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)

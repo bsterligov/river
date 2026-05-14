@@ -25,7 +25,7 @@ class LogSearchBar extends StatelessWidget {
           controller: controller,
           decoration: InputDecoration(
             hintText: 'Filter (e.g. service:myapp AND severity:ERROR)',
-            prefixIcon: const Icon(Icons.search, size: 18),
+            prefixIcon: const Icon(Icons.search, size: AppIcons.sizeL),
             errorText: errorText,
           ),
           onSubmitted: onSubmit,

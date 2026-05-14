@@ -83,3 +83,7 @@ Restructured the Logs page into `src/ui/lib/pages/logs/`: added `LogsController`
 ### 2026-05-14 — RIVER-30: implementation done
 
 Added `FacetPanel` widget and `appendFilter` to `LogsController`. The panel calls `/v1/logs/facets` on every controller notify, renders one expanded `ExpansionTile` per field with value/count rows, and on tap appends `field:value` to the search bar (joined with ` AND ` when a filter already exists). Grey shimmer shown while loading; silent failure on fetch error. Five BDD widget tests cover all spec scenarios.
+
+### 2026-05-14 — RIVER-37: implementation done
+
+Added `LogDetailPanel` (420px, `AnimatedSize` width transition) with three expanded `ExpansionTile` sections: Log Tags & Infra Info (6 key-value metadata fields), Log Message (`SelectableText` monospace), and Log Attributes (JSON-parsed key-value pairs with "No attributes" fallback). `LogsController` gained `selectedRow`, `selectRow`, and `clearSelection`; table rows wrapped in `GestureDetector` with a highlight on the selected row. Five BDD widget tests pass.
