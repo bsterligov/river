@@ -1,6 +1,8 @@
 # Week 1 — MVP done
 
-6 days, 29 committed sessions, 2,762 assistant turns.
+6 days, 35 committed sessions, 3,309 assistant turns.
+
+From 6 May to 11 May
 
 Built a working end-to-end observability pipeline with no custom frontend — Grafana as the UI layer. Components shipped: OTel sidecar, ingestion service, S3 batch storage, metrics aggregation, database migration management, query API, Grafana dashboards, and a full CI/CD setup. Test coverage above 80% (SonarQube gate).
 
@@ -10,13 +12,13 @@ Full token breakdown: [docs/token-usage.md](token-usage.md)
 
 | Token type | Volume | Cost | Share |
 |------------|--------|-----:|------:|
-| Cache reads | 190M | $57.06 | 49% |
-| Output | 2.4M | $36.32 | 31% |
-| Cache writes | 6.4M | $23.86 | 20% |
-| Input | 16K | $0.05 | <1% |
-| **Total** | | **$117.29** | |
+| Cache reads | 206.7M | $62.00 | 49% |
+| Output | 2.6M | $38.42 | 30% |
+| Cache writes | 7.0M | $26.17 | 21% |
+| Input | 17K | $0.05 | <1% |
+| **Total** | | **$126.63** | |
 
-[RTK](https://github.com/rtk-ai/rtk) was used to compress Bash tool output — 210K additional input tokens avoided (~$0.63). Since week 1, a second layer (`river-index`) was added to intercept `Read` tool calls on source files and return compact summaries — see the Token optimization section in the README for details.
+[RTK](https://github.com/rtk-ai/rtk) was used to compress Bash tool output — 218K additional input tokens avoided (~$0.65). Since week 1, a second layer (`river-index`) was added to intercept `Read` tool calls on source files and return compact summaries — see the Token optimization section in the README for details.
 
 Advanced models such as Opus (which I have used in production contexts) are intentionally avoided, as they may introduce additional usage overhead that is not consistent with the objectives of this experiment.
 
@@ -26,15 +28,15 @@ On the other hand, lower-tier models such as Haiku are also not fully optimal in
 
 | Phase | Cost | Share |
 |-------|-----:|------:|
-| Implementation | $61.93 | 56% |
-| Spec writing | $36.60 | 33% |
-| Setup / tooling | $12.25 | 11% |
+| Implementation | $51.70 | 41% |
+| Setup / tooling | $37.81 | 30% |
+| Spec writing | $37.12 | 29% |
 
-Spec writing is the cheapest phase — most spec sessions cost $0.35–$0.50 each. The outliers (`RIVER-6` at $16.84, `RIVER-22` at $13.30) were complex iterative specs with many rounds of context growth, not a structural problem with spec-first gating.
+Setup/tooling is higher than expected because the first week included bootstrapping the entire CI/CD pipeline, DevOps setup, and dev tooling from scratch — a one-time cost. Spec writing and implementation costs are close, which reflects the spec-first design: most spec sessions are cheap ($0.35–$0.50), but complex iterative specs (`RIVER-6` at $16.84, `RIVER-22` at $13.30) pull the phase cost up.
 
 **Most expensive session**: `RIVER-6 — Setup DevOps part 2` at **$16.84** — 421 turns, 27.7M cache reads, long debug loop with growing context.
 
-**Cheapest sessions**: simple spec writes at **$0.20–$0.35** each.
+**Cheapest sessions**: simple spec writes and fixes at **$0.20–$0.41** each.
 
 **By MoSCoW priority:**
 
@@ -42,8 +44,8 @@ MoSCoW labels are assigned when a spec is written. This makes it possible to see
 
 | Priority | Cost | Share |
 |----------|-----:|------:|
-| must | $110.23 | 80% |
-| should | $28.40 | 20% |
+| must | $98.23 | 78% |
+| should | $28.40 | 22% |
 | could | — | — |
 | wont | — | — |
 
@@ -51,10 +53,10 @@ MoSCoW labels are assigned when a spec is written. This makes it possible to see
 
 | Category | Cost | Share |
 |----------|-----:|------:|
-| tools | $75.12 | 54% |
-| features | $41.42 | 30% |
-| bugs | $17.31 | 12% |
+| tools | $64.48 | 51% |
+| features | $40.06 | 32% |
+| bugs | $17.31 | 14% |
 | docs | $2.95 | 2% |
 | refactoring | $1.83 | 1% |
 
-The tooling cost (54%) is high relative to features (27%) because the first week included bootstrapping the entire CI/CD pipeline, DevOps setup, and dev tooling from scratch — a one-time cost. Refactoring is cheapest because it was minimal; bugs are unexpectedly high, driven by the RIVER-22 error-linking spec which required deep context analysis.
+The tooling cost (51%) is high relative to features (32%) because of the one-time infrastructure bootstrap. Bugs are at 14% due to the RIVER-22 error-linking spec which required deep context analysis.
