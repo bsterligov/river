@@ -100,13 +100,20 @@ flowchart TD
     IB --> PB["/po-spec-writer\nSpec PR N2"]
     IC --> PC["/po-spec-writer\nSpec PR N3"]
 
-    PA --> R[Review and merge each spec PR]
+    PA --> R[Review and approve each spec PR]
     PB --> R
     PC --> R
 
-    R -->|GHA fires per merge| I["impl/RIVER-N branch per phase"]
-    I --> DS["/dev-spec\none session per phase"]
-    DS --> M[Impl PR merged]
+    R --> DPI["run /dev-plan-impl name"]
+    DPI -->|merge in order + conflict resolution| M1["GHA: impl/RIVER-N branch per phase"]
+
+    M1 --> IA2["Subagent — Phase 1<br/>/dev-spec"]
+    M1 --> IB2["Subagent — Phase 2<br/>/dev-spec"]
+    M1 --> IC2["Subagent — Phase N<br/>/dev-spec"]
+
+    IA2 --> PR[Impl PRs open]
+    IB2 --> PR
+    IC2 --> PR
 ```
 
 ### Step 1 — Plan the feature
@@ -132,9 +139,15 @@ Claude reads the plan, shows all phases, and asks which to process and at what p
 
 The result is one spec PR per phase, all open simultaneously, ready for review.
 
-### Step 3 — Implement
+### Step 3 — Merge and implement
 
-Each spec PR follows the existing V0 Loop 2: merge triggers GHA, impl branch is created, developer runs `/dev-spec`. Phases can be implemented sequentially or in parallel depending on their declared dependencies.
+```bash
+/dev-plan-impl {name}
+```
+
+Claude finds all open spec PRs belonging to the plan by matching the plan name in issue bodies. It prints a status table (one row per phase) showing each PR's review decision. If any PR is not approved, it stops and lists what still needs review.
+
+Once all PRs are approved and the user confirms, Claude merges them one by one in phase order. If a merge fails due to conflicts, it rebases the spec branch onto main, resolves the conflict (or pauses to ask if the conflict is ambiguous), force-pushes, and re-merges before continuing. After all spec PRs land, it polls for the GHA-created `impl/RIVER-{N}` branches and spawns one parallel subagent per phase, each running `/dev-spec` in an isolated git work tree. The result is one impl PR per phase, all open simultaneously.
 
 ---
 
@@ -148,11 +161,13 @@ Week 2 focus: lift the workflow one level up. Instead of driving individual task
 
 **What changed:**
 
-Two new commands were added above the existing V0 loops:
+Three new commands were added above the existing V0 loops:
 
 - `/feature-plan` — interactive session that produces a phase-by-phase plan in `specs/plans/`. Claude asks for the why, scope boundaries, and constraints, then decomposes the feature into independently shippable phases with goals, steps, dependencies, done criteria, risks, and open questions.
 
 - `/dev-plan {name}` — reads a saved plan and spawns one parallel subagent per phase. Each subagent runs in an isolated git work tree, creates the GitHub issue, waits for the GHA spec branch, and runs `/po-spec-writer`. The result: all spec PRs for a feature open simultaneously rather than one at a time.
+
+- `/dev-plan-impl {name}` — closes the loop after spec review. Finds all open spec PRs for the plan, gates on approval status, merges them in phase order (rebasing and resolving conflicts automatically), then spawns one parallel subagent per phase to run `/dev-spec`. All impl PRs for a feature land simultaneously.
 
 **Routing guidance** was also added to `CLAUDE.md` so Claude proactively suggests the right command based on task size — `/issue-create` for small self-contained tasks, `/feature-plan` for anything that spans multiple components or requires design decisions first.
 

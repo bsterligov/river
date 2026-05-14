@@ -15,6 +15,7 @@ Instructions for Claude Code when working in this repository.
 | `.claude/commands/issue-create.md` | Skill — create a GitHub issue with category and priority labels, then check out the GHA-created spec branch. |
 | `.claude/commands/feature-plan.md` | Skill — plan an ambitious feature: decompose into phases, document risks, save to `specs/plans/`. |
 | `.claude/commands/dev-plan.md` | Skill — execute a saved plan: spawn one parallel subagent per phase to create issues and write specs. |
+| `.claude/commands/dev-plan-impl.md` | Skill — merge all approved spec PRs for a plan, then spawn one subagent per phase to implement its spec. |
 | `.github/workflows/spec-from-issue.yml` | GHA — fires on issue open (spec draft) and on spec PR merge (impl branch + draft PR). No API key needed. |
 
 ## Choosing the right command
@@ -27,6 +28,7 @@ When a user describes something they want to build or fix, proactively suggest t
 | Feature with multiple moving parts or unclear scope | `/feature-plan` — plan phases first, then `/dev-plan` to kick off specs in parallel |
 | Spec branch already exists and is checked out | `/po-spec-writer` — write the spec now |
 | Spec PR is merged, impl branch is active | `/dev-spec` — implement what the spec says |
+| All spec PRs for a plan are approved and ready to land | `/dev-plan-impl` — merge them in order and kick off parallel implementation |
 
 If the user describes a task but does not specify a command, make a recommendation in one sentence ("This sounds like a `/issue-create` — want me to kick that off?") and wait for confirmation. Do not silently start a workflow.
 
