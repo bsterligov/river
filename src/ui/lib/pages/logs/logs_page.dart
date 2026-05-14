@@ -1,9 +1,14 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
-import '../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
+import 'log_search_bar.dart';
+import 'logs_controller.dart';
+import 'time_range_picker.dart';
+
+export 'log_search_bar.dart';
+export 'logs_controller.dart';
+export 'time_range_picker.dart';
 
 class LogsPage extends StatefulWidget {
   const LogsPage({super.key, required this.apiClient});
@@ -15,96 +20,116 @@ class LogsPage extends StatefulWidget {
 }
 
 class _LogsPageState extends State<LogsPage> {
+  late final LogsController _controller;
   final _searchController = TextEditingController();
-  List<LogRow> _rows = [];
-  bool _loading = false;
-  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = LogsController(apiClient: widget.apiClient);
+  }
 
   @override
   void dispose() {
+    _controller.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _search(String filter) async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final results = await widget.apiClient.getLogs(
-        filter: filter.isEmpty ? null : filter,
-      );
-      setState(() {
-        _rows = results ?? [];
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = _extractError(e);
-        _loading = false;
-      });
-    }
-  }
-
-  String _extractError(Object e) {
-    if (e is ApiException) {
-      try {
-        final body = jsonDecode(e.message ?? '') as Map<String, dynamic>;
-        final msg = body['error'] as String?;
-        if (msg != null && msg.isNotEmpty) return msg;
-      } catch (_) {}
-    }
-    return e.toString();
+  void _onSubmit(String value) {
+    _controller.setFilter(value);
+    _controller.reload();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _SearchBar(
-          controller: _searchController,
-          onSearch: _search,
+    return ListenableBuilder(
+      listenable: _controller,
+      builder: (context, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Toolbar(
+            controller: _controller,
+            searchController: _searchController,
+            onSubmit: _onSubmit,
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _FacetPlaceholder(),
+                const SizedBox(width: 12),
+                Expanded(child: _buildMain()),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMain() {
+    if (_controller.loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_controller.error != null) {
+      return Center(
+        child: Text(
+          _controller.error!,
+          style: const TextStyle(color: AppColors.error),
         ),
-        const SizedBox(height: 16),
+      );
+    }
+    return SelectionArea(child: _LogsTable(rows: _controller.rows));
+  }
+}
+
+class _Toolbar extends StatelessWidget {
+  const _Toolbar({
+    required this.controller,
+    required this.searchController,
+    required this.onSubmit,
+  });
+
+  final LogsController controller;
+  final TextEditingController searchController;
+  final void Function(String) onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Flexible(
+          child: TimeRangePicker(
+            onRange: controller.setRange,
+          ),
+        ),
+        const SizedBox(width: 12),
         Expanded(
-          child: _buildTable(),
+          child: LogSearchBar(
+            controller: searchController,
+            onSubmit: onSubmit,
+            errorText: controller.filterError,
+          ),
         ),
       ],
     );
   }
-
-  Widget _buildTable() {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_error != null) {
-      return Center(
-        child: Text(_error!, style: const TextStyle(color: AppColors.error)),
-      );
-    }
-    return SelectionArea(child: _LogsTable(rows: _rows));
-  }
 }
 
-class _SearchBar extends StatelessWidget {
-  const _SearchBar({required this.controller, required this.onSearch});
-
-  final TextEditingController controller;
-  final void Function(String) onSearch;
+class _FacetPlaceholder extends StatelessWidget {
+  const _FacetPlaceholder();
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      key: const Key('logs_search'),
-      controller: controller,
-      decoration: const InputDecoration(
-        hintText: 'Filter logs (e.g. service:myapp AND level:error)',
-        prefixIcon: Icon(Icons.search, size: 18),
+    return Container(
+      width: 220,
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(6),
       ),
-      onSubmitted: onSearch,
-      style: AppText.mono,
     );
   }
 }
@@ -133,7 +158,7 @@ class _LogsTable extends StatelessWidget {
                 : ListView.separated(
                     key: const Key('logs_table'),
                     itemCount: rows.length,
-                    separatorBuilder: (context, index) =>
+                    separatorBuilder: (_, __) =>
                         const Divider(height: 1, indent: 12, endIndent: 12),
                     itemBuilder: (_, i) => _LogRow(row: rows[i]),
                   ),
@@ -194,7 +219,9 @@ class _LogRow extends StatelessWidget {
             flex: 1,
             child: Text(
               row.severity,
-              style: AppText.label.copyWith(color: _severityColor(row.severity)),
+              style: AppText.label.copyWith(
+                color: _severityColor(row.severity),
+              ),
             ),
           ),
           Expanded(flex: 2, child: Text(row.service, style: AppText.mono)),

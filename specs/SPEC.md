@@ -52,6 +52,10 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Navigation:** custom sidebar widget (no third-party library); pages enumerated via `_Page` enum in `main.dart`
 - **Histogram step auto-selection:** targets ~30 buckets from fixed ladder `[60, 300, 900, 3600, 21600, 86400]` seconds; keeps bucket widths human-readable
 - **Facets endpoint:** queries `service_name` and `severity_text` sequentially, LIMIT 20 each; silently returns empty `values` for a field on query error — partial response preferred over 500
+- **LogsController:** ChangeNotifier (not Riverpod/Bloc) owning filter, from, to, rows, loading, error; empty filter blocked client-side before any network call
+- **TimeRangePicker presets:** computed relative to DateTime.now() at button press; Custom range uses Flutter built-in showDatePicker/showTimePicker
+- **Facet panel placeholder:** plain Container with fixed 220px width; no behavior
+- **Logs page module:** lib/pages/logs/ with barrel file logs.dart exporting all page symbols
 - **`LogRow` attributes field:** stored as a JSON string in ClickHouse; parsed to `serde_json::Value` on read, falls back to `{}` on parse failure
 
 ## Spec System

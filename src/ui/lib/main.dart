@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
-import 'pages/logs_page.dart';
+import 'pages/logs/logs.dart';
 import 'theme/app_theme.dart';
 
 void main() {
