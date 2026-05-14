@@ -50,6 +50,9 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Dart API client:** generated from `/openapi.json` via `openapi-generator 7` into `src/ui/lib/api/generated/`; referenced as a path dependency named `river_api`
 - **Flutter theme tokens:** `lib/theme/app_theme.dart` — extends to all pages; light theme only at this stage
 - **Navigation:** custom sidebar widget (no third-party library); pages enumerated via `_Page` enum in `main.dart`
+- **Histogram step auto-selection:** targets ~30 buckets from fixed ladder `[60, 300, 900, 3600, 21600, 86400]` seconds; keeps bucket widths human-readable
+- **Facets endpoint:** queries `service_name` and `severity_text` sequentially, LIMIT 20 each; silently returns empty `values` for a field on query error — partial response preferred over 500
+- **`LogRow` attributes field:** stored as a JSON string in ClickHouse; parsed to `serde_json::Value` on read, falls back to `{}` on parse failure
 
 ## Spec System
 `/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)
