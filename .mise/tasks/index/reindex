@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#MISE description="Reindex workspace for Claude Code token savings"
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+BIN="$ROOT/target/release/river-index"
+
+if [[ ! -x "$BIN" ]]; then
+    echo "Building river-index release binary..."
+    cargo build -p river-index --release
+fi
+
+"$BIN" --db "$ROOT/.river-index/index.db" --root "$ROOT" index
+"$BIN" --db "$ROOT/.river-index/index.db" --root "$ROOT" status

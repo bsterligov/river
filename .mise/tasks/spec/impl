@@ -16,7 +16,9 @@ git push origin HEAD:refs/heads/$IMPL_BRANCH
 # Create an empty placeholder commit on the impl branch.
 git fetch origin "$IMPL_BRANCH"
 git checkout -B "$IMPL_BRANCH" "origin/$IMPL_BRANCH"
-git commit --allow-empty -m "chore: start ${TASK} implementation"
+git -c user.email="github-actions[bot]@users.noreply.github.com" \
+    -c user.name="github-actions[bot]" \
+    commit --allow-empty -m "chore: start ${TASK} implementation"
 git push origin "$IMPL_BRANCH"
 git checkout -
 
