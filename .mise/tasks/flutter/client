@@ -10,4 +10,5 @@ openapi-generator generate \
   -g dart \
   -o src/ui/lib/api/generated \
   --package-name river_api \
+  --additional-properties=pubName=river_api,pubVersion=0.1.0 \
   --skip-validate-spec
