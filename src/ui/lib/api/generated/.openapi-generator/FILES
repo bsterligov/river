@@ -35,6 +35,3 @@ lib/model/span_event.dart
 lib/model/span_link.dart
 lib/model/trace_group.dart
 pubspec.yaml
-test/facet_field_test.dart
-test/facet_value_test.dart
-test/histogram_bucket_test.dart

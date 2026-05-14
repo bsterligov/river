@@ -1,8 +1,8 @@
-# openapi.api.DefaultApi
+# river_api.api.DefaultApi
 
 ## Load the API package
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 ```
 
 All URIs are relative to *http://localhost*
@@ -24,7 +24,7 @@ Method | HTTP request | Description
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 
@@ -60,7 +60,7 @@ No authorization required
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 final filter = filter_example; // String | Filter expression
@@ -107,7 +107,7 @@ No authorization required
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 final filter = filter_example; // String | Filter expression
@@ -152,7 +152,7 @@ No authorization required
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 final filter = filter_example; // String | Filter expression
@@ -199,7 +199,7 @@ No authorization required
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 final filter = filter_example; // String | Filter expression
@@ -246,7 +246,7 @@ No authorization required
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 final filter = filter_example; // String | Filter expression

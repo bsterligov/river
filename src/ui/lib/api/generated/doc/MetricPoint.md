@@ -1,8 +1,8 @@
-# openapi.model.MetricPoint
+# river_api.model.MetricPoint
 
 ## Load the model package
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 ```
 
 ## Properties
