@@ -238,15 +238,18 @@ void main() {
   });
 
   testWidgets(
-      'Given a filter is already present in the search bar, '
-      'When the operator taps a facet value, '
-      'Then the filter is extended with AND token',
+      'Given two facet values are tapped, '
+      'When the operator taps a second value, '
+      'Then both tokens appear in the filter joined with AND',
       (tester) async {
     final api = _FakeApi(
       facets: [
         FacetField(
-          field: 'severity_text',
-          values: [FacetValue(value: 'ERROR', count: 2)],
+          field: 'service_name',
+          values: [
+            FacetValue(value: 'svc-a', count: 3),
+            FacetValue(value: 'svc-b', count: 1),
+          ],
         ),
       ],
     );
@@ -256,14 +259,42 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const Key('logs_search')), 'service:svc');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.tap(find.text('svc-a'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('svc-b'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('ERROR'));
+    expect(api.calls.last['filter'], equals('service_name:svc-a AND service_name:svc-b'));
+  });
+
+  testWidgets(
+      'Given a facet value is already checked, '
+      'When the operator taps it again, '
+      'Then the token is removed from the filter (no duplicate)',
+      (tester) async {
+    final api = _FakeApi(
+      facets: [
+        FacetField(
+          field: 'service_name',
+          values: [FacetValue(value: 'svc-a', count: 3)],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
     await tester.pumpAndSettle();
 
-    expect(api.calls.last['filter'], equals('service:svc AND severity_text:ERROR'));
+    // First tap: select
+    await tester.tap(find.text('svc-a'));
+    await tester.pumpAndSettle();
+    expect(api.calls.last['filter'], equals('service_name:svc-a'));
+
+    // Second tap: deselect — filter becomes empty
+    await tester.tap(find.text('svc-a'));
+    await tester.pumpAndSettle();
+    expect(api.calls.last['filter'], isNull);
   });
 
   testWidgets(

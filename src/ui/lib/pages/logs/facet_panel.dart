@@ -22,6 +22,12 @@ class _FacetPanelState extends State<FacetPanel> {
   List<FacetField> _facets = [];
   bool _loading = false;
 
+  // Tokens the user has checked, e.g. {"service_name:svc-a", "severity_text:ERROR"}
+  final Set<String> _selected = {};
+
+  // Counts pending self-initiated controller updates to suppress re-fetch
+  int _selfUpdateDepth = 0;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +42,7 @@ class _FacetPanelState extends State<FacetPanel> {
   }
 
   void _onControllerChanged() {
+    if (_selfUpdateDepth > 0) return;
     _fetch();
   }
 
@@ -65,10 +72,25 @@ class _FacetPanelState extends State<FacetPanel> {
     }
   }
 
-  void _onValueTap(String field, String value) {
+  Future<void> _onToggle(String field, String value) async {
     final token = '$field:$value';
-    widget.controller.appendFilter(token);
-    widget.searchController.text = widget.controller.filter;
+    setState(() {
+      if (_selected.contains(token)) {
+        _selected.remove(token);
+      } else {
+        _selected.add(token);
+      }
+    });
+
+    final newFilter = _selected.join(' AND ');
+    _selfUpdateDepth++;
+    try {
+      widget.controller.setFilter(newFilter);
+      widget.searchController.text = newFilter;
+      await widget.controller.reload();
+    } finally {
+      _selfUpdateDepth--;
+    }
   }
 
   @override
@@ -80,7 +102,13 @@ class _FacetPanelState extends State<FacetPanel> {
         border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: _loading ? _Shimmer() : _FacetList(facets: _facets, onTap: _onValueTap),
+      child: _loading
+          ? _Shimmer()
+          : _FacetList(
+              facets: _facets,
+              selected: Set.unmodifiable(_selected),
+              onToggle: _onToggle,
+            ),
     );
   }
 }
@@ -99,10 +127,15 @@ class _Shimmer extends StatelessWidget {
 }
 
 class _FacetList extends StatelessWidget {
-  const _FacetList({required this.facets, required this.onTap});
+  const _FacetList({
+    required this.facets,
+    required this.selected,
+    required this.onToggle,
+  });
 
   final List<FacetField> facets;
-  final void Function(String field, String value) onTap;
+  final Set<String> selected;
+  final Future<void> Function(String field, String value) onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +144,7 @@ class _FacetList extends StatelessWidget {
       borderRadius: BorderRadius.circular(6),
       child: ListView(
         children: facets
-            .map((f) => _FacetGroup(field: f, onTap: onTap))
+            .map((f) => _FacetGroup(field: f, selected: selected, onToggle: onToggle))
             .toList(),
       ),
     );
@@ -119,10 +152,15 @@ class _FacetList extends StatelessWidget {
 }
 
 class _FacetGroup extends StatelessWidget {
-  const _FacetGroup({required this.field, required this.onTap});
+  const _FacetGroup({
+    required this.field,
+    required this.selected,
+    required this.onToggle,
+  });
 
   final FacetField field;
-  final void Function(String field, String value) onTap;
+  final Set<String> selected;
+  final Future<void> Function(String field, String value) onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +172,8 @@ class _FacetGroup extends StatelessWidget {
           .map((v) => _FacetValueRow(
                 field: field.field,
                 facetValue: v,
-                onTap: onTap,
+                checked: selected.contains('${field.field}:${v.value}'),
+                onToggle: onToggle,
               ))
           .toList(),
     );
@@ -145,23 +184,35 @@ class _FacetValueRow extends StatelessWidget {
   const _FacetValueRow({
     required this.field,
     required this.facetValue,
-    required this.onTap,
+    required this.checked,
+    required this.onToggle,
   });
 
   final String field;
   final FacetValue facetValue;
-  final void Function(String field, String value) onTap;
+  final bool checked;
+  final Future<void> Function(String field, String value) onToggle;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => onTap(field, facetValue.value),
+      onTap: () => onToggle(field, facetValue.value),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         child: Row(
           children: [
+            Checkbox(
+              value: checked,
+              onChanged: (_) => onToggle(field, facetValue.value),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
             Expanded(
-              child: Text(facetValue.value, style: AppText.mono, overflow: TextOverflow.ellipsis),
+              child: Text(
+                facetValue.value,
+                style: AppText.mono,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
