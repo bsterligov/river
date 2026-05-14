@@ -59,6 +59,8 @@ Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 *DefaultApi* | [**getHealth**](doc//DefaultApi.md#gethealth) | **GET** /health | 
 *DefaultApi* | [**getLogs**](doc//DefaultApi.md#getlogs) | **GET** /v1/logs | 
+*DefaultApi* | [**getLogsFacets**](doc//DefaultApi.md#getlogsfacets) | **GET** /v1/logs/facets | 
+*DefaultApi* | [**getLogsHistogram**](doc//DefaultApi.md#getlogshistogram) | **GET** /v1/logs/histogram | 
 *DefaultApi* | [**getMetrics**](doc//DefaultApi.md#getmetrics) | **GET** /v1/metrics | 
 *DefaultApi* | [**getTraces**](doc//DefaultApi.md#gettraces) | **GET** /v1/traces | 
 
@@ -66,6 +68,9 @@ Class | Method | HTTP request | Description
 ## Documentation For Models
 
  - [ErrorBody](doc//ErrorBody.md)
+ - [FacetField](doc//FacetField.md)
+ - [FacetValue](doc//FacetValue.md)
+ - [HistogramBucket](doc//HistogramBucket.md)
  - [LogRow](doc//LogRow.md)
  - [MetricPoint](doc//MetricPoint.md)
  - [Span](doc//Span.md)

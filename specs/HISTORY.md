@@ -71,3 +71,7 @@ Added trace configuration to the ClickHouse datasource provisioning YAML: databa
 ### 2026-05-11 — RIVER-25: implementation done
 
 Flutter MVP app created at `src/ui/` (macOS-only). Includes a dark sidebar with NavigationRail-style navigation, a Logs page with search bar and stub-data table, a theme module under `lib/theme/`, and a Dart API client generated from the query-api's OpenAPI spec. Four BDD widget tests pass; `flutter analyze` reports zero issues.
+
+### 2026-05-14 — RIVER-28: implementation done
+
+Extended `LogRow` with `severity_number`, `span_id`, and `attributes` (JSON parsed on read). Added `GET /v1/logs/histogram` (configurable time buckets, auto-step targeting ~30 buckets) and `GET /v1/logs/facets` (top-20 values for `service_name` and `severity_text`, silent skip on field error). Dart client regenerated and committed with new `HistogramBucket`, `FacetField`, and `FacetValue` models.

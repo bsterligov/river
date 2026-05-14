@@ -1,4 +1,4 @@
-# river_api.model.LogRow
+# river_api.model.HistogramBucket
 
 ## Load the model package
 ```dart
@@ -8,14 +8,8 @@ import 'package:river_api/api.dart';
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**attributes** | **Object** |  | 
-**body** | **String** |  | 
-**service** | **String** |  | 
-**severity** | **String** |  | 
-**severityNumber** | **int** |  | 
-**spanId** | **String** |  | 
-**timestamp** | **String** |  | 
-**traceId** | **String** |  | 
+**bucket** | **String** |  | 
+**count** | **int** |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 
