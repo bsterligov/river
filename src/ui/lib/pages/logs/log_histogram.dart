@@ -205,7 +205,7 @@ class _BarPainter extends CustomPainter {
 
     final barWidth = barAreaWidth / buckets.length;
     const gap = 1.0;
-    final paint = Paint()..color = AppColors.primary.withOpacity(0.7);
+    final paint = Paint()..color = AppColors.primary.withValues(alpha: 0.7);
 
     for (var i = 0; i < buckets.length; i++) {
       final barH = (buckets[i].count / maxCount) * barAreaHeight;
@@ -221,7 +221,7 @@ class _BarPainter extends CustomPainter {
 
   void _drawYAxis(Canvas canvas, double barAreaHeight) {
     final tp = TextPainter(textDirection: TextDirection.ltr);
-    final style = const TextStyle(fontSize: 9, color: Colors.black45);
+    const style = TextStyle(fontSize: 9, color: Colors.black45);
 
     void drawLabel(String text, double y) {
       tp.text = TextSpan(text: text, style: style);

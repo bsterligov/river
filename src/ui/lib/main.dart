@@ -107,11 +107,11 @@ class _SidebarHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 24, 20, 20),
       child: Text(
         'River',
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.sidebarSelected,
           fontSize: 18,
           fontWeight: FontWeight.w700,

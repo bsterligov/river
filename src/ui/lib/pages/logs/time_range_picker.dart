@@ -215,7 +215,7 @@ class _DropdownOverlay extends StatelessWidget {
                     activeIndex: activeIndex,
                     onSelect: onPreset,
                   ),
-                  VerticalDivider(width: 1, color: AppColors.border),
+                  const VerticalDivider(width: 1, color: AppColors.border),
                   Expanded(
                     child: _CustomForm(onApply: onCustom),
                   ),
@@ -374,7 +374,7 @@ class _CustomFormState extends State<_CustomForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Custom range', style: AppText.label),
+          const Text('Custom range', style: AppText.label),
           const SizedBox(height: AppLayout.gapL),
           _DateField(label: 'From', controller: _fromController),
           const SizedBox(height: AppLayout.gapM),

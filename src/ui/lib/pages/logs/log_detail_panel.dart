@@ -56,7 +56,7 @@ class _PanelContent extends StatelessWidget {
           const Divider(height: 1),
           Expanded(
             child: ListView(
-              padding: EdgeInsets.symmetric(vertical: AppLayout.gapM),
+              padding: const EdgeInsets.symmetric(vertical: AppLayout.gapM),
               children: [
                 _TagsSection(row: row),
                 _MessageSection(body: row.body),
@@ -81,7 +81,7 @@ class _PanelHeader extends StatelessWidget {
       padding: AppLayout.cellPadding,
       child: Row(
         children: [
-          Expanded(child: Text('Log Detail', style: AppText.label)),
+          Expanded(child: const Text('Log Detail', style: AppText.label)),
           IconButton(
             key: const Key('detail_close'),
             icon: const Icon(Icons.close, size: AppIcons.sizeM),
@@ -113,7 +113,7 @@ class _TagsSection extends StatelessWidget {
     return ExpansionTile(
       initiallyExpanded: true,
       tilePadding: AppLayout.tilePadding,
-      title: Text('Log Tags & Infra Info', style: AppText.label),
+      title: const Text('Log Tags & Infra Info', style: AppText.label),
       children: pairs.map((p) => _KvRow(k: p.$1, v: p.$2)).toList(),
     );
   }
@@ -129,7 +129,7 @@ class _MessageSection extends StatelessWidget {
     return ExpansionTile(
       initiallyExpanded: true,
       tilePadding: AppLayout.tilePadding,
-      title: Text('Log Message', style: AppText.label),
+      title: const Text('Log Message', style: AppText.label),
       children: [
         Padding(
           padding: AppLayout.sectionPadding,
@@ -154,12 +154,12 @@ class _AttributesSection extends StatelessWidget {
     return ExpansionTile(
       initiallyExpanded: true,
       tilePadding: AppLayout.tilePadding,
-      title: Text('Log Attributes', style: AppText.label),
+      title: const Text('Log Attributes', style: AppText.label),
       children: pairs.isEmpty
           ? [
-              Padding(
+              const Padding(
                 padding: AppLayout.sectionPadding,
-                child: const Text('No attributes', style: AppText.body),
+                child: Text('No attributes', style: AppText.body),
               ),
             ]
           : pairs.map((p) => _KvRow(k: p.$1, v: p.$2)).toList(),
