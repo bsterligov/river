@@ -13,5 +13,5 @@ Status lives here — not in filenames. Done tasks stay in the list (marked with
 - ~~RIVER-31: UI: Log Distribution Histogram~~
 - ~~RIVER-35: UI: Logs Table with Column Management and Sort~~
 - ~~RIVER-37: UI: Log Detail Panel~~
-- RIVER-46: Set up SonarQube and Tests CI Run for Flutter Code
+- ~~RIVER-46: Set up SonarQube and Tests CI Run for Flutter Code~~
 

@@ -6,6 +6,8 @@ on:
     paths:
       - 'src/**'
 
+env:
+  MISE_AUTO_INSTALL: false
 
 jobs:
   version:
@@ -20,6 +22,8 @@ jobs:
           fetch-depth: 0
 
       - uses: jdx/mise-action@v4
+        with:
+          install_args: cocogitto
 
       - name: calculate version
         id: version
@@ -27,8 +31,8 @@ jobs:
           VERSION=$(mise run release:version)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-  quality:
-    name: Run Lint & Tests
+  rust-quality:
+    name: Run Rust Lint & Tests
     runs-on: ubuntu-latest
     needs: version
 
@@ -40,7 +44,8 @@ jobs:
       - uses: jdx/mise-action@v4
         with:
           cache: false
-  
+          install_args: rust cargo:cargo-llvm-cov
+
       - name: fmt check
         run: mise run cargo:fmt-check
 
@@ -56,10 +61,33 @@ jobs:
           path: lcov.info
           retention-days: 1
 
+  flutter-quality:
+    name: Run Flutter Tests
+    runs-on: ubuntu-latest
+    needs: version
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: jdx/mise-action@v4
+        with:
+          install_args: flutter
+
+      - name: flutter coverage
+        run: mise run flutter:coverage
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: flutter-lcov
+          path: src/ui/coverage/lcov.info
+          retention-days: 1
+
   sonarqube:
     name: Run SonarQube
     runs-on: ubuntu-latest
-    needs: [version, quality]
+    needs: [version, rust-quality, flutter-quality]
 
     steps:
       - uses: actions/checkout@v6
@@ -69,6 +97,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: lcov
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: flutter-lcov
+          path: src/ui/coverage
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v8
@@ -98,6 +131,8 @@ jobs:
           git config user.name "github-actions[bot]"
 
       - uses: jdx/mise-action@v4
+        with:
+          install_args: cocogitto
 
       - run: mise run release:publish
         env:
