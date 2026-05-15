@@ -1,8 +1,8 @@
-# river_api.model.TraceGroup
+# openapi.model.TraceGroup
 
 ## Load the model package
 ```dart
-import 'package:river_api/api.dart';
+import 'package:openapi/api.dart';
 ```
 
 ## Properties

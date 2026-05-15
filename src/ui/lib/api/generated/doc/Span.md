@@ -1,8 +1,8 @@
-# river_api.model.Span
+# openapi.model.Span
 
 ## Load the model package
 ```dart
-import 'package:river_api/api.dart';
+import 'package:openapi/api.dart';
 ```
 
 ## Properties

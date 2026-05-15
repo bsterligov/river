@@ -1,8 +1,8 @@
-# river_api.model.SpanLink
+# openapi.model.SpanLink
 
 ## Load the model package
 ```dart
-import 'package:river_api/api.dart';
+import 'package:openapi/api.dart';
 ```
 
 ## Properties

@@ -1,19 +1,16 @@
-# river_api.model.LogRow
+# openapi.model.LogRow
 
 ## Load the model package
 ```dart
-import 'package:river_api/api.dart';
+import 'package:openapi/api.dart';
 ```
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**attributes** | **Object** |  | 
 **body** | **String** |  | 
 **service** | **String** |  | 
 **severity** | **String** |  | 
-**severityNumber** | **int** |  | 
-**spanId** | **String** |  | 
 **timestamp** | **String** |  | 
 **traceId** | **String** |  | 
 

@@ -180,6 +180,58 @@
                 }
             }
         },
+        "/v1/traces/{trace_id}": {
+            "get": {
+                "tags": [],
+                "operationId": "get_trace",
+                "parameters": [
+                    {
+                        "name": "trace_id",
+                        "in": "path",
+                        "description": "Trace ID to retrieve",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "All spans for the given trace ID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Span"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Trace not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorBody"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "ClickHouse unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorBody"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/v1/traces": {
             "get": {
                 "tags": [],

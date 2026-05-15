@@ -108,6 +108,10 @@ Added a persistent `TopPanel` widget (River label left, `TimeRangePicker` right)
 
 Added a `RiverLogo` widget (`CustomPainter`-drawn stylised "R" on a rounded primary-colour square) to `lib/widgets/river_logo.dart`; displayed in `TopPanel` left of the "River" label. Changed `MaterialApp(title:)` to "River Dashboard" which sets the macOS window title. No new packages required.
 
+### 2026-05-15 — RIVER-55: implementation done
+
+Added `GET /v1/traces/{trace_id}` to `river-query-api`: returns all spans for a known trace (200) or `{ "error": "trace not found" }` (404) for an unknown one. Refactored span row mapping into a shared `row_to_span` helper, eliminating duplication with `query_traces`. Dart client regenerated; `getTrace(String traceId)` method is present in `lib/api/generated/`.
+
 ### 2026-05-15 — RIVER-59: spec created
 
 PO spec written for the trace waterfall detail panel. Covers `TraceDetailPanel` (420px `AnimatedSize` slide-in matching `LogDetailPanel`), `SpanWaterfallPainter` (`CustomPainter` Gantt rows with proportional bars coloured by `status_code`), span tree building from `parent_span_id`, orphan-span handling, a 200-span cap with visible notice, and wiring into `TracesPage`. Depends on RIVER-55 (single-trace API) and RIVER-56 (trace list page).

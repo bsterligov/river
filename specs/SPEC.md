@@ -78,6 +78,7 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **`LogsTable` widget:** `lib/pages/logs/logs_table.dart`; header row has `GestureDetector`-wrapped cells with sort arrow; settings icon opens `ColumnMenu` positioned overlay
 - **`ColumnMenu`:** `Positioned` overlay inside the table's `Stack`; position computed from settings icon's `RenderBox` local-to-global coords converted to Stack-local; `CheckboxListTile` per column; backdrop `GestureDetector` dismisses on outside tap
 - **Cell text:** `softWrap: false`, `overflow: TextOverflow.ellipsis`, `maxLines: 1` on all data cells — clips mid-word at column boundary
+- **`GET /v1/traces/{trace_id}`:** path parameter (not query string); returns 404 with `{ "error": "trace not found" }` (not 200 with empty array) when no spans exist for that ID; reuses the existing `Span` struct; row-to-span mapping extracted into a shared `row_to_span` helper to avoid duplication with `query_traces`
 
 ## Spec System
 `/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)

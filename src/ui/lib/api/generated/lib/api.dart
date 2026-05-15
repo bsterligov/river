@@ -31,9 +31,6 @@ part 'auth/http_bearer_auth.dart';
 part 'api/default_api.dart';
 
 part 'model/error_body.dart';
-part 'model/facet_field.dart';
-part 'model/facet_value.dart';
-part 'model/histogram_bucket.dart';
 part 'model/log_row.dart';
 part 'model/metric_point.dart';
 part 'model/span.dart';
