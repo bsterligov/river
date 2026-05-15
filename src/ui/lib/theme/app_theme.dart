@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 abstract final class AppColors {
   static const surface = Color(0xFFF8F9FA);
-  static const sidebar = Color(0xFF1E2029);
+  static const topPanel = Color(0xFF1E2029);
+  static const sidebar = Color(0xFF2C3A5C);
   static const sidebarText = Color(0xFFB0B8C4);
   static const sidebarSelected = Color(0xFFFFFFFF);
-  static const sidebarSelectedBg = Color(0xFF2D3142);
+  static const sidebarSelectedBg = Color(0xFF3D5080);
   static const primary = Color(0xFF4F74E8);
   static const border = Color(0xFFE2E8F0);
   static const tableHeader = Color(0xFFF1F3F5);

@@ -10,11 +10,15 @@ class FacetPanel extends StatefulWidget {
     required this.controller,
     required this.searchController,
     required this.manualFilter,
+    required this.expanded,
+    required this.onToggle,
   });
 
   final LogsController controller;
   final TextEditingController searchController;
   final String manualFilter;
+  final bool expanded;
+  final VoidCallback onToggle;
 
   @override
   State<FacetPanel> createState() => _FacetPanelState();
@@ -152,20 +156,49 @@ class _FacetPanelState extends State<FacetPanel> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Material(
       key: const Key('facet_panel'),
+      color: Colors.white,
+      child: SizedBox(
       width: AppLayout.facetPanelWidth,
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(AppLayout.radius),
-      ),
-      child: _loading
-          ? _Shimmer()
-          : _FacetList(
-              facets: _facets,
-              selected: Set.unmodifiable(_selected),
-              onToggle: _onToggle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          InkWell(
+            onTap: widget.onToggle,
+            child: Padding(
+              padding: AppLayout.tilePadding.add(const EdgeInsets.symmetric(vertical: 12)),
+              child: Row(
+                children: [
+                  Icon(
+                    widget.expanded ? Icons.chevron_left : Icons.chevron_right,
+                    size: AppIcons.sizeL,
+                    color: Colors.black54,
+                  ),
+                  if (widget.expanded) ...[
+                    const SizedBox(width: AppLayout.gapM),
+                    Text('Filters', style: AppText.label),
+                  ],
+                ],
+              ),
             ),
+          ),
+          if (widget.expanded) ...[
+            const Divider(height: 1, color: AppColors.border),
+            Expanded(
+              child: _loading
+                  ? _Shimmer()
+                  : _FacetList(
+                      facets: _facets,
+                      selected: Set.unmodifiable(_selected),
+                      onToggle: _onToggle,
+                    ),
+            ),
+          ],
+        ],
+      ),
+      ),
     );
   }
 }

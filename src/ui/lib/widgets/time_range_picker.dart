@@ -136,24 +136,28 @@ class _TriggerButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: AppLayout.cellPaddingH, vertical: 7),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: open
+              ? Colors.white.withValues(alpha: 0.15)
+              : Colors.white.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(AppLayout.radius),
           border: Border.all(
-            color: open ? AppColors.primary : AppColors.border,
-            width: open ? 1.5 : 1,
+            color: open
+                ? Colors.white.withValues(alpha: 0.5)
+                : Colors.white.withValues(alpha: 0.2),
+            width: 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.schedule, size: AppIcons.sizeS, color: Colors.black54),
+            Icon(Icons.schedule, size: AppIcons.sizeS, color: Colors.white.withValues(alpha: 0.7)),
             const SizedBox(width: AppLayout.gapM - 2),
-            Text(label, style: AppText.label),
+            Text(label, style: AppText.label.copyWith(color: Colors.white)),
             const SizedBox(width: AppLayout.gapM - 2),
             Icon(
               open ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
               size: AppIcons.sizeS,
-              color: Colors.black54,
+              color: Colors.white.withValues(alpha: 0.7),
             ),
           ],
         ),

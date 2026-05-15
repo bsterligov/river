@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = ui
+PRODUCT_NAME = River Dashboard
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.river.ui
+PRODUCT_BUNDLE_IDENTIFIER = com.river.dashboard
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.river. All rights reserved.
