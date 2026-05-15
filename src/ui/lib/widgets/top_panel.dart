@@ -15,8 +15,7 @@ class TopPanel extends StatelessWidget {
     return Container(
       height: 48,
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+        color: AppColors.topPanel,
       ),
       padding: const EdgeInsets.symmetric(horizontal: AppLayout.gapXL),
       child: Row(
@@ -25,7 +24,7 @@ class TopPanel extends StatelessWidget {
           const SizedBox(width: AppLayout.gapM),
           Text(
             'River',
-            style: AppText.appTitle.copyWith(color: AppColors.primary),
+            style: AppText.appTitle.copyWith(color: Colors.white),
           ),
           const Spacer(),
           ListenableBuilder(

@@ -24,6 +24,7 @@ class _LogsPageState extends State<LogsPage> {
   late final LogsController _controller;
   final _searchController = TextEditingController();
   String _manualFilter = '';
+  bool _facetExpanded = true;
 
   @override
   void initState() {
@@ -50,6 +51,8 @@ class _LogsPageState extends State<LogsPage> {
       controller: _controller,
       searchController: _searchController,
       manualFilter: _manualFilter,
+      expanded: _facetExpanded,
+      onToggle: () => setState(() => _facetExpanded = !_facetExpanded),
     );
     return ListenableBuilder(
       listenable: _controller,
@@ -68,7 +71,10 @@ class _LogsPageState extends State<LogsPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                child!,
+                _CollapsibleFacetPanel(
+                  expanded: _facetExpanded,
+                  child: child!,
+                ),
                 const SizedBox(width: AppLayout.gapL),
                 Expanded(child: _buildTable()),
               ],
@@ -94,6 +100,39 @@ class _LogsPageState extends State<LogsPage> {
         ),
       ],
     );
+  }
+}
+
+class _CollapsibleFacetPanel extends StatelessWidget {
+  const _CollapsibleFacetPanel({required this.expanded, required this.child});
+
+  final bool expanded;
+  final Widget child;
+
+  static const _collapsedWidth = 36.0; // header strip only: icon + minimal padding
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppLayout.radius);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      width: expanded ? AppLayout.facetPanelWidth : _collapsedWidth,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: OverflowBox(
+          alignment: Alignment.topLeft,
+          minWidth: AppLayout.facetPanelWidth,
+          maxWidth: AppLayout.facetPanelWidth,
+          child: child,
+        ),
+      ),
+    );
+
   }
 }
 

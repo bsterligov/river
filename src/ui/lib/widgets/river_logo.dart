@@ -19,6 +19,9 @@ class RiverLogo extends StatelessWidget {
 class _LogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
     final fillPaint = Paint()
       ..color = AppColors.primary
       ..style = PaintingStyle.fill;
@@ -26,37 +29,54 @@ class _LogoPainter extends CustomPainter {
     final strokePaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.9)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.07
-      ..strokeCap = StrokeCap.round;
+      ..strokeWidth = w * 0.075
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
     // Rounded square background
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final rRect = RRect.fromRectAndRadius(rect, Radius.circular(size.width * 0.22));
-    canvas.drawRRect(rRect, fillPaint);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, w, h),
+        Radius.circular(w * 0.22),
+      ),
+      fillPaint,
+    );
 
-    final w = size.width;
-    final h = size.height;
+    // Left bracket [
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.23, h * 0.24)
+        ..lineTo(w * 0.15, h * 0.24)
+        ..lineTo(w * 0.15, h * 0.76)
+        ..lineTo(w * 0.23, h * 0.76),
+      strokePaint,
+    );
 
-    // Stylized "R": vertical stem + arch top + diagonal leg
-    final stemPath = Path()
-      ..moveTo(w * 0.28, h * 0.22)
-      ..lineTo(w * 0.28, h * 0.78);
+    // Right bracket ]
+    canvas.drawPath(
+      Path()
+        ..moveTo(w * 0.77, h * 0.24)
+        ..lineTo(w * 0.85, h * 0.24)
+        ..lineTo(w * 0.85, h * 0.76)
+        ..lineTo(w * 0.77, h * 0.76),
+      strokePaint,
+    );
 
-    // Top arch of R
-    final archPath = Path()
-      ..moveTo(w * 0.28, h * 0.22)
-      ..lineTo(w * 0.58, h * 0.22)
-      ..cubicTo(w * 0.80, h * 0.22, w * 0.80, h * 0.52, w * 0.58, h * 0.52)
-      ..lineTo(w * 0.28, h * 0.52);
+    // Wave arch: starts low-left, peaks at centre-top, ends low-right
+    final x0   = w * 0.27;
+    final x4   = w * 0.73;
+    final yLo  = h * 0.58;
+    final yHi  = h * 0.34;
+    final xMid = (x0 + x4) / 2;
+    final pull = (x4 - x0) * 0.28;
 
-    // Diagonal leg of R
-    final legPath = Path()
-      ..moveTo(w * 0.52, h * 0.52)
-      ..lineTo(w * 0.76, h * 0.78);
-
-    canvas.drawPath(stemPath, strokePaint);
-    canvas.drawPath(archPath, strokePaint);
-    canvas.drawPath(legPath, strokePaint);
+    canvas.drawPath(
+      Path()
+        ..moveTo(x0, yLo)
+        ..cubicTo(x0 + pull, yLo, xMid - pull, yHi, xMid, yHi)
+        ..cubicTo(xMid + pull, yHi, x4 - pull, yLo, x4, yLo),
+      strokePaint,
+    );
   }
 
   @override
