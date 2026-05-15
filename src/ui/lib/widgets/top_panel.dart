@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'time_range_picker.dart';
 import '../theme/app_theme.dart';
-import '../time_range_controller.dart';
+import '../controllers/time_range_controller.dart';
 
 class TopPanel extends StatelessWidget {
   const TopPanel({super.key, required this.rangeController});

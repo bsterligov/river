@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:river_api/api.dart';
 
-import '../../time_range_controller.dart';
+import '../../controllers/time_range_controller.dart';
 
 class LogColumn {
   const LogColumn({

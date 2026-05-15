@@ -5,7 +5,7 @@ import 'package:river_api/api.dart';
 
 import 'pages/logs/logs.dart';
 import 'theme/app_theme.dart';
-import 'time_range_controller.dart';
+import 'controllers/time_range_controller.dart';
 import 'widgets/top_panel.dart';
 
 void main() {

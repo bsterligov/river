@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
 import '../../theme/app_theme.dart';
-import '../../time_range_controller.dart';
+import '../../controllers/time_range_controller.dart';
 import '../../widgets/facet_panel.dart';
 import '../../widgets/log_detail_panel.dart';
 import '../../widgets/log_histogram.dart';

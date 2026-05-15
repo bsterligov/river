@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:river_api/api.dart';
 
 import 'package:ui/pages/logs/logs.dart';
-import 'package:ui/time_range_controller.dart';
+import 'package:ui/controllers/time_range_controller.dart';
 import 'package:ui/widgets/top_panel.dart';
 
 class FakeApi extends DefaultApi {
