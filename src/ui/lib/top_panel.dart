@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'pages/logs/time_range_picker.dart';
+import 'time_range_picker.dart';
 import 'theme/app_theme.dart';
 import 'time_range_controller.dart';
 
