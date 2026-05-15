@@ -15,4 +15,5 @@ Status lives here — not in filenames. Done tasks stay in the list (marked with
 - ~~RIVER-37: UI: Log Detail Panel~~
 - ~~RIVER-46: Set up SonarQube and Tests CI Run for Flutter Code~~
 - ~~RIVER-49: Refactor UI Layout — Top Panel with Datetime Picker~~
+- RIVER-52: Logo and Window Title
 
