@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:river_api/api.dart';
 
 import 'package:ui/pages/logs/logs.dart';
+import 'package:ui/pages/traces/traces.dart';
 import 'package:ui/controllers/time_range_controller.dart';
 import 'package:ui/widgets/top_panel.dart';
 
@@ -134,6 +135,53 @@ class TestShell extends StatelessWidget {
         TopPanel(rangeController: rangeController),
         Expanded(
           child: LogsPage(apiClient: api, rangeController: rangeController),
+        ),
+      ],
+    );
+  }
+}
+
+// Full app shell with sidebar navigation, accepts injectable API for tests.
+class TestAppShell extends StatefulWidget {
+  const TestAppShell({required this.api, required this.rangeController});
+
+  final DefaultApi api;
+  final TimeRangeController rangeController;
+
+  @override
+  State<TestAppShell> createState() => _TestAppShellState();
+}
+
+class _TestAppShellState extends State<TestAppShell> {
+  String _selected = 'logs';
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TopPanel(rangeController: widget.rangeController),
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => _selected = 'logs'),
+              child: const Padding(
+                padding: EdgeInsets.all(8),
+                child: Text('Logs'),
+              ),
+            ),
+            GestureDetector(
+              onTap: () => setState(() => _selected = 'traces'),
+              child: const Padding(
+                padding: EdgeInsets.all(8),
+                child: Text('Traces'),
+              ),
+            ),
+          ],
+        ),
+        Expanded(
+          child: _selected == 'logs'
+              ? LogsPage(apiClient: widget.api, rangeController: widget.rangeController)
+              : TracesPage(apiClient: widget.api, rangeController: widget.rangeController),
         ),
       ],
     );
