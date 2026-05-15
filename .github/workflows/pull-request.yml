@@ -96,6 +96,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: jdx/mise-action@v4
+        with:
+          install_args: flutter
+
+      - name: set flutter sdk path
+        run: echo "FLUTTER_SDK=$(mise where flutter)" >> $GITHUB_ENV
+
       - uses: actions/download-artifact@v4
         with:
           name: lcov
@@ -114,5 +121,6 @@ jobs:
             -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
             -Dsonar.pullrequest.branch=${{ github.head_ref }}
             -Dsonar.pullrequest.base=${{ github.base_ref }}
+            -Dsonar.flutter.sdk.path=${{ env.FLUTTER_SDK }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
