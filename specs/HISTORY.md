@@ -95,3 +95,7 @@ Added `LogHistogram` widget above the logs table using `CustomPainter` (no chart
 ### 2026-05-15 — RIVER-35: implementation done
 
 Added `LogColumn` model and column/sort state to `LogsController`. Replaced the fixed `_LogsTable` with a new `LogsTable` widget in `lib/pages/logs/logs_table.dart`: clicking any column header sorts ascending then descending with an arrow indicator; a settings icon opens a `ColumnMenu` positioned overlay with `CheckboxListTile` per column; tapping outside dismisses the menu. TraceID and SpanID are hidden by default. All cell text uses `softWrap: false` with ellipsis clip. Four BDD widget tests cover all spec scenarios.
+
+### 2026-05-15 — RIVER-46: implementation done
+
+Added `flutter-quality` job to both `pull-request.yml` and `release.yml`: runs `mise run flutter:coverage` (new mise task using `flutter test --coverage`), uploads `lcov.info` as an artifact, and is listed as a required dependency of the `sonarqube` job. Updated `sonar-project.properties` to include `src/ui/` in sources, exclude the generated API client and build dirs, and point `sonar.dart.lcov.reportPaths` to the Flutter coverage output.
