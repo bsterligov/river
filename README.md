@@ -1,5 +1,8 @@
 # Hybrid AI-Augmented Development — Experiment
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=bsterligov_river&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=bsterligov_river)
+[![Release](https://github.com/bsterligov/river/actions/workflows/release.yml/badge.svg)](https://github.com/bsterligov/river/actions/workflows/release.yml)
+
 ## ⚠️ Usage notice ⚠️
 
 This experiment uses Claude Code interactively under an individual Claude Pro subscription.
