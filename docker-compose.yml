@@ -39,9 +39,6 @@ services:
 
   clickhouse:
     image: clickhouse/clickhouse-server:26.3
-    ports:
-      - "8123:8123"
-      - "9000:9000"
     environment:
       CLICKHOUSE_DB: river
       CLICKHOUSE_USER: river
@@ -54,8 +51,6 @@ services:
 
   victoriametrics:
     image: victoriametrics/victoria-metrics:v1.136.0
-    ports:
-      - "8428:8428"
     command: -retentionPeriod=30d
 
   river-ingestion:
