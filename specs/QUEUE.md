@@ -18,6 +18,6 @@ Status lives here — not in filenames. Done tasks stay in the list (marked with
 - ~~RIVER-52: Logo and Window Title~~
 - ~~RIVER-55: Single-trace API endpoint~~
 - ~~RIVER-56: Trace list page (Flutter)~~
-- RIVER-67: Fix Sonar Duplication and Trace Page
+- ~~RIVER-67: Fix Sonar Duplication and Trace Page~~
 - RIVER-59: Trace waterfall detail panel (Flutter)
 - RIVER-61: Span attributes panel

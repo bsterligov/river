@@ -1,9 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:river_api/api.dart';
 
 import '../../controllers/time_range_controller.dart';
+import '../../utils/api_error.dart';
+import '../../utils/format_time.dart';
 
 class LogColumn {
   const LogColumn({
@@ -44,20 +44,7 @@ List<LogColumn> defaultColumns() => [
         label: 'Timestamp',
         // All formatted timestamps are the same character width.
         fixedSample: 'Jan 28 23:59:59.999',
-        getValue: (r) {
-          final dt = DateTime.tryParse(r.timestamp);
-          if (dt == null) return r.timestamp;
-          final local = dt.toLocal();
-          final mon = const [
-            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-          ][local.month - 1];
-          final ms = local.millisecond.toString().padLeft(3, '0');
-          return '$mon ${local.day.toString().padLeft(2)} '
-              '${local.hour.toString().padLeft(2, '0')}:'
-              '${local.minute.toString().padLeft(2, '0')}:'
-              '${local.second.toString().padLeft(2, '0')}.$ms';
-        },
+        getValue: (r) => formatTimestamp(r.timestamp),
       ),
       LogColumn(
         id: 'severity',
@@ -208,20 +195,10 @@ class LogsController extends ChangeNotifier {
       _histogram = hist ?? [];
       _loading = false;
     } catch (e) {
-      _error = _extractError(e);
+      _error = extractApiError(e);
       _loading = false;
     }
     notifyListeners();
   }
 
-  String _extractError(Object e) {
-    if (e is ApiException) {
-      try {
-        final body = jsonDecode(e.message ?? '') as Map<String, dynamic>;
-        final msg = body['error'] as String?;
-        if (msg != null && msg.isNotEmpty) return msg;
-      } catch (_) {}
-    }
-    return e.toString();
-  }
 }

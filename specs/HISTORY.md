@@ -120,6 +120,10 @@ Added a Traces page to the River Dashboard: `lib/pages/traces/` module with `Tra
 
 PO spec written for the trace waterfall detail panel. Covers `TraceDetailPanel` (420px `AnimatedSize` slide-in matching `LogDetailPanel`), `SpanWaterfallPainter` (`CustomPainter` Gantt rows with proportional bars coloured by `status_code`), span tree building from `parent_span_id`, orphan-span handling, a 200-span cap with visible notice, and wiring into `TracesPage`. Depends on RIVER-55 (single-trace API) and RIVER-56 (trace list page).
 
+### 2026-05-15 — RIVER-67: implementation done
+
+Fixed Traces page blank state (missing `reload()` in `initState`). Extracted duplicate `_extractError` and timestamp formatter into shared utils (`lib/utils/api_error.dart`, `lib/utils/format_time.dart`), eliminating identical code across logs and traces controllers/widgets.
+
 ### 2026-05-15 — RIVER-61: spec created
 
 PO spec written for the span attributes panel. BDD approach chosen. Scope covers `selectedSpan` local state on `TraceDetailPanel`, a `SpanAttributesSection` widget with three `ExpansionTile` sections (Attributes, Events, Links), and a clear-selection X button. Attributes parsing reuses the `LogDetailPanel` try/catch pattern. Panel is local widget state only — no controller changes required.

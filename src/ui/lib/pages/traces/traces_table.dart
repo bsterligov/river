@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
 import '../../theme/app_theme.dart';
+import '../../utils/format_time.dart';
 import 'traces_controller.dart';
 
 class TracesTable extends StatelessWidget {
@@ -157,7 +158,7 @@ class _TraceRowWidget extends StatelessWidget {
     final root = rootSpan(group);
     final durationMs = root?.durationMs ?? 0;
     final startTime = traceGroupStartTime(group);
-    final formattedStart = _formatTime(startTime);
+    final formattedStart = formatTimestamp(startTime);
     return [
       group.traceId,
       root?.service ?? '',
@@ -166,20 +167,5 @@ class _TraceRowWidget extends StatelessWidget {
       group.spans.length.toString(),
       formattedStart,
     ];
-  }
-
-  String _formatTime(String iso) {
-    final dt = DateTime.tryParse(iso);
-    if (dt == null) return iso;
-    final local = dt.toLocal();
-    final mon = const [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ][local.month - 1];
-    final ms = local.millisecond.toString().padLeft(3, '0');
-    return '$mon ${local.day.toString().padLeft(2)} '
-        '${local.hour.toString().padLeft(2, '0')}:'
-        '${local.minute.toString().padLeft(2, '0')}:'
-        '${local.second.toString().padLeft(2, '0')}.$ms';
   }
 }

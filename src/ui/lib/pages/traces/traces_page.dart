@@ -31,6 +31,7 @@ class _TracesPageState extends State<TracesPage> {
       apiClient: widget.apiClient,
       rangeController: widget.rangeController,
     );
+    _controller.reload();
   }
 
   @override
