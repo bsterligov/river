@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'src/**'
-      - '/mise/**'
+      - '.mise/**'
       - 'sonar-project.properties'
 
 env:
@@ -100,8 +100,7 @@ jobs:
         with:
           install_args: flutter
 
-      - name: set flutter sdk path
-        run: echo "FLUTTER_SDK=$(mise where flutter)" >> $GITHUB_ENV
+      - run: mise run flutter:ci-setup
 
       - uses: actions/download-artifact@v4
         with:

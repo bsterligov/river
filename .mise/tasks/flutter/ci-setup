@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Export FLUTTER_SDK to GITHUB_ENV and run pub get (CI use)"
+
+set -euo pipefail
+
+echo "FLUTTER_SDK=$(mise where flutter)" >> "${GITHUB_ENV:?GITHUB_ENV is not set — run this task in CI}"
+
+cd src/ui
+flutter pub get
