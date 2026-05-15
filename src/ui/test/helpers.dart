@@ -6,7 +6,7 @@ import 'package:river_api/api.dart';
 
 import 'package:ui/pages/logs/logs.dart';
 import 'package:ui/time_range_controller.dart';
-import 'package:ui/top_panel.dart';
+import 'package:ui/widgets/top_panel.dart';
 
 class FakeApi extends DefaultApi {
   final List<LogRow> rows;

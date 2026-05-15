@@ -6,7 +6,7 @@ import 'package:river_api/api.dart';
 import 'pages/logs/logs.dart';
 import 'theme/app_theme.dart';
 import 'time_range_controller.dart';
-import 'top_panel.dart';
+import 'widgets/top_panel.dart';
 
 void main() {
   runApp(const RiverApp());

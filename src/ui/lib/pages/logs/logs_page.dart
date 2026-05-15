@@ -3,21 +3,12 @@ import 'package:river_api/api.dart';
 
 import '../../theme/app_theme.dart';
 import '../../time_range_controller.dart';
-import 'facet_panel.dart';
-import 'log_detail_panel.dart';
-import 'log_histogram.dart';
+import '../../widgets/facet_panel.dart';
+import '../../widgets/log_detail_panel.dart';
+import '../../widgets/log_histogram.dart';
 import 'log_search_bar.dart';
 import 'logs_controller.dart';
 import 'logs_table.dart';
-import 'time_range_picker.dart';
-
-export 'facet_panel.dart';
-export 'log_detail_panel.dart';
-export 'log_histogram.dart';
-export 'log_search_bar.dart';
-export 'logs_controller.dart';
-export 'logs_table.dart';
-export 'time_range_picker.dart';
 
 class LogsPage extends StatefulWidget {
   const LogsPage({super.key, required this.apiClient, required this.rangeController});

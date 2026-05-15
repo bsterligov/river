@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
-import '../../theme/app_theme.dart';
-import 'logs_controller.dart';
+import '../theme/app_theme.dart';
+import '../pages/logs/logs_controller.dart';
 
 class FacetPanel extends StatefulWidget {
   const FacetPanel({

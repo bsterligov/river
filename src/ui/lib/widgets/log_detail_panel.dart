@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
-import '../../theme/app_theme.dart';
-import 'logs_controller.dart';
+import '../theme/app_theme.dart';
+import '../pages/logs/logs_controller.dart';
 
 class LogDetailPanel extends StatelessWidget {
   const LogDetailPanel({super.key, required this.controller});
