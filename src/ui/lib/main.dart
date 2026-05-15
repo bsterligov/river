@@ -4,6 +4,7 @@ import 'package:http/io_client.dart';
 import 'package:river_api/api.dart';
 
 import 'pages/logs/logs.dart';
+import 'pages/traces/traces.dart';
 import 'theme/app_theme.dart';
 import 'controllers/time_range_controller.dart';
 import 'widgets/top_panel.dart';
@@ -26,7 +27,7 @@ class RiverApp extends StatelessWidget {
   }
 }
 
-enum _Page { logs }
+enum _Page { logs, traces }
 
 class _Shell extends StatefulWidget {
   const _Shell();
@@ -88,6 +89,7 @@ class _ShellState extends State<_Shell> {
   Widget _pageFor(_Page page) {
     return switch (page) {
       _Page.logs => LogsPage(apiClient: _api, rangeController: _rangeController),
+      _Page.traces => TracesPage(apiClient: _api, rangeController: _rangeController),
     };
   }
 }
@@ -128,6 +130,14 @@ class _Sidebar extends StatelessWidget {
             icon: Icons.list_alt_outlined,
             label: 'Logs',
             page: _Page.logs,
+            selected: selected,
+            expanded: expanded,
+            onTap: onSelect,
+          ),
+          _NavItem(
+            icon: Icons.account_tree_outlined,
+            label: 'Traces',
+            page: _Page.traces,
             selected: selected,
             expanded: expanded,
             onTap: onSelect,

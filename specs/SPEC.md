@@ -79,6 +79,10 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **`ColumnMenu`:** `Positioned` overlay inside the table's `Stack`; position computed from settings icon's `RenderBox` local-to-global coords converted to Stack-local; `CheckboxListTile` per column; backdrop `GestureDetector` dismisses on outside tap
 - **Cell text:** `softWrap: false`, `overflow: TextOverflow.ellipsis`, `maxLines: 1` on all data cells — clips mid-word at column boundary
 - **`GET /v1/traces/{trace_id}`:** path parameter (not query string); returns 404 with `{ "error": "trace not found" }` (not 200 with empty array) when no spans exist for that ID; reuses the existing `Span` struct; row-to-span mapping extracted into a shared `row_to_span` helper to avoid duplication with `query_traces`
+- **`TracesController`:** `ChangeNotifier` in `lib/pages/traces/traces_controller.dart`; subscribes to `TimeRangeController`; `from`/`to` delegated to `rangeController`; calls `getTraces(limit: 200)`; no `reload()` in initState (user-triggered or range-change-triggered only)
+- **Traces page module:** `lib/pages/traces/` with barrel `traces.dart`; `TracesPage`, `TracesController`, `TracesTable`; registered in `main.dart` as `_Page.traces` with `Icons.account_tree_outlined` sidebar nav item
+- **`TracesTable` columns:** Trace ID (flex 3), Root Service (flex 2), Root Operation (flex 3), Duration ms (flex 2), Spans (flex 1), Start Time (flex 3); client-side sort via `TracesController.setSort(columnId)`; root span identified as the span with empty `parentSpanId`
+- **Root span heuristic:** `rootSpan(group)` returns the first span where `parentSpanId.isEmpty`; falls back to `spans.first` if none found
 
 ## Spec System
 `/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)
