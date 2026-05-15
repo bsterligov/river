@@ -5,6 +5,8 @@ import 'package:river_api/api.dart';
 
 import 'pages/logs/logs.dart';
 import 'theme/app_theme.dart';
+import 'time_range_controller.dart';
+import 'top_panel.dart';
 
 void main() {
   runApp(const RiverApp());
@@ -37,6 +39,7 @@ class _ShellState extends State<_Shell> {
   _Page _selected = _Page.logs;
 
   late final DefaultApi _api = _buildApi();
+  final _rangeController = TimeRangeController();
 
   static DefaultApi _buildApi() {
     final inner = HttpClient()..findProxy = (_) => 'DIRECT';
@@ -47,19 +50,32 @@ class _ShellState extends State<_Shell> {
   }
 
   @override
+  void dispose() {
+    _rangeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
+      body: Column(
         children: [
-          _Sidebar(
-            selected: _selected,
-            onSelect: (page) => setState(() => _selected = page),
-          ),
-          const VerticalDivider(width: 1),
+          TopPanel(rangeController: _rangeController),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: _pageFor(_selected),
+            child: Row(
+              children: [
+                _Sidebar(
+                  selected: _selected,
+                  onSelect: (page) => setState(() => _selected = page),
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: _pageFor(_selected),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -69,7 +85,7 @@ class _ShellState extends State<_Shell> {
 
   Widget _pageFor(_Page page) {
     return switch (page) {
-      _Page.logs => LogsPage(apiClient: _api),
+      _Page.logs => LogsPage(apiClient: _api, rangeController: _rangeController),
     };
   }
 }
@@ -88,7 +104,7 @@ class _Sidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _SidebarHeader(),
+          const SizedBox(height: 12),
           _NavItem(
             icon: Icons.list_alt_outlined,
             label: 'Logs',
@@ -97,26 +113,6 @@ class _Sidebar extends StatelessWidget {
             onTap: onSelect,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SidebarHeader extends StatelessWidget {
-  const _SidebarHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(20, 24, 20, 20),
-      child: Text(
-        'River',
-        style: TextStyle(
-          color: AppColors.sidebarSelected,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
-        ),
       ),
     );
   }

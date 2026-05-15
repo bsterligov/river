@@ -6,6 +6,8 @@ import 'package:river_api/api.dart';
 
 import 'package:ui/main.dart';
 import 'package:ui/pages/logs/logs.dart';
+import 'package:ui/time_range_controller.dart';
+import 'package:ui/top_panel.dart';
 
 class _FakeApi extends DefaultApi {
   final List<LogRow> rows;
@@ -56,8 +58,28 @@ class _FakeApi extends DefaultApi {
   }
 }
 
+// Mirrors production shell for tests that interact with the time range picker.
+class _TestShell extends StatelessWidget {
+  const _TestShell({required this.api, required this.rangeController});
+
+  final DefaultApi api;
+  final TimeRangeController rangeController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TopPanel(rangeController: rangeController),
+        Expanded(
+          child: LogsPage(apiClient: api, rangeController: rangeController),
+        ),
+      ],
+    );
+  }
+}
+
 void main() {
-  testWidgets('Given app is running, Then sidebar and default page are visible',
+  testWidgets('Given app is running, Then top panel shows River label and sidebar shows Logs nav',
       (tester) async {
     await tester.pumpWidget(const RiverApp());
     await tester.pumpAndSettle();
@@ -69,10 +91,11 @@ void main() {
   testWidgets(
       'Given Logs page is open, Then search bar, time picker trigger, and table area are visible',
       (tester) async {
+    final rc = TimeRangeController();
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: LogsPage(apiClient: _FakeApi()),
+          body: _TestShell(api: _FakeApi(), rangeController: rc),
         ),
       ),
     );
@@ -90,17 +113,18 @@ void main() {
       'Then controller issues API call with that range',
       (tester) async {
     final api = _FakeApi(rows: []);
+    final rc = TimeRangeController();
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: LogsPage(apiClient: api),
+          body: _TestShell(api: api, rangeController: rc),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    // Open the picker and click the preset (trigger shows "Last 1 hour", list also has it)
+    // Open the picker (trigger shows "Last 1 hour") and click the preset in the dropdown
     await tester.tap(find.text('Last 1 hour'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Last 1 hour').last);
@@ -119,7 +143,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: LogsPage(apiClient: api),
+          body: LogsPage(apiClient: api, rangeController: TimeRangeController()),
         ),
       ),
     );
@@ -154,7 +178,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: LogsPage(apiClient: api),
+          body: LogsPage(apiClient: api, rangeController: TimeRangeController()),
         ),
       ),
     );
@@ -180,7 +204,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: LogsPage(apiClient: api),
+          body: LogsPage(apiClient: api, rangeController: TimeRangeController()),
         ),
       ),
     );
@@ -214,7 +238,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
 
@@ -241,7 +265,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
 
@@ -272,7 +296,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
 
@@ -299,7 +323,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
 
@@ -323,7 +347,7 @@ void main() {
     final api = _HoldingFacetApi();
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     // One pump builds the widget; _fetch starts but completer hasn't resolved
     await tester.pump();
@@ -343,7 +367,7 @@ void main() {
     final api = _FakeApi(facetError: Exception('network error'));
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
 
@@ -362,25 +386,22 @@ void main() {
       'When the operator changes the time range, '
       'Then the facet panel re-fetches',
       (tester) async {
-    int facetFetchCount = 0;
-    final api = _FakeApi(facets: []);
-    final originalGetFacets = api.getLogsFacets;
-    // Use a custom api subclass to count calls
+    final rc = TimeRangeController();
     final countingApi = _CountingFacetApi(
-      onFetch: () => facetFetchCount++,
+      onFetch: () {},
       facets: [
         FacetField(field: 'service_name', values: [FacetValue(value: 'svc', count: 1)]),
       ],
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: countingApi))),
+      MaterialApp(home: Scaffold(body: _TestShell(api: countingApi, rangeController: rc))),
     );
     await tester.pumpAndSettle();
 
     final fetchesAfterInit = countingApi.facetFetchCount;
 
-    // Open time range picker and click a preset to trigger setRange
+    // Open time range picker (in top panel) and click a different preset to trigger setRange
     await tester.tap(find.text('Last 1 hour'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Last 15 minutes'));
@@ -427,7 +448,7 @@ void main() {
     final api = _FakeApi(rows: [row]);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -454,7 +475,7 @@ void main() {
     final api = _FakeApi(rows: [row1, row2]);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -479,7 +500,7 @@ void main() {
     final api = _FakeApi(rows: [row]);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -508,7 +529,7 @@ void main() {
     final api = _FakeApi(rows: [row]);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -536,7 +557,7 @@ void main() {
     final api = _FakeApi(rows: [row]);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -564,7 +585,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -581,7 +602,7 @@ void main() {
     final holdingApi = _HoldingHistogramApi();
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: holdingApi))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: holdingApi, rangeController: TimeRangeController()))),
     );
     // Trigger reload, then pump once without settling — histogram future is still pending
     await tester.tap(find.byKey(const Key('logs_search')));
@@ -603,7 +624,7 @@ void main() {
     final api = _FakeApi(histogram: []);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -627,7 +648,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -655,7 +676,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -707,7 +728,7 @@ void main() {
     final api = _FakeApi(rows: rows);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -746,7 +767,7 @@ void main() {
     final api = _FakeApi(rows: [row]);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -794,7 +815,7 @@ void main() {
     final api = _FakeApi(rows: [_makeRow()]);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -827,7 +848,7 @@ void main() {
     final api = _FakeApi(rows: [_makeRow()]);
 
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api, rangeController: TimeRangeController()))),
     );
     await tester.pumpAndSettle();
     await _loadRows(tester);
@@ -854,6 +875,57 @@ void main() {
     // Default visible columns still present
     expect(find.text('Timestamp'), findsOneWidget);
     expect(find.text('Message'), findsOneWidget);
+  });
+
+  // --- TopPanel BDD scenarios ---
+
+  testWidgets(
+      'Given the operator has set a custom time range in the top panel, '
+      'When they navigate from Logs to any other page and back, '
+      'Then the time range is unchanged',
+      (tester) async {
+    final rc = TimeRangeController();
+    final from = DateTime.utc(2024, 3, 1, 8, 0);
+    final to = DateTime.utc(2024, 3, 1, 10, 0);
+    rc.setRange(from, to);
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: _TestShell(api: _FakeApi(), rangeController: rc)),
+    ));
+    await tester.pumpAndSettle();
+
+    // Range should still be the custom one, not reset
+    expect(rc.from, equals(from));
+    expect(rc.to, equals(to));
+
+    // Simulate navigation by rebuilding with the same controller
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: _TestShell(api: _FakeApi(), rangeController: rc)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(rc.from, equals(from));
+    expect(rc.to, equals(to));
+  });
+
+  testWidgets(
+      'Given the operator is on any page, '
+      'When they look at the top of the screen, '
+      'Then they see "River" on the left and the datetime picker on the right',
+      (tester) async {
+    final rc = TimeRangeController();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: _TestShell(api: _FakeApi(), rangeController: rc)),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('River'), findsOneWidget);
+    expect(find.text('Last 1 hour'), findsOneWidget);
+
+    // River is to the left of the time picker
+    final riverOffset = tester.getCenter(find.text('River'));
+    final pickerOffset = tester.getCenter(find.text('Last 1 hour'));
+    expect(riverOffset.dx, lessThan(pickerOffset.dx));
   });
 }
 

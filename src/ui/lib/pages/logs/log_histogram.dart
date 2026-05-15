@@ -61,7 +61,7 @@ class _LogHistogramTileState extends State<_LogHistogramTile> {
     }
     return _HistogramChart(
       buckets: controller.histogram,
-      onTap: (from, to) => controller.setRange(from, to),
+      onTap: (from, to) => controller.rangeController.setRange(from, to),
     );
   }
 }

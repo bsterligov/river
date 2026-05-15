@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
 import '../../theme/app_theme.dart';
+import '../../time_range_controller.dart';
 import 'facet_panel.dart';
 import 'log_detail_panel.dart';
 import 'log_histogram.dart';
@@ -19,9 +20,10 @@ export 'logs_table.dart';
 export 'time_range_picker.dart';
 
 class LogsPage extends StatefulWidget {
-  const LogsPage({super.key, required this.apiClient});
+  const LogsPage({super.key, required this.apiClient, required this.rangeController});
 
   final DefaultApi apiClient;
+  final TimeRangeController rangeController;
 
   @override
   State<LogsPage> createState() => _LogsPageState();
@@ -35,7 +37,7 @@ class _LogsPageState extends State<LogsPage> {
   @override
   void initState() {
     super.initState();
-    _controller = LogsController(apiClient: widget.apiClient);
+    _controller = LogsController(apiClient: widget.apiClient, rangeController: widget.rangeController);
   }
 
   @override
@@ -124,23 +126,10 @@ class _Toolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: LogSearchBar(
-            controller: searchController,
-            onSubmit: onSubmit,
-            errorText: controller.error,
-          ),
-        ),
-        const SizedBox(width: AppLayout.gapL),
-        TimeRangePicker(
-          onRange: controller.setRange,
-          from: controller.from,
-          to: controller.to,
-        ),
-      ],
+    return LogSearchBar(
+      controller: searchController,
+      onSubmit: onSubmit,
+      errorText: controller.error,
     );
   }
 }

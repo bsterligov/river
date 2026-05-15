@@ -1,0 +1,45 @@
+import 'package:flutter/material.dart';
+
+import 'pages/logs/time_range_picker.dart';
+import 'theme/app_theme.dart';
+import 'time_range_controller.dart';
+
+class TopPanel extends StatelessWidget {
+  const TopPanel({super.key, required this.rangeController});
+
+  final TimeRangeController rangeController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppLayout.gapXL),
+      child: Row(
+        children: [
+          const Text(
+            'River',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const Spacer(),
+          ListenableBuilder(
+            listenable: rangeController,
+            builder: (context, _) => TimeRangePicker(
+              from: rangeController.from,
+              to: rangeController.to,
+              onRange: rangeController.setRange,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
