@@ -13,8 +13,15 @@ class _FakeApi extends DefaultApi {
   final List<Map<String, String?>> calls = [];
   List<FacetField> facets;
   Exception? facetError;
+  List<HistogramBucket> histogram;
 
-  _FakeApi({this.rows = const [], this.error, this.facets = const [], this.facetError});
+  _FakeApi({
+    this.rows = const [],
+    this.error,
+    this.facets = const [],
+    this.facetError,
+    this.histogram = const [],
+  });
 
   @override
   Future<List<LogRow>?> getLogs({
@@ -36,6 +43,16 @@ class _FakeApi extends DefaultApi {
   }) async {
     if (facetError != null) throw facetError!;
     return facets;
+  }
+
+  @override
+  Future<List<HistogramBucket>?> getLogsHistogram({
+    String? filter,
+    String? from,
+    String? to,
+    String? step,
+  }) async {
+    return histogram;
   }
 }
 
@@ -331,7 +348,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('facet_panel')), findsOneWidget);
-    expect(find.byType(ExpansionTile), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('facet_panel')),
+        matching: find.byType(ExpansionTile),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets(
@@ -395,6 +418,11 @@ void main() {
       'When the operator clicks it, '
       'Then the detail panel slides in and all three sections render with data from that row',
       (tester) async {
+    tester.view.physicalSize = const Size(1600, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final row = _makeRow(body: 'login success', attributes: '{"user":"alice"}');
     final api = _FakeApi(rows: [row]);
 
@@ -471,6 +499,11 @@ void main() {
       'When the Log Attributes section renders, '
       'Then each key-value pair is shown',
       (tester) async {
+    tester.view.physicalSize = const Size(1600, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final row = _makeRow(attributes: '{"env":"prod","version":"1.2.3"}');
     final api = _FakeApi(rows: [row]);
 
@@ -494,6 +527,11 @@ void main() {
       'When the Log Attributes section renders, '
       'Then the section shows "No attributes"',
       (tester) async {
+    tester.view.physicalSize = const Size(1600, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final row = _makeRow(attributes: null);
     final api = _FakeApi(rows: [row]);
 
@@ -507,6 +545,133 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No attributes'), findsOneWidget);
+  });
+
+  // --- LogHistogram BDD scenarios ---
+
+  testWidgets(
+      'Given the histogram loads successfully, '
+      'When the operator views the Logs page, '
+      'Then a bar chart is rendered above the table',
+      (tester) async {
+    final t0 = DateTime.utc(2024, 1, 1, 0, 0);
+    final t1 = DateTime.utc(2024, 1, 1, 0, 1);
+    final api = _FakeApi(
+      histogram: [
+        HistogramBucket(bucket: t0.toIso8601String(), count: 10),
+        HistogramBucket(bucket: t1.toIso8601String(), count: 5),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+    await _loadRows(tester);
+
+    expect(find.byKey(const Key('histogram_chart')), findsOneWidget);
+    expect(find.text('Log distribution'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given the histogram is loading, '
+      'When data has not yet arrived, '
+      'Then a flat grey placeholder row is shown',
+      (tester) async {
+    final holdingApi = _HoldingHistogramApi();
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: holdingApi))),
+    );
+    // Trigger reload, then pump once without settling — histogram future is still pending
+    await tester.tap(find.byKey(const Key('logs_search')));
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump(); // loading=true, placeholder visible
+
+    expect(find.byKey(const Key('histogram_placeholder')), findsOneWidget);
+
+    holdingApi.complete([]);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'Given the histogram response is empty, '
+      'When there are no log counts to display, '
+      'Then the histogram widget renders nothing',
+      (tester) async {
+    final api = _FakeApi(histogram: []);
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+    await _loadRows(tester);
+
+    expect(find.byKey(const Key('histogram_chart')), findsNothing);
+    expect(find.byKey(const Key('histogram_placeholder')), findsNothing);
+  });
+
+  testWidgets(
+      'Given the operator sees the histogram, '
+      'When they tap a bar, '
+      'Then from/to are set to that bucket\'s interval and the logs re-query',
+      (tester) async {
+    final t0 = DateTime.utc(2024, 1, 1, 0, 0);
+    final t1 = DateTime.utc(2024, 1, 1, 0, 1);
+    final api = _FakeApi(
+      histogram: [
+        HistogramBucket(bucket: t0.toIso8601String(), count: 10),
+        HistogramBucket(bucket: t1.toIso8601String(), count: 5),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+    await _loadRows(tester);
+
+    final chart = find.byKey(const Key('histogram_chart'));
+    expect(chart, findsOneWidget);
+
+    final callsBefore = api.calls.length;
+    // Tap inside first bar: skip 12px horizontal padding + 36px y-axis, then a few px into bar
+    await tester.tapAt(tester.getTopLeft(chart) + const Offset(60, 20));
+    await tester.pumpAndSettle();
+
+    expect(api.calls.length, greaterThan(callsBefore));
+    expect(api.calls.last['from'], contains('2024-01-01T00:00:00'));
+  });
+
+  testWidgets(
+      'Given the histogram is expanded, '
+      'When the operator taps the "Log distribution" tile header, '
+      'Then the chart collapses; tapping again re-expands it',
+      (tester) async {
+    final t0 = DateTime.utc(2024, 1, 1, 0, 0);
+    final api = _FakeApi(
+      histogram: [HistogramBucket(bucket: t0.toIso8601String(), count: 3)],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+    await _loadRows(tester);
+
+    // Initially expanded — chart visible
+    expect(find.byKey(const Key('histogram_chart')), findsOneWidget);
+
+    // Collapse
+    await tester.tap(find.text('Log distribution'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('histogram_chart')), findsNothing);
+
+    // Re-expand
+    await tester.tap(find.text('Log distribution'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('histogram_chart')), findsOneWidget);
   });
 }
 
@@ -524,6 +689,9 @@ class _HoldingFacetApi extends DefaultApi {
     _resolve = (f) => completer.complete(f);
     return completer.future;
   }
+
+  @override
+  Future<List<HistogramBucket>?> getLogsHistogram({String? filter, String? from, String? to, String? step}) async => [];
 }
 
 class _CountingFacetApi extends DefaultApi {
@@ -543,5 +711,25 @@ class _CountingFacetApi extends DefaultApi {
     facetFetchCount++;
     onFetch();
     return facets;
+  }
+
+  @override
+  Future<List<HistogramBucket>?> getLogsHistogram({String? filter, String? from, String? to, String? step}) async => [];
+}
+
+class _HoldingHistogramApi extends DefaultApi {
+  final Completer<List<HistogramBucket>?> _completer = Completer();
+
+  void complete(List<HistogramBucket> buckets) => _completer.complete(buckets);
+
+  @override
+  Future<List<LogRow>?> getLogs({String? filter, String? from, String? to, int? limit}) async => [];
+
+  @override
+  Future<List<FacetField>?> getLogsFacets({String? filter, String? from, String? to}) async => [];
+
+  @override
+  Future<List<HistogramBucket>?> getLogsHistogram({String? filter, String? from, String? to, String? step}) {
+    return _completer.future;
   }
 }
