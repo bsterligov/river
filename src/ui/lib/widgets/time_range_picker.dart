@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../theme/app_theme.dart';
+import '../theme/app_theme.dart';
 
 typedef RangeCallback = void Function(DateTime from, DateTime to);
 

@@ -68,6 +68,9 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Histogram loading state:** renders flat grey `Container` (placeholder) while `controller.loading == true`
 - **Bar tap:** calls `controller.setRange(bucket.toUtc(), bucket.toUtc().add(step))` where step is inferred from consecutive bucket timestamps
 - **`LogsController.reload()`:** sequentially awaits `getLogs` then `getLogsHistogram` with the same filter/from/to parameters
+- **`TimeRangeController`:** app-level `ChangeNotifier` in `lib/time_range_controller.dart`; owns `from`, `to`, and `setRange()`; `LogsController` subscribes via `addListener` and calls `reload()` on every range change
+- **`TopPanel`:** persistent widget in `lib/top_panel.dart`; 48px height, white background, `AppColors.border` bottom border; "River" label left-aligned, `TimeRangePicker` right-aligned; composed into `_ShellState` above the sidebar+content row
+- **`LogsController` range ownership removed:** `LogsController` no longer stores `_from`/`_to`; `from`/`to` getters delegate to `rangeController`; `setRange` method removed (use `rangeController.setRange` directly, e.g. from histogram bar tap)
 - **`LogColumn` model:** `id`, `label`, `flex`, `visible`, `getValue: LogRow → String`; default columns: Timestamp (flex 3), Severity (flex 1), Service (flex 2), Message (flex 5), TraceID (flex 3, hidden), SpanID (flex 2, hidden)
 - **Column/sort state:** `columns`, `sortColumnId`, `sortAsc` on `LogsController` (in-memory only); `toggleColumn(id)` and `setSort(id)` methods; client-side sort applied via `_sortedRows()` on each `rows` getter call
 - **`LogsTable` widget:** `lib/pages/logs/logs_table.dart`; header row has `GestureDetector`-wrapped cells with sort arrow; settings icon opens `ColumnMenu` positioned overlay

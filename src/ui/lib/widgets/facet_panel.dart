@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
-import '../../theme/app_theme.dart';
-import 'logs_controller.dart';
+import '../theme/app_theme.dart';
+import '../pages/logs/logs_controller.dart';
 
 class FacetPanel extends StatefulWidget {
   const FacetPanel({
@@ -176,7 +176,7 @@ class _Shimmer extends StatelessWidget {
     return Container(
       key: const Key('facet_shimmer'),
       decoration: BoxDecoration(
-        color: const Color(0xFFE0E0E0),
+        color: AppColors.shimmer,
         borderRadius: BorderRadius.circular(AppLayout.radius),
       ),
     );

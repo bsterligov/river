@@ -11,12 +11,17 @@ abstract final class AppColors {
   static const tableHeader = Color(0xFFF1F3F5);
   static const error = Color(0xFFE53E3E);
   static const rowSelected = Color(0x144F74E8); // primary @ 8%
+  static const shimmer = Color(0xFFE0E0E0);
+  static const shadow = Color(0x1A000000); // black @ 10%
 }
 
 abstract final class AppText {
   static const body = TextStyle(fontSize: 13, height: 1.5);
   static const label = TextStyle(fontSize: 12, fontWeight: FontWeight.w500);
   static const mono = TextStyle(fontSize: 12, fontFamily: 'monospace');
+  static const micro = TextStyle(fontSize: 9);
+  static const appTitle = TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5);
+  static const navItem = TextStyle(fontSize: 13);
 }
 
 abstract final class AppLayout {

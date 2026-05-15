@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:river_api/api.dart';
 
+import '../../controllers/time_range_controller.dart';
+
 class LogColumn {
   const LogColumn({
     required this.id,
@@ -90,17 +92,14 @@ List<LogColumn> defaultColumns() => [
     ];
 
 class LogsController extends ChangeNotifier {
-  LogsController({required this.apiClient}) {
-    final now = DateTime.now().toUtc();
-    _from = now.subtract(const Duration(hours: 1));
-    _to = now;
+  LogsController({required this.apiClient, required this.rangeController}) {
+    rangeController.addListener(_onRangeChanged);
   }
 
   final DefaultApi apiClient;
+  final TimeRangeController rangeController;
 
   String _filter = '';
-  late DateTime _from;
-  late DateTime _to;
   List<LogRow> _rawRows = [];
   List<HistogramBucket> _histogram = [];
   bool _loading = false;
@@ -114,8 +113,8 @@ class LogsController extends ChangeNotifier {
   bool _sortAsc = true;
 
   String get filter => _filter;
-  DateTime get from => _from;
-  DateTime get to => _to;
+  DateTime get from => rangeController.from;
+  DateTime get to => rangeController.to;
   List<LogRow> get rows => _sortedRows();
   List<HistogramBucket> get histogram => _histogram;
   bool get loading => _loading;
@@ -125,6 +124,12 @@ class LogsController extends ChangeNotifier {
   List<LogColumn> get columns => List.unmodifiable(_columns);
   String? get sortColumnId => _sortColumnId;
   bool get sortAsc => _sortAsc;
+
+  void _onRangeChanged() {
+    _rangeVersion++;
+    notifyListeners();
+    reload();
+  }
 
   void selectRow(LogRow row) {
     _selectedRow = row;
@@ -180,12 +185,10 @@ class LogsController extends ChangeNotifier {
     return sorted;
   }
 
-  void setRange(DateTime from, DateTime to) {
-    _from = from;
-    _to = to;
-    _rangeVersion++;
-    notifyListeners();
-    reload();
+  @override
+  void dispose() {
+    rangeController.removeListener(_onRangeChanged);
+    super.dispose();
   }
 
   Future<void> reload() async {
@@ -195,8 +198,8 @@ class LogsController extends ChangeNotifier {
 
     try {
       final filter = _filter.isEmpty ? null : _filter;
-      final from = _from.toIso8601String();
-      final to = _to.toIso8601String();
+      final from = rangeController.from.toIso8601String();
+      final to = rangeController.to.toIso8601String();
       final rowsFuture = apiClient.getLogs(filter: filter, from: from, to: to);
       final histFuture = apiClient.getLogsHistogram(filter: filter, from: from, to: to);
       final rows = await rowsFuture;

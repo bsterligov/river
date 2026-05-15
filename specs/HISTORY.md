@@ -99,3 +99,7 @@ Added `LogColumn` model and column/sort state to `LogsController`. Replaced the 
 ### 2026-05-15 — RIVER-46: implementation done
 
 Added `flutter-quality` job to both `pull-request.yml` and `release.yml`: runs `mise run flutter:coverage` (new mise task using `flutter test --coverage`), uploads `lcov.info` as an artifact, and is listed as a required dependency of the `sonarqube` job. Updated `sonar-project.properties` to include `src/ui/` in sources, exclude the generated API client and build dirs, and point `sonar.dart.lcov.reportPaths` to the Flutter coverage output.
+
+### 2026-05-15 — RIVER-49: implementation done
+
+Added a persistent `TopPanel` widget (River label left, `TimeRangePicker` right) above the sidebar+content area. Extracted time range state into a new `TimeRangeController` (app-level `ChangeNotifier`); `LogsController` now listens to it instead of owning `from`/`to` directly. The Logs page toolbar retains only the search bar. Two new BDD widget tests verify the top panel layout and range persistence across navigation.

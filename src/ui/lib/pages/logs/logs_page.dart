@@ -2,26 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
 import '../../theme/app_theme.dart';
-import 'facet_panel.dart';
-import 'log_detail_panel.dart';
-import 'log_histogram.dart';
+import '../../controllers/time_range_controller.dart';
+import '../../widgets/facet_panel.dart';
+import '../../widgets/log_detail_panel.dart';
+import '../../widgets/log_histogram.dart';
 import 'log_search_bar.dart';
 import 'logs_controller.dart';
 import 'logs_table.dart';
-import 'time_range_picker.dart';
-
-export 'facet_panel.dart';
-export 'log_detail_panel.dart';
-export 'log_histogram.dart';
-export 'log_search_bar.dart';
-export 'logs_controller.dart';
-export 'logs_table.dart';
-export 'time_range_picker.dart';
 
 class LogsPage extends StatefulWidget {
-  const LogsPage({super.key, required this.apiClient});
+  const LogsPage({super.key, required this.apiClient, required this.rangeController});
 
   final DefaultApi apiClient;
+  final TimeRangeController rangeController;
 
   @override
   State<LogsPage> createState() => _LogsPageState();
@@ -35,7 +28,7 @@ class _LogsPageState extends State<LogsPage> {
   @override
   void initState() {
     super.initState();
-    _controller = LogsController(apiClient: widget.apiClient);
+    _controller = LogsController(apiClient: widget.apiClient, rangeController: widget.rangeController);
   }
 
   @override
@@ -69,13 +62,15 @@ class _LogsPageState extends State<LogsPage> {
             onSubmit: _onSubmit,
           ),
           const SizedBox(height: AppLayout.gapL),
+          LogHistogram(controller: _controller),
+          const SizedBox(height: AppLayout.gapL),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 child!,
                 const SizedBox(width: AppLayout.gapL),
-                Expanded(child: _buildMain()),
+                Expanded(child: _buildTable()),
               ],
             ),
           ),
@@ -85,26 +80,17 @@ class _LogsPageState extends State<LogsPage> {
     );
   }
 
-  Widget _buildMain() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildTable() {
+    return Stack(
       children: [
-        LogHistogram(controller: _controller),
-        const SizedBox(height: AppLayout.gapL),
-        Expanded(
-          child: Stack(
-            children: [
-              _controller.loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : LogsTable(controller: _controller),
-              Positioned(
-                top: 0,
-                right: 0,
-                bottom: 0,
-                child: LogDetailPanel(controller: _controller),
-              ),
-            ],
-          ),
+        _controller.loading
+            ? const Center(child: CircularProgressIndicator())
+            : LogsTable(controller: _controller),
+        Positioned(
+          top: 0,
+          right: 0,
+          bottom: 0,
+          child: LogDetailPanel(controller: _controller),
         ),
       ],
     );
@@ -124,23 +110,10 @@ class _Toolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: LogSearchBar(
-            controller: searchController,
-            onSubmit: onSubmit,
-            errorText: controller.error,
-          ),
-        ),
-        const SizedBox(width: AppLayout.gapL),
-        TimeRangePicker(
-          onRange: controller.setRange,
-          from: controller.from,
-          to: controller.to,
-        ),
-      ],
+    return LogSearchBar(
+      controller: searchController,
+      onSubmit: onSubmit,
+      errorText: controller.error,
     );
   }
 }
