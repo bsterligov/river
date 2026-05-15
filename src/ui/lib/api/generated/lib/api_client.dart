@@ -184,12 +184,6 @@ class ApiClient {
           return value is DateTime ? value : DateTime.tryParse(value);
         case 'ErrorBody':
           return ErrorBody.fromJson(value);
-        case 'FacetField':
-          return FacetField.fromJson(value);
-        case 'FacetValue':
-          return FacetValue.fromJson(value);
-        case 'HistogramBucket':
-          return HistogramBucket.fromJson(value);
         case 'LogRow':
           return LogRow.fromJson(value);
         case 'MetricPoint':
