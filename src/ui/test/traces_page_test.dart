@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:river_api/api.dart';
 
-import 'package:ui/main.dart';
 import 'package:ui/pages/traces/traces.dart';
 import 'package:ui/controllers/time_range_controller.dart';
 import 'package:ui/theme/app_theme.dart';
@@ -97,7 +96,11 @@ void main() {
       'When they click "Traces" in the sidebar, '
       'Then the Traces page is shown with search bar and empty-state table',
       (tester) async {
-    await tester.pumpWidget(const RiverApp());
+    final rc = TimeRangeController();
+    final api = FakeTracesApi();
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: TestAppShell(api: api, rangeController: rc))),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Traces'));

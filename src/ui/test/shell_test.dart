@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:ui/main.dart';
 import 'package:ui/controllers/time_range_controller.dart';
 import 'package:ui/widgets/river_logo.dart';
 
@@ -12,7 +11,10 @@ void main() {
       'Given app is running, '
       'Then top panel shows River label and sidebar shows Logs nav',
       (tester) async {
-    await tester.pumpWidget(const RiverApp());
+    final rc = TimeRangeController();
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: TestAppShell(api: FakeApi(), rangeController: rc))),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('River'), findsOneWidget);

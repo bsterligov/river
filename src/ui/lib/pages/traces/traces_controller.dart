@@ -1,9 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:river_api/api.dart';
 
 import '../../controllers/time_range_controller.dart';
+import '../../utils/api_error.dart';
 
 class TracesController extends ChangeNotifier {
   TracesController({required this.apiClient, required this.rangeController}) {
@@ -108,22 +107,12 @@ class TracesController extends ChangeNotifier {
       _rows = result ?? [];
       _loading = false;
     } catch (e) {
-      _error = _extractError(e);
+      _error = extractApiError(e);
       _loading = false;
     }
     notifyListeners();
   }
 
-  String _extractError(Object e) {
-    if (e is ApiException) {
-      try {
-        final body = jsonDecode(e.message ?? '') as Map<String, dynamic>;
-        final msg = body['error'] as String?;
-        if (msg != null && msg.isNotEmpty) return msg;
-      } catch (_) {}
-    }
-    return e.toString();
-  }
 }
 
 /// Returns the root span (the one with an empty parentSpanId), or the

@@ -30,6 +30,7 @@ class _LogsPageState extends State<LogsPage> {
   void initState() {
     super.initState();
     _controller = LogsController(apiClient: widget.apiClient, rangeController: widget.rangeController);
+    _controller.reload();
   }
 
   @override
