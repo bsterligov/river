@@ -87,3 +87,7 @@ Added `FacetPanel` widget and `appendFilter` to `LogsController`. The panel call
 ### 2026-05-14 — RIVER-37: implementation done
 
 Added `LogDetailPanel` (420px, `AnimatedSize` width transition) with three expanded `ExpansionTile` sections: Log Tags & Infra Info (6 key-value metadata fields), Log Message (`SelectableText` monospace), and Log Attributes (JSON-parsed key-value pairs with "No attributes" fallback). `LogsController` gained `selectedRow`, `selectRow`, and `clearSelection`; table rows wrapped in `GestureDetector` with a highlight on the selected row. Five BDD widget tests pass.
+
+### 2026-05-15 — RIVER-31: implementation done
+
+Added `LogHistogram` widget above the logs table using `CustomPainter` (no charting dependency). `LogsController.reload()` now also fetches `/v1/logs/histogram`; buckets are stored as `List<HistogramBucket>`. Tapping a bar calls `setRange(bucket.time, bucket.time + step)` which re-queries both the table and histogram. The tile collapses/expands locally via `ExpansionTile`. Five BDD widget tests cover all spec scenarios.

@@ -6,9 +6,16 @@ import '../../theme/app_theme.dart';
 typedef RangeCallback = void Function(DateTime from, DateTime to);
 
 class TimeRangePicker extends StatefulWidget {
-  const TimeRangePicker({super.key, required this.onRange});
+  const TimeRangePicker({
+    super.key,
+    required this.onRange,
+    required this.from,
+    required this.to,
+  });
 
   final RangeCallback onRange;
+  final DateTime from;
+  final DateTime to;
 
   @override
   State<TimeRangePicker> createState() => _TimeRangePickerState();
@@ -24,22 +31,40 @@ class _TimeRangePickerState extends State<TimeRangePicker> {
     _Preset('Last 7 days', Duration(days: 7)),
   ];
 
-  int _activeIndex = 1;
   final _link = LayerLink();
   OverlayEntry? _overlay;
 
-  String get _activeLabel => _activeIndex >= 0 ? _presets[_activeIndex].label : 'Custom';
+  // Returns the preset index whose duration matches from→to within 5s, or -1.
+  int _matchPreset(DateTime from, DateTime to) {
+    final span = to.difference(from);
+    for (int i = 0; i < _presets.length; i++) {
+      if ((span - _presets[i].duration).abs() < const Duration(seconds: 5)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  String _label() {
+    final idx = _matchPreset(widget.from, widget.to);
+    if (idx >= 0) return _presets[idx].label;
+    final f = widget.from.toLocal();
+    final t = widget.to.toLocal();
+    return '${_fmtShort(f)} – ${_fmtShort(t)}';
+  }
+
+  static String _fmtShort(DateTime dt) =>
+      '${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')} '
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
   void _applyPreset(int index) {
     final now = DateTime.now().toUtc();
     widget.onRange(now.subtract(_presets[index].duration), now);
-    setState(() => _activeIndex = index);
     _close();
   }
 
   void _applyCustom(DateTime from, DateTime to) {
     widget.onRange(from, to);
-    setState(() => _activeIndex = -1);
     _close();
   }
 
@@ -52,11 +77,12 @@ class _TimeRangePickerState extends State<TimeRangePicker> {
   }
 
   void _open() {
+    final activeIndex = _matchPreset(widget.from, widget.to);
     _overlay = OverlayEntry(
       builder: (_) => _DropdownOverlay(
         link: _link,
         presets: _presets,
-        activeIndex: _activeIndex,
+        activeIndex: activeIndex,
         onPreset: _applyPreset,
         onCustom: _applyCustom,
         onDismiss: _close,
@@ -85,7 +111,7 @@ class _TimeRangePickerState extends State<TimeRangePicker> {
     return CompositedTransformTarget(
       link: _link,
       child: _TriggerButton(
-        label: _activeLabel,
+        label: _label(),
         open: open,
         onTap: _toggle,
       ),

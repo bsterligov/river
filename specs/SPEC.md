@@ -62,6 +62,12 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **LogDetailPanel:** 420px fixed-width panel, `AnimatedSize` (width 0 → 420, 200ms easeInOut); shown when `controller.selectedRow != null`; three `ExpansionTile` sections all expanded by default
 - **Log row selection:** `LogsController` holds `LogRow? selectedRow`; `selectRow(LogRow)` and `clearSelection()` notify listeners; table rows wrapped in `GestureDetector` with `AppColors.primary.withOpacity(0.08)` highlight
 - **Attributes parsing:** `jsonDecode` in try/catch in `_AttributesSection._parseAttributes`; falls back to empty list → "No attributes" label
+- **LogHistogram widget:** `CustomPainter`-based bar chart in `lib/pages/logs/log_histogram.dart`; no charting package dependency
+- **Histogram collapse state:** stored in `_LogHistogramTileState` (widget-local), not on `LogsController` — display-only
+- **Histogram empty state:** renders `SizedBox.shrink()` (nothing) — no placeholder or message when `histogram = []`
+- **Histogram loading state:** renders flat grey `Container` (placeholder) while `controller.loading == true`
+- **Bar tap:** calls `controller.setRange(bucket.toUtc(), bucket.toUtc().add(step))` where step is inferred from consecutive bucket timestamps
+- **`LogsController.reload()`:** sequentially awaits `getLogs` then `getLogsHistogram` with the same filter/from/to parameters
 
 ## Spec System
 `/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)

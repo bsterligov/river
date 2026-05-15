@@ -4,12 +4,14 @@ import 'package:river_api/api.dart';
 import '../../theme/app_theme.dart';
 import 'facet_panel.dart';
 import 'log_detail_panel.dart';
+import 'log_histogram.dart';
 import 'log_search_bar.dart';
 import 'logs_controller.dart';
 import 'time_range_picker.dart';
 
 export 'facet_panel.dart';
 export 'log_detail_panel.dart';
+export 'log_histogram.dart';
 export 'log_search_bar.dart';
 export 'logs_controller.dart';
 export 'time_range_picker.dart';
@@ -82,20 +84,28 @@ class _LogsPageState extends State<LogsPage> {
   }
 
   Widget _buildMain() {
-    if (_controller.loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    return Stack(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _LogsTable(
-          rows: _controller.rows,
-          controller: _controller,
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          bottom: 0,
-          child: LogDetailPanel(controller: _controller),
+        LogHistogram(controller: _controller),
+        const SizedBox(height: AppLayout.gapL),
+        Expanded(
+          child: Stack(
+            children: [
+              _controller.loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _LogsTable(
+                      rows: _controller.rows,
+                      controller: _controller,
+                    ),
+              Positioned(
+                top: 0,
+                right: 0,
+                bottom: 0,
+                child: LogDetailPanel(controller: _controller),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -128,6 +138,8 @@ class _Toolbar extends StatelessWidget {
         const SizedBox(width: AppLayout.gapL),
         TimeRangePicker(
           onRange: controller.setRange,
+          from: controller.from,
+          to: controller.to,
         ),
       ],
     );

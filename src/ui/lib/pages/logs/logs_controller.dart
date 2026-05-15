@@ -16,6 +16,7 @@ class LogsController extends ChangeNotifier {
   late DateTime _from;
   late DateTime _to;
   List<LogRow> _rows = [];
+  List<HistogramBucket> _histogram = [];
   bool _loading = false;
   String? _error;
   LogRow? _selectedRow;
@@ -26,6 +27,7 @@ class LogsController extends ChangeNotifier {
   DateTime get from => _from;
   DateTime get to => _to;
   List<LogRow> get rows => _rows;
+  List<HistogramBucket> get histogram => _histogram;
   bool get loading => _loading;
   String? get error => _error;
   LogRow? get selectedRow => _selectedRow;
@@ -66,12 +68,15 @@ class LogsController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final results = await apiClient.getLogs(
-        filter: _filter.isEmpty ? null : _filter,
-        from: _from.toIso8601String(),
-        to: _to.toIso8601String(),
-      );
-      _rows = results ?? [];
+      final filter = _filter.isEmpty ? null : _filter;
+      final from = _from.toIso8601String();
+      final to = _to.toIso8601String();
+      final rowsFuture = apiClient.getLogs(filter: filter, from: from, to: to);
+      final histFuture = apiClient.getLogsHistogram(filter: filter, from: from, to: to);
+      final rows = await rowsFuture;
+      final hist = await histFuture;
+      _rows = rows ?? [];
+      _histogram = hist ?? [];
       _loading = false;
     } catch (e) {
       _error = _extractError(e);
