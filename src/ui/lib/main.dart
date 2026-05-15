@@ -18,7 +18,7 @@ class RiverApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'River',
+      title: 'River Dashboard',
       theme: appTheme,
       home: const _Shell(),
       debugShowCheckedModeBanner: false,

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:ui/main.dart';
 import 'package:ui/controllers/time_range_controller.dart';
+import 'package:ui/widgets/river_logo.dart';
 
 import 'helpers.dart';
 
@@ -16,6 +17,24 @@ void main() {
 
     expect(find.text('River'), findsOneWidget);
     expect(find.text('Logs'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given the app is running, '
+      'When the user looks at the top bar, '
+      'Then they see the River logo to the left of the River label',
+      (tester) async {
+    final rc = TimeRangeController();
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: TestShell(api: FakeApi(), rangeController: rc))),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RiverLogo), findsOneWidget);
+
+    final logoOffset = tester.getCenter(find.byType(RiverLogo));
+    final labelOffset = tester.getCenter(find.text('River'));
+    expect(logoOffset.dx, lessThan(labelOffset.dx));
   });
 
   testWidgets(

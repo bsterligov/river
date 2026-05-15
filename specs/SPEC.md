@@ -69,7 +69,9 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Bar tap:** calls `controller.setRange(bucket.toUtc(), bucket.toUtc().add(step))` where step is inferred from consecutive bucket timestamps
 - **`LogsController.reload()`:** sequentially awaits `getLogs` then `getLogsHistogram` with the same filter/from/to parameters
 - **`TimeRangeController`:** app-level `ChangeNotifier` in `lib/time_range_controller.dart`; owns `from`, `to`, and `setRange()`; `LogsController` subscribes via `addListener` and calls `reload()` on every range change
-- **`TopPanel`:** persistent widget in `lib/top_panel.dart`; 48px height, white background, `AppColors.border` bottom border; "River" label left-aligned, `TimeRangePicker` right-aligned; composed into `_ShellState` above the sidebar+content row
+- **`TopPanel`:** persistent widget in `lib/widgets/top_panel.dart`; 48px height, white background, `AppColors.border` bottom border; `RiverLogo` then "River" label left-aligned, `TimeRangePicker` right-aligned; composed into `_ShellState` above the sidebar+content row
+- **`RiverLogo`:** `CustomPainter`-based widget in `lib/widgets/river_logo.dart`; draws a stylised "R" in white on a rounded `AppColors.primary` square; default size 28px; no external package dependency
+- **Window title:** `MaterialApp(title: 'River Dashboard')` — sets the macOS window/taskbar title
 - **`LogsController` range ownership removed:** `LogsController` no longer stores `_from`/`_to`; `from`/`to` getters delegate to `rangeController`; `setRange` method removed (use `rangeController.setRange` directly, e.g. from histogram bar tap)
 - **`LogColumn` model:** `id`, `label`, `flex`, `visible`, `getValue: LogRow → String`; default columns: Timestamp (flex 3), Severity (flex 1), Service (flex 2), Message (flex 5), TraceID (flex 3, hidden), SpanID (flex 2, hidden)
 - **Column/sort state:** `columns`, `sortColumnId`, `sortAsc` on `LogsController` (in-memory only); `toggleColumn(id)` and `setSort(id)` methods; client-side sort applied via `_sortedRows()` on each `rows` getter call

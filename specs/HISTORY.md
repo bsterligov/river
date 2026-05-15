@@ -103,3 +103,7 @@ Added `flutter-quality` job to both `pull-request.yml` and `release.yml`: runs `
 ### 2026-05-15 — RIVER-49: implementation done
 
 Added a persistent `TopPanel` widget (River label left, `TimeRangePicker` right) above the sidebar+content area. Extracted time range state into a new `TimeRangeController` (app-level `ChangeNotifier`); `LogsController` now listens to it instead of owning `from`/`to` directly. The Logs page toolbar retains only the search bar. Two new BDD widget tests verify the top panel layout and range persistence across navigation.
+
+### 2026-05-15 — RIVER-52: implementation done
+
+Added a `RiverLogo` widget (`CustomPainter`-drawn stylised "R" on a rounded primary-colour square) to `lib/widgets/river_logo.dart`; displayed in `TopPanel` left of the "River" label. Changed `MaterialApp(title:)` to "River Dashboard" which sets the macOS window title. No new packages required.

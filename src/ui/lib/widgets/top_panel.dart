@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'river_logo.dart';
 import 'time_range_picker.dart';
 import '../theme/app_theme.dart';
 import '../controllers/time_range_controller.dart';
@@ -20,6 +21,8 @@ class TopPanel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppLayout.gapXL),
       child: Row(
         children: [
+          const RiverLogo(),
+          const SizedBox(width: AppLayout.gapM),
           Text(
             'River',
             style: AppText.appTitle.copyWith(color: AppColors.primary),
