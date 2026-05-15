@@ -11,6 +11,6 @@ Status lives here — not in filenames. Done tasks stay in the list (marked with
 - ~~RIVER-29: UI: Page Layout + Time Range Selector + Search Bar~~
 - ~~RIVER-30: UI: Facet Panel~~
 - ~~RIVER-31: UI: Log Distribution Histogram~~
-- RIVER-35: UI: Logs Table with Column Management and Sort
+- ~~RIVER-35: UI: Logs Table with Column Management and Sort~~
 - ~~RIVER-37: UI: Log Detail Panel~~
 
