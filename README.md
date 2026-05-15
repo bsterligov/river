@@ -54,7 +54,7 @@ Full command reference: [docs/v1.md](docs/v1.md)
 | Week | Status | Summary |
 |------|--------|---------|
 | [Week 2](docs/week-2.md) | In progress | Plan-driven multi-agent mode — parallel spec and impl across phases |
-| [Week 1](docs/week-1.md) | Done | MVP — end-to-end observability pipeline, $117.29 API-equivalent |
+| [Week 1](docs/week-1.md) | Done | MVP — end-to-end observability pipeline, $126.63 API-equivalent |
 
 ---
 

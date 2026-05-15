@@ -22,38 +22,38 @@ Three new commands were added above the existing V0 loops:
 
 | Token type | Volume | Cost | Share |
 |------------|--------|-----:|------:|
-| Cache reads | 93.6M | $28.09 | 58% |
-| Output | 0.7M | $11.16 | 23% |
-| Cache writes | 2.5M | $9.44 | 19% |
-| Input | 2K | $0.01 | <1% |
-| **Total** | | **$48.72** | |
+| Cache reads | 228.7M | $68.61 | 65% |
+| Output | 1.3M | $19.25 | 18% |
+| Cache writes | 4.7M | $17.81 | 17% |
+| Input | 4K | $0.01 | <1% |
+| **Total** | | **$105.69** | |
 
-17 commits, 1,384 assistant turns. RTK compressed 44K additional tokens (~$0.13 avoided).
+30 commits, 3,003 assistant turns. RTK compressed 73K additional tokens (~$0.22 avoided).
 
 Full token breakdown: [docs/token-usage.md](token-usage.md)
 
-For comparison, week 1 ran to **$126.63** across 35 commits and 3,309 turns. The lower turn count in week 2 so far reflects the plan-driven parallel approach — fewer sequential context-heavy debug loops.
+For comparison, week 1 ran to **$126.63** across 35 commits and 3,309 turns. Week 2 is on track to exceed week 1 spend as more implementation work lands — the Flutter UI build is driving the bulk of context load.
 
 **By phase:**
 
 | Phase | Cost | Share |
 |-------|-----:|------:|
-| Implementation | $35.12 | 72% |
-| Setup / tooling | $12.24 | 25% |
-| Spec writing | $1.36 | 3% |
+| Implementation | $98.02 | 93% |
+| Setup / tooling | $6.31 | 6% |
+| Spec writing | $1.36 | 1% |
 
-Spec writing is nearly free in week 2 — the parallel `/dev-plan` subagents each write specs with minimal context, keeping individual session costs at $0.11–$0.36. Implementation dominates because it carries the full context of the codebase.
+Spec writing remains nearly free — parallel `/dev-plan` subagents write specs with minimal context ($0.11–$0.13 each). Implementation now dominates at 93% as the full Flutter UI layer was built out.
 
-**Most expensive session**: `feat: add sqlite based index` at **$12.10** — 314 turns, building `river-index` from scratch.
+**Most expensive session**: `impl: RIVER-31 -- UI: Log Distribution Histogram` at **$12.93** — 323 turns, building the histogram widget from scratch.
 
-**Cheapest sessions**: parallel spec writes at **$0.11–$0.36** each.
+**Cheapest sessions**: parallel spec writes at **$0.11–$0.13** each.
 
 **By MoSCoW priority:**
 
 | Priority | Cost | Share |
 |----------|-----:|------:|
-| must | $48.72 | 100% |
-| should | — | — |
+| must | $78.45 | 74% |
+| should | $27.24 | 26% |
 | could | — | — |
 | wont | — | — |
 
@@ -61,10 +61,11 @@ Spec writing is nearly free in week 2 — the parallel `/dev-plan` subagents eac
 
 | Category | Cost | Share |
 |----------|-----:|------:|
-| features | $24.38 | 50% |
-| tools | $24.34 | 50% |
+| features | $57.97 | 55% |
+| tools | $36.08 | 34% |
+| refactoring | $11.64 | 11% |
 
-Features and tooling are evenly split — the `river-index` build ($12.10) accounts for most of the tooling cost and is a one-time investment.
+Features now dominate as the Flutter UI build ramps up. The `should` priority share (26%) reflects the UI layer being classified as non-critical infrastructure — logs table, histogram, facet panel, log detail.
 
 **Open questions being studied in week 2:**
 
