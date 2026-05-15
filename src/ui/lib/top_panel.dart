@@ -20,14 +20,9 @@ class TopPanel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppLayout.gapXL),
       child: Row(
         children: [
-          const Text(
+          Text(
             'River',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
+            style: AppText.appTitle.copyWith(color: AppColors.primary),
           ),
           const Spacer(),
           ListenableBuilder(

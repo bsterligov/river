@@ -153,11 +153,8 @@ class _NavItem extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               label,
-              style: TextStyle(
-                color: isSelected
-                    ? AppColors.sidebarSelected
-                    : AppColors.sidebarText,
-                fontSize: 13,
+              style: AppText.navItem.copyWith(
+                color: isSelected ? AppColors.sidebarSelected : AppColors.sidebarText,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
               ),
             ),

@@ -71,13 +71,15 @@ class _LogsPageState extends State<LogsPage> {
             onSubmit: _onSubmit,
           ),
           const SizedBox(height: AppLayout.gapL),
+          LogHistogram(controller: _controller),
+          const SizedBox(height: AppLayout.gapL),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 child!,
                 const SizedBox(width: AppLayout.gapL),
-                Expanded(child: _buildMain()),
+                Expanded(child: _buildTable()),
               ],
             ),
           ),
@@ -87,26 +89,17 @@ class _LogsPageState extends State<LogsPage> {
     );
   }
 
-  Widget _buildMain() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildTable() {
+    return Stack(
       children: [
-        LogHistogram(controller: _controller),
-        const SizedBox(height: AppLayout.gapL),
-        Expanded(
-          child: Stack(
-            children: [
-              _controller.loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : LogsTable(controller: _controller),
-              Positioned(
-                top: 0,
-                right: 0,
-                bottom: 0,
-                child: LogDetailPanel(controller: _controller),
-              ),
-            ],
-          ),
+        _controller.loading
+            ? const Center(child: CircularProgressIndicator())
+            : LogsTable(controller: _controller),
+        Positioned(
+          top: 0,
+          right: 0,
+          bottom: 0,
+          child: LogDetailPanel(controller: _controller),
         ),
       ],
     );

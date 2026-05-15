@@ -79,7 +79,7 @@ class _HistogramPlaceholder extends StatelessWidget {
         vertical: AppLayout.gapM,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFE0E0E0),
+        color: AppColors.shimmer,
         borderRadius: BorderRadius.circular(AppLayout.radius),
       ),
     );
@@ -221,7 +221,7 @@ class _BarPainter extends CustomPainter {
 
   void _drawYAxis(Canvas canvas, double barAreaHeight) {
     final tp = TextPainter(textDirection: TextDirection.ltr);
-    const style = TextStyle(fontSize: 9, color: Colors.black45);
+    final style = AppText.micro.copyWith(color: Colors.black45);
 
     void drawLabel(String text, double y) {
       tp.text = TextSpan(text: text, style: style);
@@ -289,7 +289,7 @@ class _XAxisLabels extends StatelessWidget {
             height: labelHeight,
             child: Text(
               l.label,
-              style: const TextStyle(fontSize: 9, color: Colors.black54),
+              style: AppText.micro.copyWith(color: Colors.black54),
               overflow: TextOverflow.clip,
               maxLines: 1,
             ),
