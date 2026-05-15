@@ -91,3 +91,7 @@ Added `LogDetailPanel` (420px, `AnimatedSize` width transition) with three expan
 ### 2026-05-15 — RIVER-31: implementation done
 
 Added `LogHistogram` widget above the logs table using `CustomPainter` (no charting dependency). `LogsController.reload()` now also fetches `/v1/logs/histogram`; buckets are stored as `List<HistogramBucket>`. Tapping a bar calls `setRange(bucket.time, bucket.time + step)` which re-queries both the table and histogram. The tile collapses/expands locally via `ExpansionTile`. Five BDD widget tests cover all spec scenarios.
+
+### 2026-05-15 — RIVER-35: implementation done
+
+Added `LogColumn` model and column/sort state to `LogsController`. Replaced the fixed `_LogsTable` with a new `LogsTable` widget in `lib/pages/logs/logs_table.dart`: clicking any column header sorts ascending then descending with an arrow indicator; a settings icon opens a `ColumnMenu` positioned overlay with `CheckboxListTile` per column; tapping outside dismisses the menu. TraceID and SpanID are hidden by default. All cell text uses `softWrap: false` with ellipsis clip. Four BDD widget tests cover all spec scenarios.

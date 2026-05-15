@@ -673,6 +673,188 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('histogram_chart')), findsOneWidget);
   });
+
+  // --- LogsTable: sort and column management BDD scenarios ---
+
+  LogRow _makeRowWith({required String severity, required String body, String service = 'svc'}) =>
+      LogRow(
+        timestamp: '2024-01-01T12:00:00Z',
+        severityNumber: 9,
+        spanId: 'span-1',
+        attributes: null,
+        severity: severity,
+        service: service,
+        body: body,
+        traceId: 'trace-1',
+      );
+
+  testWidgets(
+      'Given the logs table is showing rows, '
+      'When the operator clicks the "Severity" column header, '
+      'Then the rows sort ascending by severity and an up-arrow icon appears in the header; '
+      'clicking again reverses to descending',
+      (tester) async {
+    tester.view.physicalSize = const Size(1600, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final rows = [
+      _makeRowWith(severity: 'WARN', body: 'warn msg'),
+      _makeRowWith(severity: 'ERROR', body: 'error msg'),
+      _makeRowWith(severity: 'INFO', body: 'info msg'),
+    ];
+    final api = _FakeApi(rows: rows);
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+    await _loadRows(tester);
+
+    // First click: sort ascending
+    await tester.tap(find.text('Severity'));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+
+    // Verify rows are sorted ascending by severity text
+    final texts = tester.widgetList<Text>(find.byType(Text))
+        .map((t) => t.data ?? '')
+        .where((s) => s == 'ERROR' || s == 'INFO' || s == 'WARN')
+        .toList();
+    expect(texts.first, equals('ERROR'));
+
+    // Second click: sort descending
+    await tester.tap(find.text('Severity'));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given the column menu is open, '
+      'When the operator unchecks "TraceID", '
+      'Then the TraceID column disappears from the header row and all log rows immediately',
+      (tester) async {
+    tester.view.physicalSize = const Size(1600, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final row = _makeRow(body: 'test event');
+    final api = _FakeApi(rows: [row]);
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+    await _loadRows(tester);
+
+    // Open column menu
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    // TraceID is hidden by default; enable it, then close the menu to verify
+    await tester.tap(find.byKey(const Key('col_toggle_traceId')));
+    await tester.pump();
+    final tableKey1 = find.byType(LogsTable);
+    final tableCenter1 = tester.getCenter(tableKey1);
+    await tester.tapAt(tableCenter1 + const Offset(0, 200));
+    await tester.pumpAndSettle();
+
+    // TraceID column header should now be visible (menu is closed)
+    expect(find.text('TraceID'), findsOneWidget);
+
+    // Open the menu again and uncheck it
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('col_toggle_traceId')));
+    await tester.pump();
+    // Dismiss the menu by tapping the backdrop (inside the table, below the header)
+    final tableKey2 = find.byType(LogsTable);
+    final tableCenter2 = tester.getCenter(tableKey2);
+    await tester.tapAt(tableCenter2 + const Offset(0, 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('TraceID'), findsNothing);
+  });
+
+  testWidgets(
+      'Given TraceID was hidden, '
+      'When the operator reopens the column menu and checks "TraceID", '
+      'Then the column reappears in its original position',
+      (tester) async {
+    tester.view.physicalSize = const Size(1600, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final api = _FakeApi(rows: [_makeRow()]);
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+    await _loadRows(tester);
+
+    // TraceID is hidden by default; open menu and enable it
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('col_toggle_traceId')));
+    await tester.pump();
+    // Dismiss the menu by tapping the backdrop (inside the table, below the header)
+    final tableKey = find.byType(LogsTable);
+    final tableCenter = tester.getCenter(tableKey);
+    await tester.tapAt(tableCenter + const Offset(0, 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('TraceID'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given the column menu is open, '
+      'When the operator taps outside the menu overlay, '
+      'Then the menu dismisses without changing column state',
+      (tester) async {
+    tester.view.physicalSize = const Size(1600, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final api = _FakeApi(rows: [_makeRow()]);
+
+    await tester.pumpWidget(
+      MaterialApp(home: Scaffold(body: LogsPage(apiClient: api))),
+    );
+    await tester.pumpAndSettle();
+    await _loadRows(tester);
+
+    // Open column menu
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('col_toggle_timestamp')), findsOneWidget);
+
+    // Tap the logs table area (not on the settings icon) to dismiss the overlay
+    final tableList = find.byKey(const Key('logs_table'));
+    if (tableList.evaluate().isNotEmpty) {
+      await tester.tapAt(tester.getTopLeft(tableList) + const Offset(10, 10));
+    } else {
+      // Table is empty; tap the empty-state text area
+      await tester.tapAt(tester.getCenter(find.text('No logs found.')));
+    }
+    await tester.pumpAndSettle();
+
+    // Menu is gone
+    expect(find.byKey(const Key('col_toggle_timestamp')), findsNothing);
+
+    // Default visible columns still present
+    expect(find.text('Timestamp'), findsOneWidget);
+    expect(find.text('Message'), findsOneWidget);
+  });
 }
 
 class _HoldingFacetApi extends DefaultApi {

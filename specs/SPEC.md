@@ -68,6 +68,11 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Histogram loading state:** renders flat grey `Container` (placeholder) while `controller.loading == true`
 - **Bar tap:** calls `controller.setRange(bucket.toUtc(), bucket.toUtc().add(step))` where step is inferred from consecutive bucket timestamps
 - **`LogsController.reload()`:** sequentially awaits `getLogs` then `getLogsHistogram` with the same filter/from/to parameters
+- **`LogColumn` model:** `id`, `label`, `flex`, `visible`, `getValue: LogRow → String`; default columns: Timestamp (flex 3), Severity (flex 1), Service (flex 2), Message (flex 5), TraceID (flex 3, hidden), SpanID (flex 2, hidden)
+- **Column/sort state:** `columns`, `sortColumnId`, `sortAsc` on `LogsController` (in-memory only); `toggleColumn(id)` and `setSort(id)` methods; client-side sort applied via `_sortedRows()` on each `rows` getter call
+- **`LogsTable` widget:** `lib/pages/logs/logs_table.dart`; header row has `GestureDetector`-wrapped cells with sort arrow; settings icon opens `ColumnMenu` positioned overlay
+- **`ColumnMenu`:** `Positioned` overlay inside the table's `Stack`; position computed from settings icon's `RenderBox` local-to-global coords converted to Stack-local; `CheckboxListTile` per column; backdrop `GestureDetector` dismisses on outside tap
+- **Cell text:** `softWrap: false`, `overflow: TextOverflow.ellipsis`, `maxLines: 1` on all data cells — clips mid-word at column boundary
 
 ## Spec System
 `/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)
