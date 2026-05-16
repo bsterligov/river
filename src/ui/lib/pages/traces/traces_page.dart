@@ -3,6 +3,7 @@ import 'package:river_api/api.dart';
 
 import '../../controllers/time_range_controller.dart';
 import '../../theme/app_theme.dart';
+import 'trace_detail_panel.dart';
 import 'traces_controller.dart';
 import 'traces_table.dart';
 
@@ -60,12 +61,20 @@ class _TracesPageState extends State<TracesPage> {
           ),
           const SizedBox(height: AppLayout.gapL),
           Expanded(
-            child: _controller.loading
-                ? const Center(child: CircularProgressIndicator())
-                : TracesTable(controller: _controller),
+            child: Stack(
+              children: [
+                _controller.loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : TracesTable(controller: _controller),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: TraceDetailPanel(controller: _controller),
+                ),
+              ],
+            ),
           ),
-          // Placeholder for Phase 3 detail panel
-          const SizedBox.shrink(),
         ],
       ),
     );

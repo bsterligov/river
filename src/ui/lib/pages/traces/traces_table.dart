@@ -15,7 +15,7 @@ class TracesTable extends StatelessWidget {
     final rows = controller.rows;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(AppLayout.radius),
       ),

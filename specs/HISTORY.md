@@ -127,3 +127,7 @@ Fixed Traces page blank state (missing `reload()` in `initState`). Extracted dup
 ### 2026-05-15 — RIVER-61: spec created
 
 PO spec written for the span attributes panel. BDD approach chosen. Scope covers `selectedSpan` local state on `TraceDetailPanel`, a `SpanAttributesSection` widget with three `ExpansionTile` sections (Attributes, Events, Links), and a clear-selection X button. Attributes parsing reuses the `LogDetailPanel` try/catch pattern. Panel is local widget state only — no controller changes required.
+
+### 2026-05-16 — RIVER-59: implementation done
+
+Added `TraceDetailPanel` (420px `AnimatedSize` slide-in) and `SpanWaterfallPainter` (`CustomPainter` Gantt rows) to `lib/pages/traces/`. The panel fetches spans via `getTrace`, builds a depth-first span tree from `parent_span_id`, renders proportional bars coloured by `status_code`, caps at 200 spans with a visible notice, and wires into `TracesPage` replacing the Phase 2 `SizedBox` placeholder. Thirteen BDD widget tests and unit tests cover all specified scenarios.

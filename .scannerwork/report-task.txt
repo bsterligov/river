@@ -1,0 +1,7 @@
+organization=bsterligov
+projectKey=bsterligov_river
+serverUrl=https://sonarcloud.io
+serverVersion=8.0.0.87504
+dashboardUrl=https://sonarcloud.io/dashboard?id=bsterligov_river&pullRequest=65
+ceTaskId=AZ4vWFM_96KjGFq-gNRd
+ceTaskUrl=https://sonarcloud.io/api/ce/task?id=AZ4vWFM_96KjGFq-gNRd
