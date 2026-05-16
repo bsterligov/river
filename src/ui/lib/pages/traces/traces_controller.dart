@@ -5,6 +5,7 @@ import '../../controllers/time_range_controller.dart';
 import '../../utils/api_error.dart';
 import '../../utils/format_time.dart';
 import '../shared/column_def.dart';
+import '../shared/table_sort_state.dart';
 
 class TraceColumn implements ColumnDef {
   const TraceColumn({
@@ -91,20 +92,18 @@ class TracesController extends ChangeNotifier {
   bool _loading = false;
   String? _error;
   String? _selectedTraceId;
-  String? _sortColumnId;
-  bool _sortAsc = true;
-  List<TraceColumn> _columns = defaultTraceColumns();
+  final _sort = TableSortState<TraceColumn>(defaultTraceColumns());
 
   String get filter => _filter;
   DateTime get from => rangeController.from;
   DateTime get to => rangeController.to;
-  List<TraceGroup> get rows => _sortedRows();
+  List<TraceGroup> get rows => _sort.sortedRows(_rows).cast<TraceGroup>();
   bool get loading => _loading;
   String? get error => _error;
   String? get selectedTraceId => _selectedTraceId;
-  String? get sortColumnId => _sortColumnId;
-  bool get sortAsc => _sortAsc;
-  List<TraceColumn> get columns => List.unmodifiable(_columns);
+  String? get sortColumnId => _sort.sortColumnId;
+  bool get sortAsc => _sort.sortAsc;
+  List<TraceColumn> get columns => _sort.columns;
 
   void _onRangeChanged() {
     notifyListeners();
@@ -128,36 +127,11 @@ class TracesController extends ChangeNotifier {
   }
 
   void toggleColumn(String id) {
-    final idx = _columns.indexWhere((c) => c.id == id);
-    if (idx == -1) return;
-    _columns = List.of(_columns)..[idx] = _columns[idx].copyWith(
-          visible: !_columns[idx].visible,
-        );
-    notifyListeners();
+    if (_sort.toggleColumn(id, (c, v) => c.copyWith(visible: v))) notifyListeners();
   }
 
   void setSort(String columnId) {
-    if (_sortColumnId == columnId) {
-      _sortAsc = !_sortAsc;
-    } else {
-      _sortColumnId = columnId;
-      _sortAsc = true;
-    }
-    notifyListeners();
-  }
-
-  List<TraceGroup> _sortedRows() {
-    if (_sortColumnId == null) return List.unmodifiable(_rows);
-    final col = _columns.firstWhere(
-      (c) => c.id == _sortColumnId,
-      orElse: () => _columns.first,
-    );
-    final sorted = List.of(_rows)
-      ..sort((a, b) {
-        final cmp = col.getValue(a).compareTo(col.getValue(b));
-        return _sortAsc ? cmp : -cmp;
-      });
-    return sorted;
+    if (_sort.setSort(columnId)) notifyListeners();
   }
 
   @override

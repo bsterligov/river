@@ -5,6 +5,7 @@ import '../../controllers/time_range_controller.dart';
 import '../../utils/api_error.dart';
 import '../../utils/format_time.dart';
 import '../shared/column_def.dart';
+import '../shared/table_sort_state.dart';
 
 class LogColumn implements ColumnDef {
   const LogColumn({
@@ -99,22 +100,20 @@ class LogsController extends ChangeNotifier {
   // Incremented only when time range changes; facet panel uses this to skip
   // re-fetches caused by selection or loading notifications.
   int _rangeVersion = 0;
-  List<LogColumn> _columns = defaultColumns();
-  String? _sortColumnId;
-  bool _sortAsc = true;
+  final _sort = TableSortState<LogColumn>(defaultColumns());
 
   String get filter => _filter;
   DateTime get from => rangeController.from;
   DateTime get to => rangeController.to;
-  List<LogRow> get rows => _sortedRows();
+  List<LogRow> get rows => _sort.sortedRows(_rawRows);
   List<HistogramBucket> get histogram => _histogram;
   bool get loading => _loading;
   String? get error => _error;
   LogRow? get selectedRow => _selectedRow;
   int get rangeVersion => _rangeVersion;
-  List<LogColumn> get columns => List.unmodifiable(_columns);
-  String? get sortColumnId => _sortColumnId;
-  bool get sortAsc => _sortAsc;
+  List<LogColumn> get columns => _sort.columns;
+  String? get sortColumnId => _sort.sortColumnId;
+  bool get sortAsc => _sort.sortAsc;
 
   void _onRangeChanged() {
     _rangeVersion++;
@@ -144,36 +143,11 @@ class LogsController extends ChangeNotifier {
   }
 
   void toggleColumn(String id) {
-    final idx = _columns.indexWhere((c) => c.id == id);
-    if (idx == -1) return;
-    _columns = List.of(_columns)..[idx] = _columns[idx].copyWith(
-          visible: !_columns[idx].visible,
-        );
-    notifyListeners();
+    if (_sort.toggleColumn(id, (c, v) => c.copyWith(visible: v))) notifyListeners();
   }
 
   void setSort(String columnId) {
-    if (_sortColumnId == columnId) {
-      _sortAsc = !_sortAsc;
-    } else {
-      _sortColumnId = columnId;
-      _sortAsc = true;
-    }
-    notifyListeners();
-  }
-
-  List<LogRow> _sortedRows() {
-    if (_sortColumnId == null) return List.unmodifiable(_rawRows);
-    final col = _columns.firstWhere(
-      (c) => c.id == _sortColumnId,
-      orElse: () => _columns.first,
-    );
-    final sorted = List.of(_rawRows)
-      ..sort((a, b) {
-        final cmp = col.getValue(a).compareTo(col.getValue(b));
-        return _sortAsc ? cmp : -cmp;
-      });
-    return sorted;
+    if (_sort.setSort(columnId)) notifyListeners();
   }
 
   @override
