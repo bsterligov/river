@@ -181,7 +181,7 @@ class _PanelContent extends StatelessWidget {
           )),
           if (selected != null) ...[
             const Divider(height: 1),
-            _SpanAttributesSection(span: selected),
+            SpanAttributesSection(span: selected),
           ],
         ],
       ),
@@ -344,8 +344,8 @@ class _PanelBody extends StatelessWidget {
   }
 }
 
-class _SpanAttributesSection extends StatelessWidget {
-  const _SpanAttributesSection({required this.span});
+class SpanAttributesSection extends StatelessWidget {
+  const SpanAttributesSection({super.key, required this.span});
 
   final Span span;
 
@@ -353,10 +353,11 @@ class _SpanAttributesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 260),
-      child: ListView(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: AppLayout.gapM),
-        shrinkWrap: true,
-        children: [
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           ExpansionTile(
             key: const Key('span_attrs_info'),
             initiallyExpanded: true,
@@ -379,7 +380,7 @@ class _SpanAttributesSection extends StatelessWidget {
             title: Text('Events (${span.events.length})', style: AppText.label),
             children: span.events.isEmpty
                 ? [_emptyRow('No events')]
-                : span.events.map((e) => _EventRow(event: e)).toList(),
+                : span.events.map((e) => EventRow(event: e)).toList(),
           ),
           ExpansionTile(
             key: const Key('span_attrs_links'),
@@ -388,9 +389,10 @@ class _SpanAttributesSection extends StatelessWidget {
             title: Text('Links (${span.links.length})', style: AppText.label),
             children: span.links.isEmpty
                 ? [_emptyRow('No links')]
-                : span.links.map((l) => _LinkRow(link: l)).toList(),
+                : span.links.map((l) => LinkRow(link: l)).toList(),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -401,8 +403,8 @@ class _SpanAttributesSection extends StatelessWidget {
       );
 }
 
-class _EventRow extends StatelessWidget {
-  const _EventRow({required this.event});
+class EventRow extends StatelessWidget {
+  const EventRow({super.key, required this.event});
 
   final SpanEvent event;
 
@@ -431,8 +433,8 @@ class _EventRow extends StatelessWidget {
   }
 }
 
-class _LinkRow extends StatelessWidget {
-  const _LinkRow({required this.link});
+class LinkRow extends StatelessWidget {
+  const LinkRow({super.key, required this.link});
 
   final SpanLink link;
 

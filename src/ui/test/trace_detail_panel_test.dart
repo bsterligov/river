@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:river_api/api.dart';
 
 import 'package:ui/pages/traces/traces.dart';
+import 'package:ui/pages/traces/span_waterfall.dart';
+import 'package:ui/pages/traces/traces_controller.dart';
 import 'package:ui/controllers/time_range_controller.dart';
 import 'package:ui/theme/app_theme.dart';
 
@@ -429,5 +431,444 @@ void main() {
       'buildSpanTree: empty input returns empty list',
       () {
     expect(buildSpanTree([]), isEmpty);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Span selection — _selectSpan and _selectedSpan
+  // ---------------------------------------------------------------------------
+
+  testWidgets(
+      'Given the panel is open with spans, '
+      'When the operator taps a span row, '
+      'Then the span attributes section appears with the selected span info',
+      (tester) async {
+    final spans = [
+      _makeSpan(
+        spanId: 'sp1',
+        service: 'svc-a',
+        operation: 'op-alpha',
+        statusCode: 1,
+      ),
+    ];
+    final api = FakeTraceDetailApi(spansById: {'tid': spans});
+    await _pumpPanel(tester, api: api, selectedTraceId: 'tid');
+
+    // Tap the waterfall row (SpanWaterfallRow has key ValueKey(spanId)).
+    await tester.tap(find.byKey(const ValueKey('sp1')));
+    await tester.pumpAndSettle();
+
+    // The span attributes section should appear with key span fields.
+    expect(find.byKey(const Key('span_attrs_info')), findsOneWidget);
+    expect(find.text('sp1'), findsWidgets);
+  });
+
+  testWidgets(
+      'Given a span is selected and the panel closes, '
+      'When the panel re-opens with a new trace, '
+      'Then the span selection is cleared',
+      (tester) async {
+    final spans = [_makeSpan(spanId: 'sp1')];
+    final api = FakeTraceDetailApi(spansById: {'t1': spans, 't2': spans});
+    final ctrl = await _pumpPanel(tester, api: api, selectedTraceId: 't1');
+
+    // Select a span.
+    await tester.tap(find.byKey(const ValueKey('sp1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('span_attrs_info')), findsOneWidget);
+
+    // Close and reopen with a different trace.
+    ctrl.clearSelection();
+    await tester.pumpAndSettle();
+    ctrl.selectTrace('t2');
+    await tester.pumpAndSettle();
+
+    // Attributes section should not be present (no span selected yet).
+    expect(find.byKey(const Key('span_attrs_info')), findsNothing);
+  });
+
+  // ---------------------------------------------------------------------------
+  // _SpanAttributesSection: events and links (pumped directly)
+  // ---------------------------------------------------------------------------
+
+  testWidgets(
+      'Given a span with events, '
+      'When the attributes section renders, '
+      'Then the Events tile shows the correct count',
+      (tester) async {
+    final span = Span(
+      spanId: 'sp1',
+      parentSpanId: '',
+      service: 'svc',
+      operation: 'op',
+      durationMs: 10,
+      startTime: '2024-01-01T12:00:00.000Z',
+      endTime: '2024-01-01T12:00:00.010Z',
+      statusCode: 0,
+      events: [
+        SpanEvent(
+          name: 'exception',
+          timestamp: '2024-01-01T12:00:00.005Z',
+          attributes: null,
+        ),
+      ],
+      links: [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SpanAttributesSection(span: span),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('span_attrs_info')), findsOneWidget);
+    expect(find.byKey(const Key('span_attrs_events')), findsOneWidget);
+    expect(find.text('Events (1)'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given a span with no events, '
+      'When the Events tile is present, '
+      'Then it shows 0 in the title',
+      (tester) async {
+    final span = Span(
+      spanId: 'sp1',
+      parentSpanId: '',
+      service: 'svc',
+      operation: 'op',
+      durationMs: 10,
+      startTime: '2024-01-01T12:00:00.000Z',
+      endTime: '2024-01-01T12:00:00.010Z',
+      statusCode: 0,
+      events: [],
+      links: [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SpanAttributesSection(span: span),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // All three ExpansionTile keys must be in the tree.
+    expect(find.byKey(const Key('span_attrs_info')), findsOneWidget);
+    expect(find.byKey(const Key('span_attrs_events')), findsOneWidget);
+    expect(find.byKey(const Key('span_attrs_links')), findsOneWidget);
+    expect(find.text('Events (0)'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given a span with links, '
+      'When the Links tile renders, '
+      'Then it shows the correct link count in the title',
+      (tester) async {
+    final span = Span(
+      spanId: 'sp1',
+      parentSpanId: '',
+      service: 'svc',
+      operation: 'op',
+      durationMs: 10,
+      startTime: '2024-01-01T12:00:00.000Z',
+      endTime: '2024-01-01T12:00:00.010Z',
+      statusCode: 0,
+      events: [],
+      links: [
+        SpanLink(
+          traceId: 'linked-trace-1',
+          spanId: 'linked-span-1',
+          attributes: null,
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SpanAttributesSection(span: span),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Links (1)'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given a span with no links, '
+      'When the Links tile renders, '
+      'Then it shows 0 in the title',
+      (tester) async {
+    final span = _makeSpan(spanId: 'sp1');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SpanAttributesSection(span: span),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Links (0)'), findsOneWidget);
+    expect(find.byKey(const Key('span_attrs_links')), findsOneWidget);
+  });
+
+  testWidgets(
+      'EventRow renders event name and timestamp',
+      (tester) async {
+    final event = SpanEvent(
+      name: 'exception',
+      timestamp: '2024-01-01T12:00:00.005Z',
+      attributes: null,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: EventRow(event: event),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('exception'), findsOneWidget);
+    expect(find.text('2024-01-01T12:00:00.005Z'), findsOneWidget);
+  });
+
+  testWidgets(
+      'EventRow with JSON attributes renders each key-value pair',
+      (tester) async {
+    final event = SpanEvent(
+      name: 'ev',
+      timestamp: '2024-01-01T12:00:00.001Z',
+      attributes: '{"errType":"timeout"}',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: EventRow(event: event),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('errType'), findsOneWidget);
+    expect(find.textContaining('timeout'), findsOneWidget);
+  });
+
+  testWidgets(
+      'LinkRow renders trace_id and span_id',
+      (tester) async {
+    final link = SpanLink(
+      traceId: 'linked-trace-1',
+      spanId: 'linked-span-1',
+      attributes: null,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: LinkRow(link: link),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('linked-trace-1'), findsOneWidget);
+    expect(find.text('linked-span-1'), findsOneWidget);
+  });
+
+  // ---------------------------------------------------------------------------
+  // TracesController sort helpers
+  // ---------------------------------------------------------------------------
+
+  test('traceGroupRootService returns root span service', () {
+    final group = _makeTrace(
+      spans: [_makeSpan(spanId: 'root', parentSpanId: '', service: 'my-svc')],
+    );
+    expect(traceGroupRootService(group), equals('my-svc'));
+  });
+
+  test('traceGroupRootOperation returns root span operation', () {
+    final group = _makeTrace(
+      spans: [_makeSpan(spanId: 'root', parentSpanId: '', operation: 'my-op')],
+    );
+    expect(traceGroupRootOperation(group), equals('my-op'));
+  });
+
+  test('traceGroupDurationMs returns root span duration', () {
+    final group = _makeTrace(
+      spans: [_makeSpan(spanId: 'root', parentSpanId: '', durationMs: 123.4)],
+    );
+    expect(traceGroupDurationMs(group), closeTo(123.4, 0.001));
+  });
+
+  test('traceGroupDurationMs returns 0 for empty spans', () {
+    final group = TraceGroup(traceId: 't1', spans: []);
+    expect(traceGroupDurationMs(group), equals(0.0));
+  });
+
+  test('traceGroupStartTime returns earliest span startTime', () {
+    final group = _makeTrace(spans: [
+      _makeSpan(
+          spanId: 'sp1',
+          startTime: '2024-01-01T12:00:00.010Z',
+          endTime: '2024-01-01T12:00:00.020Z'),
+      _makeSpan(
+          spanId: 'sp2',
+          parentSpanId: 'sp1',
+          startTime: '2024-01-01T11:59:59.000Z',
+          endTime: '2024-01-01T12:00:00.010Z'),
+    ]);
+    expect(traceGroupStartTime(group), equals('2024-01-01T11:59:59.000Z'));
+  });
+
+  test('traceGroupStartTime returns empty string for empty spans', () {
+    final group = TraceGroup(traceId: 't1', spans: []);
+    expect(traceGroupStartTime(group), equals(''));
+  });
+
+  test('TracesController sorts by rootService ascending', () {
+    final rc = TimeRangeController();
+    final api = FakeTraceDetailApi();
+    final ctrl = TracesController(apiClient: api, rangeController: rc);
+
+    // Use setSort to exercise the sort-column state transitions.
+    ctrl.setSort('rootService');
+    expect(ctrl.sortColumnId, equals('rootService'));
+    expect(ctrl.sortAsc, isTrue);
+
+    // Toggle to descending.
+    ctrl.setSort('rootService');
+    expect(ctrl.sortAsc, isFalse);
+
+    ctrl.dispose();
+    rc.dispose();
+  });
+
+  test('TracesController from/to getters delegate to rangeController', () {
+    final rc = TimeRangeController();
+    final api = FakeTraceDetailApi();
+    final ctrl = TracesController(apiClient: api, rangeController: rc);
+
+    expect(ctrl.from, equals(rc.from));
+    expect(ctrl.to, equals(rc.to));
+
+    ctrl.dispose();
+    rc.dispose();
+  });
+
+  test('TracesController filter getter reflects setFilter', () {
+    final rc = TimeRangeController();
+    final api = FakeTraceDetailApi();
+    final ctrl = TracesController(apiClient: api, rangeController: rc);
+
+    expect(ctrl.filter, equals(''));
+    ctrl.setFilter('service:backend');
+    expect(ctrl.filter, equals('service:backend'));
+
+    ctrl.dispose();
+    rc.dispose();
+  });
+
+  // ---------------------------------------------------------------------------
+  // SpanRowPainter.shouldRepaint
+  // ---------------------------------------------------------------------------
+
+  test('SpanRowPainter.shouldRepaint returns true when node changes', () {
+    final span1 = _makeSpan(spanId: 'sp1');
+    final span2 = _makeSpan(spanId: 'sp2');
+    final node1 = SpanNode(span: span1, depth: 0);
+    final node2 = SpanNode(span: span2, depth: 0);
+
+    final p1 = SpanRowPainter(
+      node: node1,
+      traceStartMs: 0,
+      traceDurationMs: 100,
+      labelColumnWidth: 150,
+      isSelected: false,
+    );
+    final p2 = SpanRowPainter(
+      node: node2,
+      traceStartMs: 0,
+      traceDurationMs: 100,
+      labelColumnWidth: 150,
+      isSelected: false,
+    );
+
+    expect(p1.shouldRepaint(p2), isTrue);
+  });
+
+  test('SpanRowPainter.shouldRepaint returns true when isSelected changes', () {
+    final span = _makeSpan(spanId: 'sp1');
+    final node = SpanNode(span: span, depth: 0);
+
+    final p1 = SpanRowPainter(
+      node: node,
+      traceStartMs: 0,
+      traceDurationMs: 100,
+      labelColumnWidth: 150,
+      isSelected: false,
+    );
+    final p2 = SpanRowPainter(
+      node: node,
+      traceStartMs: 0,
+      traceDurationMs: 100,
+      labelColumnWidth: 150,
+      isSelected: true,
+    );
+
+    expect(p1.shouldRepaint(p2), isTrue);
+  });
+
+  test('SpanRowPainter.shouldRepaint returns false when nothing changes', () {
+    final span = _makeSpan(spanId: 'sp1');
+    final node = SpanNode(span: span, depth: 0);
+
+    final painter = SpanRowPainter(
+      node: node,
+      traceStartMs: 0,
+      traceDurationMs: 100,
+      labelColumnWidth: 150,
+      isSelected: false,
+    );
+
+    expect(painter.shouldRepaint(painter), isFalse);
+  });
+
+  testWidgets(
+      'Given a span is selected, '
+      'When the waterfall row is rendered, '
+      'Then the SpanRowPainter has isSelected=true for that span',
+      (tester) async {
+    final spans = [_makeSpan(spanId: 'sp1', service: 'svc', operation: 'op')];
+    final api = FakeTraceDetailApi(spansById: {'tid': spans});
+    await _pumpPanel(tester, api: api, selectedTraceId: 'tid');
+
+    // Tap the row to select it.
+    await tester.tap(find.byKey(const ValueKey('sp1')));
+    await tester.pumpAndSettle();
+
+    final painters = tester
+        .widgetList<CustomPaint>(find.byType(CustomPaint))
+        .map((cp) => cp.painter)
+        .whereType<SpanRowPainter>()
+        .toList();
+    expect(painters, isNotEmpty);
+    expect(painters.first.isSelected, isTrue);
   });
 }
