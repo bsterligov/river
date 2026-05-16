@@ -250,7 +250,6 @@ void main() {
     final trace = makeTrace();
     final api = FakeTracesApi(traces: [trace]);
     final rc = TimeRangeController();
-    late TracesController capturedController;
 
     await tester.pumpWidget(
       MaterialApp(

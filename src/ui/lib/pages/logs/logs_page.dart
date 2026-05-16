@@ -6,7 +6,7 @@ import '../../controllers/time_range_controller.dart';
 import '../../widgets/facet_panel.dart';
 import '../../widgets/log_detail_panel.dart';
 import '../../widgets/log_histogram.dart';
-import 'log_search_bar.dart';
+import '../../widgets/river_search_bar.dart';
 import 'logs_controller.dart';
 import 'logs_table.dart';
 
@@ -30,7 +30,7 @@ class _LogsPageState extends State<LogsPage> {
   void initState() {
     super.initState();
     _controller = LogsController(apiClient: widget.apiClient, rangeController: widget.rangeController);
-    _controller.reload();
+    _controller.reload().onError((e, _) => debugPrint('LogsPage: initial reload failed: $e'));
   }
 
   @override
@@ -150,9 +150,11 @@ class _Toolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LogSearchBar(
+    return RiverSearchBar(
+      fieldKey: const Key('logs_search'),
       controller: searchController,
       onSubmit: onSubmit,
+      hintText: 'Filter (e.g. service:myapp AND severity:ERROR)',
       errorText: controller.error,
     );
   }

@@ -221,7 +221,7 @@ class _BarPainter extends CustomPainter {
 
   void _drawYAxis(Canvas canvas, double barAreaHeight) {
     final tp = TextPainter(textDirection: TextDirection.ltr);
-    final style = AppText.micro.copyWith(color: Colors.black45);
+    final style = AppText.micro.copyWith(color: AppColors.textMuted);
 
     void drawLabel(String text, double y) {
       tp.text = TextSpan(text: text, style: style);
@@ -289,7 +289,7 @@ class _XAxisLabels extends StatelessWidget {
             height: labelHeight,
             child: Text(
               l.label,
-              style: AppText.micro.copyWith(color: Colors.black54),
+              style: AppText.micro.copyWith(color: AppColors.textMuted),
               overflow: TextOverflow.clip,
               maxLines: 1,
             ),

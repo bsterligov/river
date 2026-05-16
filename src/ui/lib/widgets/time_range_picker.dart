@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
+import 'custom_range_form.dart';
 
 typedef RangeCallback = void Function(DateTime from, DateTime to);
 
@@ -34,7 +34,6 @@ class _TimeRangePickerState extends State<TimeRangePicker> {
   final _link = LayerLink();
   OverlayEntry? _overlay;
 
-  // Returns the preset index whose duration matches from→to within 5s, or -1.
   int _matchPreset(DateTime from, DateTime to) {
     final span = to.difference(from);
     for (int i = 0; i < _presets.length; i++) {
@@ -77,6 +76,7 @@ class _TimeRangePickerState extends State<TimeRangePicker> {
   }
 
   void _open() {
+    if (!mounted) return;
     final activeIndex = _matchPreset(widget.from, widget.to);
     _overlay = OverlayEntry(
       builder: (_) => _DropdownOverlay(
@@ -122,7 +122,8 @@ class _TimeRangePickerState extends State<TimeRangePicker> {
 // ── Trigger button ────────────────────────────────────────────────────────────
 
 class _TriggerButton extends StatelessWidget {
-  const _TriggerButton({required this.label, required this.open, required this.onTap});
+  const _TriggerButton(
+      {required this.label, required this.open, required this.onTap});
 
   final String label;
   final bool open;
@@ -134,7 +135,8 @@ class _TriggerButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppLayout.radius),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppLayout.cellPaddingH, vertical: 7),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppLayout.cellPaddingH, vertical: 7),
         decoration: BoxDecoration(
           color: open
               ? Colors.white.withValues(alpha: 0.15)
@@ -150,7 +152,8 @@ class _TriggerButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.schedule, size: AppIcons.sizeS, color: Colors.white.withValues(alpha: 0.7)),
+            Icon(Icons.schedule,
+                size: AppIcons.sizeS, color: Colors.white.withValues(alpha: 0.7)),
             const SizedBox(width: AppLayout.gapM - 2),
             Text(label, style: AppText.label.copyWith(color: Colors.white)),
             const SizedBox(width: AppLayout.gapM - 2),
@@ -221,7 +224,7 @@ class _DropdownOverlay extends StatelessWidget {
                   ),
                   const VerticalDivider(width: 1, color: AppColors.border),
                   Expanded(
-                    child: _CustomForm(onApply: onCustom),
+                    child: CustomRangeForm(onApply: onCustom),
                   ),
                 ],
               ),
@@ -236,7 +239,8 @@ class _DropdownOverlay extends StatelessWidget {
 // ── Preset list (left column) ─────────────────────────────────────────────────
 
 class _PresetList extends StatelessWidget {
-  const _PresetList({required this.presets, required this.activeIndex, required this.onSelect});
+  const _PresetList(
+      {required this.presets, required this.activeIndex, required this.onSelect});
 
   final List<_Preset> presets;
   final int activeIndex;
@@ -257,7 +261,8 @@ class _PresetList extends StatelessWidget {
               AppLayout.cellPaddingH,
               AppLayout.gapM - 2,
             ),
-            child: Text('Suggested', style: AppText.label.copyWith(color: Colors.black45)),
+            child: Text('Suggested',
+                style: AppText.label.copyWith(color: AppColors.textMuted)),
           ),
           for (int i = 0; i < presets.length; i++)
             _PresetRow(
@@ -273,7 +278,8 @@ class _PresetList extends StatelessWidget {
 }
 
 class _PresetRow extends StatelessWidget {
-  const _PresetRow({required this.label, required this.active, required this.onTap});
+  const _PresetRow(
+      {required this.label, required this.active, required this.onTap});
 
   final String label;
   final bool active;
@@ -289,151 +295,11 @@ class _PresetRow extends StatelessWidget {
         child: Text(
           label,
           style: AppText.body.copyWith(
-            color: active ? AppColors.primary : Colors.black87,
+            color: active ? AppColors.primary : AppColors.textBody,
             fontWeight: active ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
       ),
-    );
-  }
-}
-
-// ── Custom date/time form (right column) ──────────────────────────────────────
-
-class _CustomForm extends StatefulWidget {
-  const _CustomForm({required this.onApply});
-
-  final void Function(DateTime from, DateTime to) onApply;
-
-  @override
-  State<_CustomForm> createState() => _CustomFormState();
-}
-
-class _CustomFormState extends State<_CustomForm> {
-  final _fromController = TextEditingController();
-  final _toController = TextEditingController();
-  String? _error;
-
-  static final _fmt = RegExp(
-    r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$',
-  );
-
-  @override
-  void initState() {
-    super.initState();
-    final now = DateTime.now();
-    final from = now.subtract(const Duration(hours: 1));
-    _fromController.text = _format(from);
-    _toController.text = _format(now);
-  }
-
-  @override
-  void dispose() {
-    _fromController.dispose();
-    _toController.dispose();
-    super.dispose();
-  }
-
-  String _format(DateTime dt) =>
-      '${dt.year.toString().padLeft(4, '0')}-'
-      '${dt.month.toString().padLeft(2, '0')}-'
-      '${dt.day.toString().padLeft(2, '0')} '
-      '${dt.hour.toString().padLeft(2, '0')}:'
-      '${dt.minute.toString().padLeft(2, '0')}';
-
-  DateTime? _parse(String s) {
-    if (!_fmt.hasMatch(s)) return null;
-    try {
-      final parts = s.split(' ');
-      final d = parts[0].split('-');
-      final t = parts[1].split(':');
-      return DateTime(
-        int.parse(d[0]), int.parse(d[1]), int.parse(d[2]),
-        int.parse(t[0]), int.parse(t[1]),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  void _apply() {
-    final from = _parse(_fromController.text);
-    final to = _parse(_toController.text);
-    if (from == null || to == null) {
-      setState(() => _error = 'Use format: YYYY-MM-DD HH:MM');
-      return;
-    }
-    if (!to.isAfter(from)) {
-      setState(() => _error = '"To" must be after "From"');
-      return;
-    }
-    widget.onApply(from.toUtc(), to.toUtc());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppLayout.gapXL),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text('Custom range', style: AppText.label),
-          const SizedBox(height: AppLayout.gapL),
-          _DateField(label: 'From', controller: _fromController),
-          const SizedBox(height: AppLayout.gapM),
-          _DateField(label: 'To', controller: _toController),
-          if (_error != null) ...[
-            const SizedBox(height: AppLayout.gapM - 2),
-            Text(_error!, style: AppText.label.copyWith(color: AppColors.error)),
-          ],
-          const SizedBox(height: AppLayout.gapL),
-          ElevatedButton(
-            onPressed: _apply,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: AppLayout.cellPaddingV + 4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppLayout.radius),
-              ),
-              elevation: 0,
-            ),
-            child: const Text('Apply', style: AppText.label),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DateField extends StatelessWidget {
-  const _DateField({required this.label, required this.controller});
-
-  final String label;
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label, style: AppText.label.copyWith(color: Colors.black54)),
-        const SizedBox(height: AppLayout.gapS),
-        TextField(
-          controller: controller,
-          style: AppText.mono,
-          decoration: const InputDecoration(
-            hintText: 'YYYY-MM-DD HH:MM',
-            isDense: true,
-          ),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'[\d\- :]')),
-            LengthLimitingTextInputFormatter(16),
-          ],
-        ),
-      ],
     );
   }
 }

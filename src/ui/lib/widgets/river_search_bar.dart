@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 
-import '../../theme/app_theme.dart';
+import '../theme/app_theme.dart';
 
-class LogSearchBar extends StatelessWidget {
-  const LogSearchBar({
+class RiverSearchBar extends StatelessWidget {
+  const RiverSearchBar({
     super.key,
+    required this.fieldKey,
     required this.controller,
     required this.onSubmit,
+    required this.hintText,
     this.errorText,
   });
 
+  final Key fieldKey;
   final TextEditingController controller;
   final void Function(String) onSubmit;
+  final String hintText;
   final String? errorText;
 
   @override
@@ -21,10 +25,10 @@ class LogSearchBar extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         TextField(
-          key: const Key('logs_search'),
+          key: fieldKey,
           controller: controller,
           decoration: InputDecoration(
-            hintText: 'Filter (e.g. service:myapp AND severity:ERROR)',
+            hintText: hintText,
             prefixIcon: const Icon(Icons.search, size: AppIcons.sizeL),
             errorText: errorText,
           ),

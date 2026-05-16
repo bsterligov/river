@@ -1,9 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
 import '../theme/app_theme.dart';
+import '../utils/parse_attributes.dart';
+import '../widgets/kv_row.dart';
 import '../pages/logs/logs_controller.dart';
 
 class LogDetailPanel extends StatelessWidget {
@@ -81,7 +81,7 @@ class _PanelHeader extends StatelessWidget {
       padding: AppLayout.cellPadding,
       child: Row(
         children: [
-          Expanded(child: const Text('Log Detail', style: AppText.label)),
+          const Expanded(child: Text('Log Detail', style: AppText.label)),
           IconButton(
             key: const Key('detail_close'),
             icon: const Icon(Icons.close, size: AppIcons.sizeM),
@@ -114,7 +114,7 @@ class _TagsSection extends StatelessWidget {
       initiallyExpanded: true,
       tilePadding: AppLayout.tilePadding,
       title: const Text('Log Tags & Infra Info', style: AppText.label),
-      children: pairs.map((p) => _KvRow(k: p.$1, v: p.$2)).toList(),
+      children: pairs.map((p) => KvRow(k: p.$1, v: p.$2)).toList(),
     );
   }
 }
@@ -150,7 +150,7 @@ class _AttributesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pairs = _parseAttributes(attributes);
+    final pairs = parseAttributes(attributes);
     return ExpansionTile(
       initiallyExpanded: true,
       tilePadding: AppLayout.tilePadding,
@@ -162,41 +162,7 @@ class _AttributesSection extends StatelessWidget {
                 child: Text('No attributes', style: AppText.body),
               ),
             ]
-          : pairs.map((p) => _KvRow(k: p.$1, v: p.$2)).toList(),
-    );
-  }
-
-  static List<(String, String)> _parseAttributes(Object? raw) {
-    try {
-      final decoded = raw is String ? jsonDecode(raw) : raw;
-      if (decoded is Map<String, dynamic>) {
-        return decoded.entries.map((e) => (e.key, '${e.value}')).toList();
-      }
-    } catch (_) {}
-    return [];
-  }
-}
-
-class _KvRow extends StatelessWidget {
-  const _KvRow({required this.k, required this.v});
-
-  final String k;
-  final String v;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: AppLayout.sectionPadding,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: AppLayout.detailLabelWidth,
-            child: Text(k, style: AppText.label),
-          ),
-          Expanded(child: Text(v, style: AppText.mono)),
-        ],
-      ),
+          : pairs.map((p) => KvRow(k: p.$1, v: p.$2)).toList(),
     );
   }
 }

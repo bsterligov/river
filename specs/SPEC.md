@@ -87,6 +87,15 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **`SpanWaterfallPainter`:** `CustomPainter` in `lib/pages/traces/span_waterfall.dart`; one row per span — label column (service + operation, left-padded `depth * 12px`) and bar column; bar x/width proportional to `start_time`/`duration_ms` relative to trace bounds; bar colour: `AppColors.primary` (ok/status 1), `Colors.red` (error/status 2), `Colors.grey` (unset/other)
 - **Span tree building:** `buildSpanTree(List<Span>)` produces flat depth-first `SpanNode` list from `parent_span_id` linkage; orphan spans (missing or unresolvable parent) placed at root depth 0; never drops or crashes on malformed data
 - **200-span cap:** constant `_kMaxSpans = 200` in `trace_detail_panel.dart`; when exceeded a `spans_capped_notice` banner is shown above the waterfall; raising the cap requires no spec change
+- **`KvRow` widget:** shared in `lib/widgets/kv_row.dart`; used by `LogDetailPanel` and `SpanAttributesSection`
+- **`parseAttributes`:** public function in `lib/utils/parse_attributes.dart`; replaces all inline `_parseAttributes` copies
+- **`RiverSearchBar`:** shared search bar widget in `lib/widgets/river_search_bar.dart`; parameterised by `fieldKey` and `hintText`; replaces `LogSearchBar` and `_TracesSearchBar`
+- **`CustomRangeForm`:** extracted from `time_range_picker.dart` to `lib/widgets/custom_range_form.dart`
+- **`column_layout.dart`:** column-width math extracted from `logs_table.dart` to `lib/pages/logs/column_layout.dart`
+- **`span_detail_widgets.dart`:** `SpanAttributesSection`, `EventRow`, `LinkRow` extracted from `trace_detail_panel.dart` to `lib/pages/traces/span_detail_widgets.dart`
+- **`AppColors.warning`:** `Color(0xFFED8936)` — WARN severity colour in logs table
+- **`AppColors.textBody`:** `Color(0xDD000000)` — black @ 87%, replaces `Colors.black87` literals
+- **`spanRowHeight`:** top-level constant in `span_waterfall.dart`; replaces `SpanRowPainter._rowHeight`
 - **`Span.attributes`:** `serde_json::Value` field on the `Span` struct; populated by `row_to_span` reading the `attributes` column from the ClickHouse `traces` table; uses the same `parse_attributes` fallback (`{}` on parse failure or missing column) as `LogRow.attributes`; included in both `query_traces` and `query_trace` SQL selects; Dart model field is `Object? attributes`
 - **`SpanAttributesSection`:** inline widget in `trace_detail_panel.dart`; four `ExpansionTile` sections — Attributes (JSON key-value pairs from `span.attributes`, falls back to "No attributes"; key `span_attrs_attributes`), Span Info (key `span_attrs_info`), Events (key `span_attrs_events`), Links (key `span_attrs_links`); `_SpanAttrHeader` with X button (key `span_attrs_close`) calls `onClear` callback; rendered below the waterfall inside `_PanelContent` when `_selectedSpanId != null`; `_clearSpan` on `_TraceDetailPanelState` resets `_selectedSpanId` to null
 

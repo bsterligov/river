@@ -95,19 +95,18 @@ class _FacetPanelState extends State<FacetPanel> {
         from: widget.controller.from.toIso8601String(),
         to: widget.controller.to.toIso8601String(),
       );
-      if (mounted) {
-        setState(() {
-          _facets = results ?? [];
-          _loading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _facets = [];
-          _loading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _facets = results ?? [];
+        _loading = false;
+      });
+    } catch (e) {
+      debugPrint('FacetPanel: failed to fetch facets: $e');
+      if (!mounted) return;
+      setState(() {
+        _facets = [];
+        _loading = false;
+      });
     }
   }
 
@@ -188,7 +187,7 @@ class _FacetPanelState extends State<FacetPanel> {
             const Divider(height: 1, color: AppColors.border),
             Expanded(
               child: _loading
-                  ? _Shimmer()
+                  ? const _Shimmer()
                   : _FacetList(
                       facets: _facets,
                       selected: Set.unmodifiable(_selected),
@@ -204,6 +203,8 @@ class _FacetPanelState extends State<FacetPanel> {
 }
 
 class _Shimmer extends StatelessWidget {
+  const _Shimmer();
+
   @override
   Widget build(BuildContext context) {
     return Container(

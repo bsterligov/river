@@ -143,3 +143,7 @@ Added an "Attributes" `ExpansionTile` to `SpanAttributesSection` that parses `sp
 ### 2026-05-16 — RIVER-73: spec created
 
 Spec for Flutter UI code quality refactoring: extract duplicate `_KvRow` widget and attribute-parsing logic, consolidate search bars, split three oversized files, move hardcoded colors into theme, and fix async `mounted`/error-handling gaps surfaced in a code review.
+
+### 2026-05-16 — RIVER-73: implementation done
+
+Extracted `KvRow`, `RiverSearchBar`, `CustomRangeForm`, `parseAttributes` into shared files eliminating all widget/function duplication; split `logs_table.dart` (column layout) and `trace_detail_panel.dart` (span detail widgets) into dedicated modules; added `AppColors.warning` and `AppColors.textBody` theme tokens replacing all raw `Colors.orange/black45/black87` literals; renamed `spanRowHeight` and other pixel constants in `span_waterfall.dart`; fixed `mounted` guard ordering in `facet_panel.dart`, added error handler to unawaited reload in `logs_page.dart`, and added `mounted` guard in `time_range_picker.dart`. All 76 widget tests pass; `flutter analyze` reports zero new issues.
