@@ -155,7 +155,7 @@ class _PanelContent extends StatelessWidget {
     final selected = _selectedSpan;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(AppLayout.radius),
         boxShadow: const [
@@ -268,7 +268,7 @@ class _CappedNotice extends StatelessWidget {
       ),
       child: Text(
         'Showing top $count spans',
-        style: AppText.micro.copyWith(color: Colors.black54),
+        style: AppText.micro.copyWith(color: AppColors.textMuted),
       ),
     );
   }

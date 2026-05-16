@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 abstract final class AppColors {
   static const surface = Color(0xFFF8F9FA);
+  static const white = Color(0xFFFFFFFF);
   static const topPanel = Color(0xFF1E2029);
   static const sidebar = Color(0xFF2C3A5C);
   static const sidebarText = Color(0xFFB0B8C4);
@@ -11,6 +12,8 @@ abstract final class AppColors {
   static const border = Color(0xFFE2E8F0);
   static const tableHeader = Color(0xFFF1F3F5);
   static const error = Color(0xFFE53E3E);
+  static const spanUnset = Color(0xFF9E9E9E); // OTel status unset bar colour
+  static const textMuted = Color(0x8A000000); // black @ 54% (Colors.black54)
   static const rowSelected = Color(0x144F74E8); // primary @ 8%
   static const shimmer = Color(0xFFE0E0E0);
   static const shadow = Color(0x1A000000); // black @ 10%
@@ -23,6 +26,12 @@ abstract final class AppText {
   static const micro = TextStyle(fontSize: 9);
   static const appTitle = TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5);
   static const navItem = TextStyle(fontSize: 13);
+  static const spanLabel = TextStyle(
+    fontSize: 11,
+    color: Color(0xDD000000), // Colors.black87
+    fontFamily: 'monospace',
+    overflow: TextOverflow.ellipsis,
+  );
 }
 
 abstract final class AppLayout {
@@ -79,7 +88,7 @@ final appTheme = ThemeData(
   ),
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
-    fillColor: Colors.white,
+    fillColor: AppColors.white,
     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(6),

@@ -79,7 +79,6 @@ class SpanRowPainter extends CustomPainter {
   static const _rowHeight = 28.0;
   static const _barHeight = 14.0;
   static const _indentPx = 12.0;
-  static const _labelFontSize = 11.0;
   static const _minBarWidth = 2.0;
 
   @override
@@ -100,12 +99,7 @@ class SpanRowPainter extends CustomPainter {
     final labelPainter = TextPainter(
       text: TextSpan(
         text: label,
-        style: const TextStyle(
-          fontSize: _labelFontSize,
-          color: Colors.black87,
-          fontFamily: 'monospace',
-          overflow: TextOverflow.ellipsis,
-        ),
+        style: AppText.spanLabel,
       ),
       textDirection: TextDirection.ltr,
       maxLines: 1,
@@ -142,8 +136,8 @@ class SpanRowPainter extends CustomPainter {
     // OTel status codes: 0=unset, 1=ok, 2=error.
     return switch (statusCode) {
       1 => AppColors.primary,
-      2 => Colors.red,
-      _ => Colors.grey,
+      2 => AppColors.error,
+      _ => AppColors.spanUnset,
     };
   }
 
