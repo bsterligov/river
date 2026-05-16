@@ -139,3 +139,7 @@ Added `attributes: serde_json::Value` to the `Span` struct, read `SpanAttributes
 ### 2026-05-16 — RIVER-61: implementation done
 
 Added an "Attributes" `ExpansionTile` to `SpanAttributesSection` that parses `span.attributes` as JSON key-value pairs (same try/catch fallback as `LogDetailPanel`), and added a `_SpanAttrHeader` with an X button (`span_attrs_close` key) that calls `onClear` to dismiss the section. Five new BDD tests cover valid JSON attributes, null attributes, non-JSON fallback, and the close button both standalone and integrated in the full panel.
+
+### 2026-05-16 — RIVER-73: spec created
+
+Spec for Flutter UI code quality refactoring: extract duplicate `_KvRow` widget and attribute-parsing logic, consolidate search bars, split three oversized files, move hardcoded colors into theme, and fix async `mounted`/error-handling gaps surfaced in a code review.

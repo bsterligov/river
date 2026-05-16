@@ -22,3 +22,4 @@ Status lives here — not in filenames. Done tasks stay in the list (marked with
 - ~~RIVER-59: Trace waterfall detail panel (Flutter)~~
 - ~~RIVER-61: Span attributes panel~~
 - ~~RIVER-70: Add `attributes` field to Span API response and show it in the trace detail panel~~
+- RIVER-73: Refactor Flutter widgets: extract duplicates, split large files, fix async safety
