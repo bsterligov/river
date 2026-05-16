@@ -83,6 +83,10 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Traces page module:** `lib/pages/traces/` with barrel `traces.dart`; `TracesPage`, `TracesController`, `TracesTable`; registered in `main.dart` as `_Page.traces` with `Icons.account_tree_outlined` sidebar nav item
 - **`TracesTable` columns:** Trace ID (flex 3), Root Service (flex 2), Root Operation (flex 3), Duration ms (flex 2), Spans (flex 1), Start Time (flex 3); client-side sort via `TracesController.setSort(columnId)`; root span identified as the span with empty `parentSpanId`
 - **Root span heuristic:** `rootSpan(group)` returns the first span where `parentSpanId.isEmpty`; falls back to `spans.first` if none found
+- **`TraceDetailPanel`:** 420px `AnimatedSize` slide-in (0 → 420px, 200ms easeInOut) in `lib/pages/traces/trace_detail_panel.dart`; shown when `controller.selectedTraceId != null`; fetches spans via `getTrace(traceId)` on open, builds span tree in local widget state; X button calls `controller.clearSelection()`; timeline header shows total trace duration
+- **`SpanWaterfallPainter`:** `CustomPainter` in `lib/pages/traces/span_waterfall.dart`; one row per span — label column (service + operation, left-padded `depth * 12px`) and bar column; bar x/width proportional to `start_time`/`duration_ms` relative to trace bounds; bar colour: `AppColors.primary` (ok/status 1), `Colors.red` (error/status 2), `Colors.grey` (unset/other)
+- **Span tree building:** `buildSpanTree(List<Span>)` produces flat depth-first `SpanNode` list from `parent_span_id` linkage; orphan spans (missing or unresolvable parent) placed at root depth 0; never drops or crashes on malformed data
+- **200-span cap:** constant `_kMaxSpans = 200` in `trace_detail_panel.dart`; when exceeded a `spans_capped_notice` banner is shown above the waterfall; raising the cap requires no spec change
 
 ## Spec System
 `/spec` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/spec-dev` → impl PR → merge(main)
