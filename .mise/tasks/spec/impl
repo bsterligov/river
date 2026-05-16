@@ -23,11 +23,11 @@ git push origin "$IMPL_BRANCH"
 git checkout -
 
 PR_BODY="Implementation branch for ${TASK}."$'\n\n'
-PR_BODY+="Checkout this branch and run \`/dev-spec\` to implement the spec."$'\n\n'
+PR_BODY+="Checkout this branch and run \`/spec-dev\` to implement the spec."$'\n\n'
 PR_BODY+='```'$'\n'
 PR_BODY+="git checkout ${IMPL_BRANCH}"$'\n'
 PR_BODY+='```'$'\n\n'
-PR_BODY+="Then open Claude Code and run \`/dev-spec\`."
+PR_BODY+="Then open Claude Code and run \`/spec-dev\`."
 
 gh pr create \
   --title "impl: ${TASK}" \

@@ -85,7 +85,7 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **Root span heuristic:** `rootSpan(group)` returns the first span where `parentSpanId.isEmpty`; falls back to `spans.first` if none found
 
 ## Spec System
-`/po-spec-writer` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/dev-spec` → impl PR → merge(main)
+`/spec` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/spec-dev` → impl PR → merge(main)
 Path: `/specs/{priority}/{category}/RIVER-{issue_number}-title.md`
 Priorities: `must` `should` `could` `wont`
 Categories: `bugs` `docs` `features` `refactoring` `tools`

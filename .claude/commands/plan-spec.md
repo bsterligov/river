@@ -1,12 +1,12 @@
-# dev-plan
+# plan-spec
 
-Reads a feature plan from `specs/plans/` and for each phase spawns a parallel subagent that creates a GitHub issue, waits for the GHA to create the spec branch, checks it out, and writes a spec using po-spec-writer.
+Reads a feature plan from `specs/plans/` and for each phase spawns a parallel subagent that creates a GitHub issue, waits for the GHA to create the spec branch, checks it out, and writes a spec using spec.
 
 Subagents run with worktree isolation so they can work on separate branches in parallel without git conflicts.
 
 ## Step 1 — Locate the plan
 
-The user provides the plan name as an argument (e.g. `/dev-plan alerting-system`). Resolve it to `specs/plans/{plan-name}.md`.
+The user provides the plan name as an argument (e.g. `/plan-spec alerting-system`). Resolve it to `specs/plans/{plan-name}.md`.
 
 If the argument is missing, list all files in `specs/plans/` and ask the user to name one.
 
@@ -48,7 +48,7 @@ Use this prompt template for each subagent (fill in the placeholders from the pl
 
 ---
 
-You are working inside the River repository. Your job is to create a GitHub issue for one phase of a feature plan, wait for the GHA to create a spec branch, check it out, and write a spec using po-spec-writer.
+You are working inside the River repository. Your job is to create a GitHub issue for one phase of a feature plan, wait for the GHA to create a spec branch, check it out, and write a spec using spec.
 
 **Context from the feature plan:**
 - Why (plan-level): {WHY}
@@ -100,7 +100,7 @@ Why: {WHY}
    git checkout <headRefName>
    ```
 
-4. Invoke the po-spec-writer skill. Pass it all context from the issue fields above so it does not need to ask for inputs — it should find the draft file in `specs/drafts/` (created by GHA) and proceed directly to proposing a test approach and writing the spec.
+4. Invoke the spec skill. Pass it all context from the issue fields above so it does not need to ask for inputs — it should find the draft file in `specs/drafts/` (created by GHA) and proceed directly to proposing a test approach and writing the spec.
 
 5. Report: issue number, branch name, spec file path created.
 

@@ -2,15 +2,21 @@
 
 Recalculates the Claude token usage table in `docs/token-usage.md` by correlating Claude Code session data with git history.
 
-## Step 1 — Extract token events from Claude Code sessions
+Run the following single script. It covers all steps — session parsing, RTK savings, git correlation, cost breakdown, and file updates.
 
-Parse all JSONL session files for this project and collect every assistant turn that has a `usage` field:
-
-```python
-import json, glob
+```bash
+mise exec -- python - <<'PYEOF'
+import json, glob, os, re, sqlite3, subprocess, collections
 from datetime import datetime, timezone
 
-proj = "/Users/b.sterligov/.claude/projects/-Users-b-sterligov-projects-river/"
+# ── project root ────────────────────────────────────────────────────────────
+project_root = subprocess.check_output(
+    ["git", "rev-parse", "--show-toplevel"], text=True
+).strip()
+
+# ── Step 1: token events from Claude Code sessions ───────────────────────────
+proj_slug = project_root.lstrip("/").replace("/", "-")
+proj = os.path.join(os.path.expanduser("~"), ".claude", "projects", f"-{proj_slug}", "")
 files = glob.glob(proj + "*.jsonl")
 
 events = []
@@ -22,7 +28,7 @@ for fpath in files:
                 continue
             try:
                 obj = json.loads(line)
-            except:
+            except Exception:
                 continue
             if obj.get("type") != "assistant":
                 continue
@@ -40,24 +46,19 @@ for fpath in files:
             ))
 
 events.sort(key=lambda x: x[0])
-```
 
-## Step 2 — Extract RTK compression savings
-
-Query the RTK SQLite database for saved tokens in this project, scoped by `project_path`:
-
-```python
-import sqlite3
-
-RTK_DB = "/Users/b.sterligov/Library/Application Support/rtk/history.db"
-PROJECT_PATH = "/Users/b.sterligov/projects/river"
-
+# ── Step 2: RTK compression savings ─────────────────────────────────────────
 rtk_events = []
 try:
+    _rtk_line = subprocess.check_output(
+        ["rtk", "config"], text=True, stderr=subprocess.DEVNULL
+    ).splitlines()[0]
+    _rtk_dir = os.path.dirname(_rtk_line.split("Config:", 1)[1].strip())
+    RTK_DB = os.path.join(_rtk_dir, "history.db")
     con = sqlite3.connect(RTK_DB)
     cur = con.execute(
         "SELECT timestamp, saved_tokens FROM commands WHERE project_path = ? ORDER BY timestamp",
-        (PROJECT_PATH,),
+        (project_root,),
     )
     for ts_str, saved in cur.fetchall():
         ts = datetime.fromisoformat(ts_str).astimezone(timezone.utc)
@@ -65,17 +66,11 @@ try:
     con.close()
 except Exception as e:
     print(f"RTK DB unavailable: {e}")
-    rtk_events = []
-```
 
-## Step 3 — Load git commits
-
-```python
-import subprocess
-
+# ── Step 3: git commits ──────────────────────────────────────────────────────
 result = subprocess.run(
     ["git", "log", "--format=%aI|%H|%s"],
-    capture_output=True, text=True
+    capture_output=True, text=True, cwd=project_root
 )
 commits = []
 for line in result.stdout.strip().splitlines():
@@ -85,13 +80,8 @@ for line in result.stdout.strip().splitlines():
         ts = datetime.fromisoformat(ts_str).astimezone(timezone.utc)
         commits.append((ts, sha[:8], msg))
 commits.sort(key=lambda x: x[0])
-```
 
-## Step 4 — Correlate by timestamp window
-
-For each commit, sum the token usage from all assistant turns that occurred after the previous commit and up to and including this commit's timestamp. Do the same for RTK saved tokens. Skip commits with zero turns.
-
-```python
+# ── Step 4: correlate by timestamp window ───────────────────────────────────
 boundaries = [None] + [c[0] for c in commits]
 
 rows = []
@@ -112,25 +102,50 @@ for i, (commit_ts, sha, msg) in enumerate(commits):
         "rtk_saved": sum(e[1] for e in rtk_window),
         "subject": msg[:75],
     })
-```
 
-## Step 5 — Write docs/token-usage.md
+# ── Step 5: write docs/token-usage.md ───────────────────────────────────────
+def fmt(n):
+    return f"{n:,}"
 
-Overwrite `docs/token-usage.md` with the updated table. Use today's date in the header. Include a totals row. Keep the Notes section from the current file if it is still accurate, or update it to reflect what the new numbers show.
+today = datetime.now().strftime("%Y-%m-%d")
+header = f"# Token Usage — updated {today}\n\n"
+header += "**RTKSaved** = tokens removed by RTK compression before reaching Claude (avoided context, on top of billed input).\n\n"
 
-Table columns: **Input**, **CacheC** (cache_creation), **CacheR** (cache_read), **Output**, **Turns**, **RTKSaved**, **Subject**.
+col_headers = "| Date | SHA | Input | CacheC | CacheR | Output | Turns | RTKSaved | Subject |\n"
+col_sep     = "|------|-----|------:|-------:|-------:|-------:|------:|---------:|---------|\n"
+table = col_headers + col_sep
+for r in rows:
+    table += (
+        f"| {r['date']} | {r['sha']} "
+        f"| {fmt(r['input'])} | {fmt(r['cache_create'])} | {fmt(r['cache_read'])} "
+        f"| {fmt(r['output'])} | {r['turns']} | {fmt(r['rtk_saved'])} "
+        f"| {r['subject']} |\n"
+    )
 
-**RTKSaved** = tokens that would have been fed back to Claude as tool results but were removed by RTK compression. This is additional context consumption that was avoided, on top of the billed input tokens.
+totals = {k: sum(r[k] for r in rows) for k in ("input", "cache_create", "cache_read", "output", "turns", "rtk_saved")}
+table += (
+    f"| **Total** | — "
+    f"| **{fmt(totals['input'])}** | **{fmt(totals['cache_create'])}** | **{fmt(totals['cache_read'])}** "
+    f"| **{fmt(totals['output'])}** | **{totals['turns']}** | **{fmt(totals['rtk_saved'])}** | — |\n"
+)
 
-Format numbers with thousands separators.
+usage_path = os.path.join(project_root, "docs", "token-usage.md")
+os.makedirs(os.path.dirname(usage_path), exist_ok=True)
 
-## Step 6 — Calculate cost breakdown by MoSCoW priority and category
+# Preserve existing Notes section if present
+notes = ""
+if os.path.exists(usage_path):
+    with open(usage_path) as f:
+        content = f.read()
+    if "## Notes" in content:
+        notes = "\n" + content[content.index("## Notes"):]
 
-Using Sonnet 4.6 pricing: $3.00/1M input, $3.75/1M cache write, $0.30/1M cache read, $15.00/1M output.
+with open(usage_path, "w") as f:
+    f.write(header + table + notes)
 
-```python
-import re, os
+print(f"docs/token-usage.md updated ({len(rows)} commits).")
 
+# ── Step 6: cost breakdown ───────────────────────────────────────────────────
 PRICING = {
     "input":        3.00 / 1e6,
     "cache_create": 3.75 / 1e6,
@@ -146,13 +161,14 @@ def row_cost(row):
         + row["output"]       * PRICING["output"]
     )
 
-# Build RIVER-N -> (priority, category) from spec file paths
 river_map = {}
-for root, _, files in os.walk("specs"):
+for root, _, fnames in os.walk(os.path.join(project_root, "specs")):
     parts = root.replace("\\", "/").split("/")
-    if len(parts) >= 3:
-        priority, category = parts[1], parts[2]
-        for fname in files:
+    # specs/{priority}/{category}/
+    idx = parts.index("specs") if "specs" in parts else -1
+    if idx >= 0 and len(parts) >= idx + 3:
+        priority, category = parts[idx + 1], parts[idx + 2]
+        for fname in fnames:
             m = re.match(r"RIVER-(\d+)-", fname)
             if m:
                 river_map[int(m.group(1))] = (priority, category)
@@ -165,25 +181,18 @@ for row in rows:
     if m:
         pri, cat = river_map.get(int(m.group(1)), ("must", "tools"))
     else:
-        pri, cat = "must", "tools"  # day-0 setup, fixes, workflow changes
-
+        pri, cat = "must", "tools"
     c = row_cost(row)
     priority_costs[pri] = priority_costs.get(pri, 0) + c
     category_costs[cat] = category_costs.get(cat, 0) + c
 
 total_cost = sum(row_cost(r) for r in rows)
-```
 
-## Step 7 — Update README.md priority and category tables
-
-Replace the two cost tables in `README.md` (under "By MoSCoW priority" and "By category") with freshly computed values. Do not touch any other part of the file.
-
-```python
-readme_path = "README.md"
+# ── Step 7: update README.md tables ─────────────────────────────────────────
+readme_path = os.path.join(project_root, "README.md")
 with open(readme_path) as f:
     readme = f.read()
 
-# MoSCoW priority table
 all_priorities = ["must", "should", "could", "wont"]
 pri_lines = ""
 for p in all_priorities:
@@ -192,14 +201,12 @@ for p in all_priorities:
 
 new_priority_table = f"| Priority | Cost | Share |\n|----------|-----:|------:|\n{pri_lines}"
 
-# Category table (sorted by cost descending)
 cat_lines = ""
 for cat, c in sorted(category_costs.items(), key=lambda x: -x[1]):
     cat_lines += f"| {cat} | ${c:.2f} | {c/total_cost*100:.0f}% |\n"
 
 new_category_table = f"| Category | Cost | Share |\n|----------|-----:|------:|\n{cat_lines}"
 
-# Replace tables using header row as anchor
 readme = re.sub(
     r"\| Priority \| Cost \| Share \|\n\|[-|: ]+\|\n(?:\|.*\|\n)+",
     new_priority_table,
@@ -215,4 +222,5 @@ with open(readme_path, "w") as f:
     f.write(readme)
 
 print("README.md priority/category tables updated.")
+PYEOF
 ```

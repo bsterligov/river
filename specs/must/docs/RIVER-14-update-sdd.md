@@ -7,7 +7,7 @@ Why: The current SDD process pushes implementation directly to main and has a co
 
 ## Problem
 
-Spec authoring already uses a branch+PR flow, but implementation (`/dev-spec`) pushes straight to main. This risks conflicts and bypasses review. The queue states (`In Progress`, `Pending`) are unclear, and completed tasks disappear from the queue — making it hard to see what has been done or what is next.
+Spec authoring already uses a branch+PR flow, but implementation (`/spec-dev`) pushes straight to main. This risks conflicts and bypasses review. The queue states (`In Progress`, `Pending`) are unclear, and completed tasks disappear from the queue — making it hard to see what has been done or what is next.
 
 ## Goal
 
@@ -15,7 +15,7 @@ A developer can take a spec from creation to done entirely through PRs, without 
 
 **Scenario: creating a spec**
 - Given a developer opens a GitHub issue
-- When the GHA fires and they run `/po-spec-writer`
+- When the GHA fires and they run `/spec`
 - Then a feature branch and draft PR are created; the spec is authored there, not on main
 
 **Scenario: moving to implementation**
@@ -37,8 +37,8 @@ A developer can take a spec from creation to done entirely through PRs, without 
 
 **In**
 - Update `QUEUE.md` format: remove `In Progress` / `Pending` sections; replace with a single queue list where done items are marked with `~~strikethrough~~`
-- Update `/po-spec-writer` skill: add task to queue (not to `Pending`); do not move between sections during authoring
-- Update `/dev-spec` skill: implementation must happen on a feature branch + PR, not a direct push to main; mark task done in queue on completion
+- Update `/spec` skill: add task to queue (not to `Pending`); do not move between sections during authoring
+- Update `/spec-dev` skill: implementation must happen on a feature branch + PR, not a direct push to main; mark task done in queue on completion
 - Update GHA `spec-from-issue.yml`: on spec PR merge to main, auto-create an implementation branch and draft PR
 - Update `SPEC.md` workflow line to reflect the new branch-based flow
 - Update `CLAUDE.md` key files table if any skill file descriptions change

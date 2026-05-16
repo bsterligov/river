@@ -1,4 +1,4 @@
-# dev-spec
+# spec-dev
 
 Implementation skill. Reads the current in-progress spec, implements it, and closes out all tracking files. Run after the spec PR has been merged to main.
 
@@ -18,16 +18,18 @@ Run `git branch --show-current`. If the branch is `impl/river-{N}`, derive the t
 - If found and not struck through → use it, no need to ask.
 - If not found in QUEUE, or already marked done, or the branch name does not match `impl/*` → ask the user which task to implement before continuing.
 
-## Step 2 — Check out the implementation branch
+## Step 2 — Confirm the implementation branch
 
-Implementation must happen on a feature branch, not main. The GHA creates it automatically on spec PR merge.
+Implementation must happen on a feature branch, not main. Run `git branch --show-current` to confirm.
 
+If already on `impl/river-{N}` (e.g. when called from a `plan-dev` subagent worktree), continue — no checkout needed.
+
+If on main or a different branch, check out the impl branch:
 ```bash
 git checkout impl/river-{N}
 ```
 
 If the branch does not exist yet (GHA did not run), create it with the mise task:
-
 ```bash
 SPEC_BRANCH=spec/river-{N} mise run spec:impl
 git checkout impl/river-{N}
@@ -49,7 +51,7 @@ After implementation, review for:
 - **Code duplication** — run the script below; fix anything it flags before opening the PR. Target: overall < 3%.
 
 ```bash
-python3 - <<'PYEOF'
+mise exec -- python - <<'PYEOF'
 import os, hashlib, collections, sys
 
 WINDOW = 8
@@ -97,7 +99,20 @@ PYEOF
 ```
 - **Cognitive Complexity ≤ 15** — SonarQube enforces a maximum of 15 per function. Each level of nesting adds to the score (nested `if`/`for`/`match` compounds quickly). When a function exceeds 15, extract the inner logic into a named helper; do not just flatten with early returns if nesting is the root cause.
 
-## Step 4 — Close out tracking files
+## Step 4 — Run SonarQube
+
+Run a branch scan and wait for the quality gate:
+
+```bash
+mise run sonar:scan   # generates lcov reports + submits scan
+mise run sonar:check  # polls CE task, prints gate result and any failing conditions
+```
+
+`sonar:check` exits non-zero if the quality gate fails. Fix any reported issues before continuing. The dashboard URL is printed at the end for drill-down.
+
+`SONAR_TOKEN` must be set in the environment (add it to your shell profile or `.env.local` if not already present).
+
+## Step 5 — Close out tracking files
 
 When implementation is complete:
 
@@ -109,18 +124,17 @@ When implementation is complete:
    {1–2 sentences on what was built and any notable outcome.}
    ```
 
-## Step 5 — Sync SPEC.md
+## Step 6 — Sync SPEC.md
 
 Update `specs/SPEC.md` with any decisions from this spec.
 
-## Step 6 — Open a PR
+## Step 7 — Open a PR
 
-Commit all changes (implementation + tracking files) and open a draft PR targeting main:
+Commit all changes (implementation + tracking files), push the branch, and open a draft PR targeting main:
 
 ```bash
 git add <files>
 git commit -m "<type>: RIVER-N message"
+git push origin HEAD
 gh pr create --title "impl: RIVER-N -- Title" --base main --draft
 ```
-
-Do not push.

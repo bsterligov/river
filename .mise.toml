@@ -4,3 +4,5 @@ rust = { version = "1.95.0", components = "rustfmt,clippy,rust-src,llvm-tools" }
 cocogitto = "7.0.0"
 flutter = "3.41.0"
 "ubi:OpenAPITools/openapi-generator" = "7.22.0"
+python = "3.13"
+sonar-scanner-cli = "latest"

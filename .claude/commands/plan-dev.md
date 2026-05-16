@@ -1,10 +1,10 @@
-# dev-plan-impl
+# plan-dev
 
-Merges all approved spec PRs for a feature plan and then spawns one subagent per phase to implement its spec using the dev-spec skill.
+Merges all approved spec PRs for a feature plan and then spawns one subagent per phase to implement its spec using the spec-dev skill.
 
 ## Step 1 — Select the plan
 
-If the user provided a plan name as an argument (e.g. `/dev-plan-impl logs-ui-full-page`), resolve it to `specs/plans/{plan-name}.md`.
+If the user provided a plan name as an argument (e.g. `/plan-dev logs-ui-full-page`), resolve it to `specs/plans/{plan-name}.md`.
 
 If no argument, list all files in `specs/plans/` and ask the user to choose one.
 
@@ -116,12 +116,13 @@ Process the execution waves in order. For each wave:
 1. Spawn one subagent per phase in the wave simultaneously (all Agent calls in a single message with `isolation: "worktree"` and `run_in_background: true`).
 2. Wait for all subagents in the wave to complete before starting the next wave.
 3. If a subagent in the wave fails, report it but continue the wave — do not block other phases in the same wave. Do block dependent phases in subsequent waves: remove them from their wave and mark them as skipped with the reason.
+4. After all subagents in the wave complete, run Step 6b before starting the next wave.
 
 Use this prompt template for each subagent (fill in placeholders):
 
 ---
 
-You are working inside the River repository on the `impl/river-{ISSUE_NUMBER}` branch. Your job is to implement the spec for RIVER-{ISSUE_NUMBER} by invoking the dev-spec skill.
+You are working inside the River repository on the `impl/river-{ISSUE_NUMBER}` branch. Your job is to implement the spec for RIVER-{ISSUE_NUMBER} by invoking the spec-dev skill.
 
 **Context:**
 - Plan: {PLAN_TITLE}
@@ -137,16 +138,48 @@ You are working inside the River repository on the `impl/river-{ISSUE_NUMBER}` b
    git checkout impl/river-{ISSUE_NUMBER}
    ```
 
-2. Invoke the dev-spec skill. It will:
+2. Invoke the spec-dev skill. It will:
    - Read `specs/SPEC.md`, `specs/QUEUE.md`, and the spec file
    - Implement everything in Scope In
-   - Run `mise exec -- cargo fmt && mise exec -- cargo clippy -- -D warnings && mise exec -- cargo test`
+   - Run `mise exec -- cargo fmt`, `mise exec -- cargo clippy -- -D warnings`, `mise exec -- cargo test` (and `mise exec -- flutter test` if Flutter files are touched)
    - Close out `specs/QUEUE.md` and `specs/HISTORY.md`
-   - Open a draft impl PR targeting main
+   - Push the branch and open a draft impl PR targeting main
 
 3. Report back: impl PR number, branch, and any test failures.
 
 ---
+
+### Step 6b — Wait for wave PRs to be validated
+
+Before starting the next wave, all impl PRs produced by the current wave must pass:
+- **Not draft** — marked ready for review
+- **CI passing** — all required checks green
+- **Approved** — `reviewDecision` is `APPROVED`
+
+Poll every 60 seconds (max 60 attempts = ~1 hour):
+
+```bash
+gh pr list --state open --json number,title,headRefName,isDraft,reviewDecision,statusCheckRollup \
+  | jq '[.[] | select(.headRefName | startswith("impl/river-"))]'
+```
+
+For each PR in the current wave, check:
+1. `isDraft` is `false`
+2. `reviewDecision` is `APPROVED`
+3. All entries in `statusCheckRollup` have `conclusion` of `SUCCESS` (wait on `IN_PROGRESS` entries)
+
+Print a status table on each poll:
+
+```
+PR     | Branch           | Draft | CI     | Review
+-------+------------------+-------+--------+------------------
+#60    | impl/river-42    | no    | green  | APPROVED
+#61    | impl/river-43    | yes   | —      | REVIEW_REQUIRED
+```
+
+Once all PRs in the wave are validated, print "Wave N validated — proceeding to Wave N+1" and continue.
+
+If any PR is still blocked after the timeout, stop and tell the user which PRs need attention. Do not start the next wave. Re-running `/plan-dev` after the PRs are ready is the intended recovery flow — or use `/pr-merge` to merge the validated wave manually.
 
 ## Step 7 — Report results
 

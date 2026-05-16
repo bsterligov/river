@@ -1,4 +1,4 @@
-# feature-plan
+# create-feature
 
 Interactive skill to plan an ambitious feature. Produces a structured, phase-by-phase implementation plan saved to `specs/plans/`.
 
@@ -94,5 +94,5 @@ Describe the overall dependency graph in plain English before the phase list. Ex
 
 Print the file path of the saved plan and tell the user:
 - Which phase to start with and what the first concrete step is
-- Whether a GitHub issue or spec is needed before implementation begins (use `/issue-create` or `/po-spec-writer` if so)
+- Whether a GitHub issue or spec is needed before implementation begins (use `/create-issue` or `/spec` if so)
 - Any open question that must be resolved before Phase 1 can start

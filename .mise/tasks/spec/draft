@@ -24,7 +24,7 @@ FILE="specs/drafts/${TASK}-${SLUG}.md"
 mkdir -p specs/drafts
 {
   printf '# DRAFT -- Issue #%s\n' "$ISSUE_NUMBER"
-  printf '# Run `/po-spec-writer` on this branch to generate the full spec.\n'
+  printf '# Run `/spec` on this branch to generate the full spec.\n'
   printf '\n'
   printf 'Issue:    #%s\n' "$ISSUE_NUMBER"
   printf 'Task:     %s\n' "$TASK"

@@ -46,7 +46,7 @@ Grafana added to docker-compose with anonymous admin access and plugin-based Cli
 
 ### 2026-05-09 — RIVER-14: implementation done
 
-SDD process updated to a fully branch-based flow: spec authoring and implementation now both go through PRs. QUEUE.md redesigned as a flat persistent list with strikethrough for done items. GHA extended to auto-create an impl branch and draft PR on spec PR merge. dev-spec updated to infer the task from the current branch name.
+SDD process updated to a fully branch-based flow: spec authoring and implementation now both go through PRs. QUEUE.md redesigned as a flat persistent list with strikethrough for done items. GHA extended to auto-create an impl branch and draft PR on spec PR merge. spec-dev updated to infer the task from the current branch name.
 
 ### 2026-05-10 — RIVER-16: implementation done
 

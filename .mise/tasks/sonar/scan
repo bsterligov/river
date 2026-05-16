@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#MISE description="Generate coverage reports and run SonarQube branch scan"
+set -euo pipefail
+
+BRANCH=$(git branch --show-current)
+
+echo "==> Generating Rust coverage (lcov.info)..."
+cargo llvm-cov --workspace --no-cfg-coverage --lcov --output-path lcov.info \
+  --ignore-filename-regex 'main\.rs'
+
+echo "==> Generating Flutter coverage (src/ui/coverage/lcov.info)..."
+(cd src/ui && flutter test --coverage --coverage-path coverage/lcov.info)
+
+echo "==> Running sonar-scanner on branch: $BRANCH"
+sonar-scanner \
+  -Dsonar.branch.name="$BRANCH" \
+  ${SONAR_TOKEN:+-Dsonar.token="$SONAR_TOKEN"}
+
+echo "==> Scan submitted. Run 'mise run sonar:check' to poll results."

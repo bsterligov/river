@@ -1,4 +1,4 @@
-# issue-create
+# create-issue
 
 Interactive skill to create a GitHub issue with priority and category labels.
 

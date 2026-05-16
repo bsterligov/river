@@ -37,13 +37,13 @@ Two workflow versions exist, each building on the previous. Full details: [V0 �
 
 ### V0 — Single task
 
-`/issue-create` → GHA creates `spec/RIVER-N` branch → `/po-spec-writer` writes spec → spec PR reviewed and merged → GHA creates `impl/RIVER-N` branch → `/dev-spec` implements → impl PR merged.
+`/create-issue` → GHA creates `spec/RIVER-N` branch → `/spec` writes spec → spec PR reviewed and merged → GHA creates `impl/RIVER-N` branch → `/spec-dev` implements → impl PR merged.
 
 The spec PR is the only review gate. Implementation runs without further review — the spec already covered it.
 
 ### V1 — Ambitious features
 
-V1 adds three commands above the V0 loops. `/feature-plan` decomposes the feature into phases and assigns each one an execution mode — `parallel` (no dependencies, can run alongside others) or `sequential` (must wait for dependencies to land). `/dev-plan` and `/dev-plan-impl` respect that order: independent phases spawn simultaneously, dependent phases wait for their wave to complete before starting.
+V1 adds three commands above the V0 loops. `/create-feature` decomposes the feature into phases and assigns each one an execution mode — `parallel` (no dependencies, can run alongside others) or `sequential` (must wait for dependencies to land). `/plan-spec` and `/plan-dev` respect that order: independent phases spawn simultaneously, dependent phases wait for their wave to complete before starting.
 
 Full command reference: [docs/v1.md](docs/v1.md)
 
