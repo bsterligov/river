@@ -1,13 +1,14 @@
-# openapi.model.Span
+# river_api.model.Span
 
 ## Load the model package
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 ```
 
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**attributes** | **Object** |  | 
 **durationMs** | **double** |  | 
 **endTime** | **String** |  | 
 **events** | [**List<SpanEvent>**](SpanEvent.md) |  | [default to const []]

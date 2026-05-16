@@ -131,3 +131,7 @@ PO spec written for the span attributes panel. BDD approach chosen. Scope covers
 ### 2026-05-16 — RIVER-59: implementation done
 
 Added `TraceDetailPanel` (420px `AnimatedSize` slide-in) and `SpanWaterfallPainter` (`CustomPainter` Gantt rows) to `lib/pages/traces/`. The panel fetches spans via `getTrace`, builds a depth-first span tree from `parent_span_id`, renders proportional bars coloured by `status_code`, caps at 200 spans with a visible notice, and wires into `TracesPage` replacing the Phase 2 `SizedBox` placeholder. Thirteen BDD widget tests and unit tests cover all specified scenarios.
+
+### 2026-05-16 — RIVER-70: implementation done
+
+Added `attributes: serde_json::Value` to the `Span` struct, read `SpanAttributes` from ClickHouse in `row_to_span` using the same `parse_attributes` fallback pattern as `LogRow`, and updated both `query_trace` and `query_traces` SQL to select the `attributes` column. Regenerated the Dart API client from the live API server; `Span` now has an `attributes: Object?` field. Four BDD tests added for key-value, empty, malformed, and SQL column scenarios.

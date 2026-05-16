@@ -73,6 +73,7 @@ Span makeSpan({
       startTime: startTime,
       endTime: '2024-01-01T12:00:01Z',
       statusCode: 0,
+      attributes: null,
       events: [],
       links: [],
     );

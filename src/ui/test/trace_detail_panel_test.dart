@@ -70,6 +70,7 @@ Span _makeSpan({
       startTime: startTime,
       endTime: endTime,
       statusCode: statusCode,
+      attributes: null,
       events: [],
       links: [],
     );
@@ -504,6 +505,7 @@ void main() {
       startTime: '2024-01-01T12:00:00.000Z',
       endTime: '2024-01-01T12:00:00.010Z',
       statusCode: 0,
+      attributes: null,
       events: [
         SpanEvent(
           name: 'exception',
@@ -544,6 +546,7 @@ void main() {
       startTime: '2024-01-01T12:00:00.000Z',
       endTime: '2024-01-01T12:00:00.010Z',
       statusCode: 0,
+      attributes: null,
       events: [],
       links: [],
     );
@@ -580,6 +583,7 @@ void main() {
       startTime: '2024-01-01T12:00:00.000Z',
       endTime: '2024-01-01T12:00:00.010Z',
       statusCode: 0,
+      attributes: null,
       events: [],
       links: [
         SpanLink(

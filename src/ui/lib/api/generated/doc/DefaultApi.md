@@ -1,8 +1,8 @@
-# openapi.api.DefaultApi
+# river_api.api.DefaultApi
 
 ## Load the API package
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 ```
 
 All URIs are relative to *http://localhost*
@@ -11,6 +11,8 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**getHealth**](DefaultApi.md#gethealth) | **GET** /health | 
 [**getLogs**](DefaultApi.md#getlogs) | **GET** /v1/logs | 
+[**getLogsFacets**](DefaultApi.md#getlogsfacets) | **GET** /v1/logs/facets | 
+[**getLogsHistogram**](DefaultApi.md#getlogshistogram) | **GET** /v1/logs/histogram | 
 [**getMetrics**](DefaultApi.md#getmetrics) | **GET** /v1/metrics | 
 [**getTrace**](DefaultApi.md#gettrace) | **GET** /v1/traces/{trace_id} | 
 [**getTraces**](DefaultApi.md#gettraces) | **GET** /v1/traces | 
@@ -23,7 +25,7 @@ Method | HTTP request | Description
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 
@@ -59,7 +61,7 @@ No authorization required
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 final filter = filter_example; // String | Filter expression
@@ -99,6 +101,98 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **getLogsFacets**
+> List<FacetField> getLogsFacets(filter, from, to)
+
+
+
+### Example
+```dart
+import 'package:river_api/api.dart';
+
+final api_instance = DefaultApi();
+final filter = filter_example; // String | Filter expression
+final from = from_example; // String | Start time (RFC 3339)
+final to = to_example; // String | End time (RFC 3339)
+
+try {
+    final result = api_instance.getLogsFacets(filter, from, to);
+    print(result);
+} catch (e) {
+    print('Exception when calling DefaultApi->getLogsFacets: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **filter** | **String**| Filter expression | [optional] 
+ **from** | **String**| Start time (RFC 3339) | [optional] 
+ **to** | **String**| End time (RFC 3339) | [optional] 
+
+### Return type
+
+[**List<FacetField>**](FacetField.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getLogsHistogram**
+> List<HistogramBucket> getLogsHistogram(filter, from, to, step)
+
+
+
+### Example
+```dart
+import 'package:river_api/api.dart';
+
+final api_instance = DefaultApi();
+final filter = filter_example; // String | Filter expression
+final from = from_example; // String | Start time (RFC 3339)
+final to = to_example; // String | End time (RFC 3339)
+final step = step_example; // String | Bucket width (e.g. 60s, 5m); auto-selected if omitted
+
+try {
+    final result = api_instance.getLogsHistogram(filter, from, to, step);
+    print(result);
+} catch (e) {
+    print('Exception when calling DefaultApi->getLogsHistogram: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **filter** | **String**| Filter expression | [optional] 
+ **from** | **String**| Start time (RFC 3339) | [optional] 
+ **to** | **String**| End time (RFC 3339) | [optional] 
+ **step** | **String**| Bucket width (e.g. 60s, 5m); auto-selected if omitted | [optional] 
+
+### Return type
+
+[**List<HistogramBucket>**](HistogramBucket.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **getMetrics**
 > List<MetricPoint> getMetrics(filter, from, to, step)
 
@@ -106,7 +200,7 @@ No authorization required
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 final filter = filter_example; // String | Filter expression
@@ -153,7 +247,7 @@ No authorization required
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 final traceId = traceId_example; // String | Trace ID to retrieve
@@ -194,7 +288,7 @@ No authorization required
 
 ### Example
 ```dart
-import 'package:openapi/api.dart';
+import 'package:river_api/api.dart';
 
 final api_instance = DefaultApi();
 final filter = filter_example; // String | Filter expression
