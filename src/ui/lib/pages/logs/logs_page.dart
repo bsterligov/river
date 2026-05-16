@@ -150,7 +150,7 @@ class _Toolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RiverSearchBar(
+    return FilterBar(
       fieldKey: const Key('logs_search'),
       controller: searchController,
       onSubmit: onSubmit,

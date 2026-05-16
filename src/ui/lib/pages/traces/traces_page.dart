@@ -55,7 +55,7 @@ class _TracesPageState extends State<TracesPage> {
       builder: (context, _) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          RiverSearchBar(
+          FilterBar(
             fieldKey: const Key('traces_search'),
             controller: _searchController,
             onSubmit: _onSubmit,

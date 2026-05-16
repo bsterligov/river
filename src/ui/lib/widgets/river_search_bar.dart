@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-class RiverSearchBar extends StatelessWidget {
-  const RiverSearchBar({
+class FilterBar extends StatelessWidget {
+  const FilterBar({
     super.key,
     required this.fieldKey,
     required this.controller,
