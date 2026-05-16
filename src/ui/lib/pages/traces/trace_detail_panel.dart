@@ -94,6 +94,10 @@ class _TraceDetailPanelState extends State<TraceDetailPanel> {
     setState(() => _selectedSpanId = spanId);
   }
 
+  void _clearSpan() {
+    setState(() => _selectedSpanId = null);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -114,6 +118,7 @@ class _TraceDetailPanelState extends State<TraceDetailPanel> {
                     controller: widget.controller,
                     selectedSpanId: _selectedSpanId,
                     onSelectSpan: _selectSpan,
+                    onClearSpan: _clearSpan,
                     spansCapped: _nodes.length >= _kMaxSpans,
                   ),
                 )
@@ -131,6 +136,7 @@ class _PanelContent extends StatelessWidget {
     required this.controller,
     required this.selectedSpanId,
     required this.onSelectSpan,
+    required this.onClearSpan,
     required this.spansCapped,
   });
 
@@ -139,6 +145,7 @@ class _PanelContent extends StatelessWidget {
   final TracesController controller;
   final String? selectedSpanId;
   final void Function(String) onSelectSpan;
+  final VoidCallback onClearSpan;
   final bool spansCapped;
 
   Span? get _selectedSpan {
@@ -181,7 +188,10 @@ class _PanelContent extends StatelessWidget {
           )),
           if (selected != null) ...[
             const Divider(height: 1),
-            SpanAttributesSection(span: selected),
+            SpanAttributesSection(
+              span: selected,
+              onClear: onClearSpan,
+            ),
           ],
         ],
       ),
@@ -345,62 +355,129 @@ class _PanelBody extends StatelessWidget {
 }
 
 class SpanAttributesSection extends StatelessWidget {
-  const SpanAttributesSection({super.key, required this.span});
+  const SpanAttributesSection({
+    super.key,
+    required this.span,
+    this.onClear,
+  });
 
   final Span span;
+  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
+    final attrPairs = _parseAttributes(span.attributes);
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 260),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: AppLayout.gapM),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-          ExpansionTile(
-            key: const Key('span_attrs_info'),
-            initiallyExpanded: true,
-            tilePadding: AppLayout.tilePadding,
-            title: const Text('Span Info', style: AppText.label),
-            children: [
-              _KvRow(k: 'span_id', v: span.spanId),
-              _KvRow(k: 'service', v: span.service),
-              _KvRow(k: 'operation', v: span.operation),
-              _KvRow(k: 'status_code', v: '${span.statusCode}'),
-              _KvRow(k: 'duration_ms', v: span.durationMs.toStringAsFixed(3)),
-              _KvRow(k: 'start_time', v: span.startTime),
-              _KvRow(k: 'end_time', v: span.endTime),
-            ],
+      constraints: const BoxConstraints(maxHeight: 300),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SpanAttrHeader(onClear: onClear),
+          const Divider(height: 1),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ExpansionTile(
+                    key: const Key('span_attrs_attributes'),
+                    initiallyExpanded: true,
+                    tilePadding: AppLayout.tilePadding,
+                    title: const Text('Attributes', style: AppText.label),
+                    children: attrPairs.isEmpty
+                        ? [_emptyRow('No attributes')]
+                        : attrPairs
+                            .map((p) => _KvRow(k: p.$1, v: p.$2))
+                            .toList(),
+                  ),
+                  ExpansionTile(
+                    key: const Key('span_attrs_info'),
+                    initiallyExpanded: true,
+                    tilePadding: AppLayout.tilePadding,
+                    title: const Text('Span Info', style: AppText.label),
+                    children: [
+                      _KvRow(k: 'span_id', v: span.spanId),
+                      _KvRow(k: 'service', v: span.service),
+                      _KvRow(k: 'operation', v: span.operation),
+                      _KvRow(k: 'status_code', v: '${span.statusCode}'),
+                      _KvRow(
+                          k: 'duration_ms',
+                          v: span.durationMs.toStringAsFixed(3)),
+                      _KvRow(k: 'start_time', v: span.startTime),
+                      _KvRow(k: 'end_time', v: span.endTime),
+                    ],
+                  ),
+                  ExpansionTile(
+                    key: const Key('span_attrs_events'),
+                    initiallyExpanded: false,
+                    tilePadding: AppLayout.tilePadding,
+                    title: Text('Events (${span.events.length})',
+                        style: AppText.label),
+                    children: span.events.isEmpty
+                        ? [_emptyRow('No events')]
+                        : span.events.map((e) => EventRow(event: e)).toList(),
+                  ),
+                  ExpansionTile(
+                    key: const Key('span_attrs_links'),
+                    initiallyExpanded: false,
+                    tilePadding: AppLayout.tilePadding,
+                    title: Text('Links (${span.links.length})',
+                        style: AppText.label),
+                    children: span.links.isEmpty
+                        ? [_emptyRow('No links')]
+                        : span.links.map((l) => LinkRow(link: l)).toList(),
+                  ),
+                ],
+              ),
+            ),
           ),
-          ExpansionTile(
-            key: const Key('span_attrs_events'),
-            initiallyExpanded: false,
-            tilePadding: AppLayout.tilePadding,
-            title: Text('Events (${span.events.length})', style: AppText.label),
-            children: span.events.isEmpty
-                ? [_emptyRow('No events')]
-                : span.events.map((e) => EventRow(event: e)).toList(),
-          ),
-          ExpansionTile(
-            key: const Key('span_attrs_links'),
-            initiallyExpanded: false,
-            tilePadding: AppLayout.tilePadding,
-            title: Text('Links (${span.links.length})', style: AppText.label),
-            children: span.links.isEmpty
-                ? [_emptyRow('No links')]
-                : span.links.map((l) => LinkRow(link: l)).toList(),
-          ),
-          ],
-        ),
+        ],
       ),
     );
+  }
+
+  static List<(String, String)> _parseAttributes(Object? raw) {
+    try {
+      final decoded = raw is String ? jsonDecode(raw) : raw;
+      if (decoded is Map<String, dynamic>) {
+        return decoded.entries.map((e) => (e.key, '${e.value}')).toList();
+      }
+    } catch (_) {}
+    return [];
   }
 
   static Widget _emptyRow(String text) => Padding(
         padding: AppLayout.sectionPadding,
         child: Text(text, style: AppText.body),
       );
+}
+
+class _SpanAttrHeader extends StatelessWidget {
+  const _SpanAttrHeader({this.onClear});
+
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: AppLayout.cellPadding,
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text('Span Details', style: AppText.label),
+          ),
+          if (onClear != null)
+            IconButton(
+              key: const Key('span_attrs_close'),
+              icon: const Icon(Icons.close, size: AppIcons.sizeM),
+              onPressed: onClear,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class EventRow extends StatelessWidget {

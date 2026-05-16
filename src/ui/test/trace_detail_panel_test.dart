@@ -697,6 +697,163 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // SpanAttributesSection: Attributes tile
+  // ---------------------------------------------------------------------------
+
+  testWidgets(
+      'Given a span has a valid JSON object in the attributes field, '
+      'When the Attributes section renders, '
+      'Then each key-value pair is shown as a labelled row',
+      (tester) async {
+    final span = Span(
+      spanId: 'sp1',
+      parentSpanId: '',
+      service: 'svc',
+      operation: 'op',
+      durationMs: 10,
+      startTime: '2024-01-01T12:00:00.000Z',
+      endTime: '2024-01-01T12:00:00.010Z',
+      statusCode: 0,
+      attributes: '{"http.method":"GET","http.status_code":"200"}',
+      events: [],
+      links: [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SpanAttributesSection(span: span),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('span_attrs_attributes')), findsOneWidget);
+    expect(find.textContaining('http.method'), findsOneWidget);
+    expect(find.textContaining('GET'), findsOneWidget);
+    expect(find.textContaining('http.status_code'), findsOneWidget);
+    expect(find.textContaining('200'), findsWidgets);
+  });
+
+  testWidgets(
+      'Given a span has a null attributes field, '
+      'When the Attributes section renders, '
+      'Then the section shows "No attributes"',
+      (tester) async {
+    final span = Span(
+      spanId: 'sp1',
+      parentSpanId: '',
+      service: 'svc',
+      operation: 'op',
+      durationMs: 10,
+      startTime: '2024-01-01T12:00:00.000Z',
+      endTime: '2024-01-01T12:00:00.010Z',
+      statusCode: 0,
+      attributes: null,
+      events: [],
+      links: [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SpanAttributesSection(span: span),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('span_attrs_attributes')), findsOneWidget);
+    expect(find.text('No attributes'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given a span has a non-JSON attributes value, '
+      'When the Attributes section renders, '
+      'Then the section shows "No attributes"',
+      (tester) async {
+    final span = Span(
+      spanId: 'sp1',
+      parentSpanId: '',
+      service: 'svc',
+      operation: 'op',
+      durationMs: 10,
+      startTime: '2024-01-01T12:00:00.000Z',
+      endTime: '2024-01-01T12:00:00.010Z',
+      statusCode: 0,
+      attributes: 'not-valid-json',
+      events: [],
+      links: [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SpanAttributesSection(span: span),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('No attributes'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Given SpanAttributesSection is visible, '
+      'When the operator taps the clear-selection button, '
+      'Then onClear is called and the section is dismissed',
+      (tester) async {
+    bool cleared = false;
+    final span = _makeSpan(spanId: 'sp1');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SpanAttributesSection(
+              span: span,
+              onClear: () => cleared = true,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('span_attrs_close')));
+    await tester.pumpAndSettle();
+
+    expect(cleared, isTrue);
+  });
+
+  testWidgets(
+      'Given the panel is open and a span is selected, '
+      'When the operator taps the X button in the span details header, '
+      'Then the SpanAttributesSection is dismissed',
+      (tester) async {
+    final spans = [_makeSpan(spanId: 'sp1')];
+    final api = FakeTraceDetailApi(spansById: {'tid': spans});
+    await _pumpPanel(tester, api: api, selectedTraceId: 'tid');
+
+    // Select a span.
+    await tester.tap(find.byKey(const ValueKey('sp1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('span_attrs_info')), findsOneWidget);
+
+    // Tap the span-details close button.
+    await tester.tap(find.byKey(const Key('span_attrs_close')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('span_attrs_info')), findsNothing);
+  });
+
+  // ---------------------------------------------------------------------------
   // TracesController sort helpers
   // ---------------------------------------------------------------------------
 
