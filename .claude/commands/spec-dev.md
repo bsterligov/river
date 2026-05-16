@@ -101,16 +101,38 @@ PYEOF
 
 ## Step 4 — Run SonarQube
 
-Run a branch scan and wait for the quality gate:
+Load `SONAR_TOKEN` from `.env.local` if it is not already in the environment:
+```bash
+export SONAR_TOKEN=$(grep '^SONAR_TOKEN' .env.local | cut -d'"' -f2)
+```
+
+Run a scan and wait for the quality gate:
 
 ```bash
-mise run sonar:scan   # generates lcov reports + submits scan
+mise run sonar:scan   # generates lcov reports + submits PR or branch scan
 mise run sonar:check  # polls CE task, prints gate result and any failing conditions
 ```
 
-`sonar:check` exits non-zero if the quality gate fails. Fix any reported issues before continuing. The dashboard URL is printed at the end for drill-down.
+`sonar:scan` automatically uses PR mode when an open PR exists (passes `sonar.pullrequest.*`), falling back to branch mode otherwise.
 
-`SONAR_TOKEN` must be set in the environment (add it to your shell profile or `.env.local` if not already present).
+`sonar:check` exits non-zero if the quality gate fails. When it does, fetch the new issues introduced by this PR and fix every one before continuing:
+
+```bash
+export SONAR_TOKEN=$(grep '^SONAR_TOKEN' .env.local | cut -d'"' -f2)
+PR=$(gh pr view --json number -q .number)
+curl -sf -u "${SONAR_TOKEN}:" \
+  "https://sonarcloud.io/api/issues/search?projectKeys=bsterligov_river&pullRequest=${PR}&resolved=false" \
+| python3 -c "
+import sys, json
+issues = json.load(sys.stdin).get('issues', [])
+print(f'New issues: {len(issues)}')
+for i in issues:
+    print(f'  [{i[\"severity\"]}] {i[\"type\"]} — {i[\"message\"]}')
+    print(f'    {i[\"component\"].split(\":\")[-1]}:{i.get(\"line\",\"?\")}')
+"
+```
+
+After fixing, re-run `sonar:scan` + `sonar:check` until the gate passes. The dashboard URL is printed at the end for drill-down.
 
 ## Step 5 — Close out tracking files
 
