@@ -160,7 +160,7 @@ class _PanelContent extends StatelessWidget {
           _PanelHeader(controller: controller, nodes: nodes),
           const Divider(height: 1),
           if (spansCapped)
-            _CappedNotice(count: _kMaxSpans),
+            const _CappedNotice(count: _kMaxSpans),
           Expanded(child: _PanelBody(
             nodes: nodes,
             loading: loading,
@@ -216,17 +216,23 @@ class _PanelHeader extends StatelessWidget {
     DateTime? minStart;
     DateTime? maxEnd;
     for (final s in spans) {
-      final start = DateTime.tryParse(s.startTime);
-      final end = DateTime.tryParse(s.endTime);
-      if (start != null) {
-        if (minStart == null || start.isBefore(minStart)) minStart = start;
-      }
-      if (end != null) {
-        if (maxEnd == null || end.isAfter(maxEnd)) maxEnd = end;
-      }
+      minStart = _earlier(minStart, DateTime.tryParse(s.startTime));
+      maxEnd = _later(maxEnd, DateTime.tryParse(s.endTime));
     }
     if (minStart == null || maxEnd == null) return 0;
     return maxEnd.difference(minStart).inMicroseconds / 1000.0;
+  }
+
+  static DateTime? _earlier(DateTime? a, DateTime? b) {
+    if (b == null) return a;
+    if (a == null) return b;
+    return b.isBefore(a) ? b : a;
+  }
+
+  static DateTime? _later(DateTime? a, DateTime? b) {
+    if (b == null) return a;
+    if (a == null) return b;
+    return b.isAfter(a) ? b : a;
   }
 }
 
