@@ -4,10 +4,6 @@ import '../../theme/app_theme.dart';
 import '../logs/column_layout.dart';
 import 'column_def.dart';
 
-/// Shared table header widget for logs and traces tables.
-///
-/// Renders column labels with sort arrows and a settings icon on the right.
-/// Callers provide column definitions, current sort state, and callbacks.
 class SharedTableHeader extends StatelessWidget {
   const SharedTableHeader({
     super.key,
@@ -18,6 +14,7 @@ class SharedTableHeader extends StatelessWidget {
     required this.menuKey,
     required this.onSort,
     required this.onSettingsTap,
+    this.precomputedWidths,
   });
 
   final List<ColumnDef> columns;
@@ -27,6 +24,9 @@ class SharedTableHeader extends StatelessWidget {
   final GlobalKey menuKey;
   final void Function(String id) onSort;
   final VoidCallback onSettingsTap;
+  // When the parent already computed widths (to share with row widgets), pass
+  // them here to skip redundant text measurement.
+  final List<double>? precomputedWidths;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +36,8 @@ class SharedTableHeader extends StatelessWidget {
       padding: AppLayout.headerPadding,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final widths = computeColumnWidths(visibleColumns, constraints.maxWidth, rows);
+          final widths = precomputedWidths ??
+              computeColumnWidths(visibleColumns, constraints.maxWidth, rows);
           return Row(
             children: [
               for (int i = 0; i < visibleColumns.length; i++) ...[

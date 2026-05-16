@@ -27,6 +27,8 @@ class _TracesTableState extends State<TracesTable> {
   Widget build(BuildContext context) {
     final controller = widget.controller;
     final rows = controller.rows;
+    final columns = controller.columns;
+    final visibleColumns = columns.where((c) => c.visible).toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -36,43 +38,53 @@ class _TracesTableState extends State<TracesTable> {
       ),
       child: Stack(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SharedTableHeader(
-                columns: controller.columns.cast<ColumnDef>(),
-                rows: rows,
-                sortColumnId: controller.sortColumnId,
-                sortAsc: controller.sortAsc,
-                menuKey: _menuKey,
-                onSort: controller.setSort,
-                onSettingsTap: _toggleMenu,
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: rows.isEmpty
-                    ? const Center(child: Text('No traces found.'))
-                    : ListView.separated(
-                        key: const Key('traces_table'),
-                        itemCount: rows.length,
-                        separatorBuilder: (_, __) => const Divider(
-                          height: 1,
-                          indent: AppLayout.cellPaddingH,
-                          endIndent: AppLayout.cellPaddingH,
-                        ),
-                        itemBuilder: (_, i) => ListenableBuilder(
-                          listenable: controller,
-                          builder: (context, _) => _TraceRowWidget(
-                            group: rows[i],
-                            allRows: rows,
-                            columns: controller.columns,
-                            selected: controller.selectedTraceId == rows[i].traceId,
-                            onTap: () => controller.selectTrace(rows[i].traceId),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final widths = computeColumnWidths(
+                visibleColumns.cast<ColumnDef>(),
+                constraints.maxWidth,
+                rows,
+              );
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SharedTableHeader(
+                    columns: columns.cast<ColumnDef>(),
+                    rows: rows,
+                    sortColumnId: controller.sortColumnId,
+                    sortAsc: controller.sortAsc,
+                    menuKey: _menuKey,
+                    onSort: controller.setSort,
+                    onSettingsTap: _toggleMenu,
+                    precomputedWidths: widths,
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: rows.isEmpty
+                        ? const Center(child: Text('No traces found.'))
+                        : ListView.separated(
+                            key: const Key('traces_table'),
+                            itemCount: rows.length,
+                            separatorBuilder: (context, i) => const Divider(
+                              height: 1,
+                              indent: AppLayout.cellPaddingH,
+                              endIndent: AppLayout.cellPaddingH,
+                            ),
+                            itemBuilder: (_, i) => ListenableBuilder(
+                              listenable: controller,
+                              builder: (context, _) => _TraceRowWidget(
+                                group: rows[i],
+                                columns: visibleColumns,
+                                widths: widths,
+                                selected: controller.selectedTraceId == rows[i].traceId,
+                                onTap: () => controller.selectTrace(rows[i].traceId),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
           if (_menuOpen)
             Positioned.fill(
@@ -83,7 +95,7 @@ class _TracesTableState extends State<TracesTable> {
                   children: [
                     ColumnMenu(
                       menuKey: _menuKey,
-                      items: controller.columns
+                      items: columns
                           .map((c) => ColumnMenuItem(id: c.id, label: c.label, visible: c.visible))
                           .toList(),
                       onToggle: (id) {
@@ -103,50 +115,44 @@ class _TracesTableState extends State<TracesTable> {
 class _TraceRowWidget extends StatelessWidget {
   const _TraceRowWidget({
     required this.group,
-    required this.allRows,
     required this.columns,
+    required this.widths,
     required this.selected,
     required this.onTap,
   });
 
   final dynamic group;
-  final List<dynamic> allRows;
   final List<TraceColumn> columns;
+  final List<double> widths;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final visibleColumns = columns.where((c) => c.visible).toList();
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         color: selected ? AppColors.rowSelected : null,
         padding: AppLayout.cellPadding,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final widths = computeColumnWidths(visibleColumns.cast<ColumnDef>(), constraints.maxWidth, allRows);
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (int i = 0; i < visibleColumns.length; i++) ...[
-                  Expanded(
-                    flex: (widths[i] * 1000).round(),
-                    child: Text(
-                      visibleColumns[i].getValue(group),
-                      style: AppText.mono,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
-                      maxLines: 1,
-                    ),
-                  ),
-                  if (i < visibleColumns.length - 1)
-                    const SizedBox(width: AppLayout.gapM),
-                ],
-              ],
-            );
-          },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (int i = 0; i < columns.length; i++) ...[
+              Expanded(
+                flex: (widths[i] * 1000).round(),
+                child: Text(
+                  columns[i].getValue(group),
+                  style: AppText.mono,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  maxLines: 1,
+                ),
+              ),
+              if (i < columns.length - 1)
+                const SizedBox(width: AppLayout.gapM),
+            ],
+          ],
         ),
       ),
     );

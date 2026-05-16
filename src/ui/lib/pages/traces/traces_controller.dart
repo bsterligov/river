@@ -12,10 +12,9 @@ class TraceColumn implements ColumnDef {
     required this.label,
     required this.getValue,
     this.fixedSample,
-    bool stretchy = false,
-    bool visible = true,
-  })  : _stretchy = stretchy,
-        _visible = visible;
+    this.stretchy = false,
+    this.visible = true,
+  });
 
   @override
   final String id;
@@ -25,13 +24,10 @@ class TraceColumn implements ColumnDef {
   final String? fixedSample;
   final String Function(TraceGroup) getValue;
 
-  final bool? _stretchy;
-  final bool? _visible;
-
   @override
-  bool get stretchy => _stretchy ?? false;
+  final bool stretchy;
   @override
-  bool get visible => _visible ?? true;
+  final bool visible;
 
   @override
   String Function(dynamic) get getValueDynamic => (row) => getValue(row as TraceGroup);

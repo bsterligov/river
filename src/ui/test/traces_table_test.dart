@@ -5,8 +5,6 @@ import 'package:river_api/api.dart';
 import 'package:ui/pages/traces/traces.dart';
 import 'package:ui/controllers/time_range_controller.dart';
 
-import 'helpers.dart';
-
 // ---------------------------------------------------------------------------
 // Fake API helpers
 // ---------------------------------------------------------------------------
