@@ -87,6 +87,7 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **`SpanWaterfallPainter`:** `CustomPainter` in `lib/pages/traces/span_waterfall.dart`; one row per span — label column (service + operation, left-padded `depth * 12px`) and bar column; bar x/width proportional to `start_time`/`duration_ms` relative to trace bounds; bar colour: `AppColors.primary` (ok/status 1), `Colors.red` (error/status 2), `Colors.grey` (unset/other)
 - **Span tree building:** `buildSpanTree(List<Span>)` produces flat depth-first `SpanNode` list from `parent_span_id` linkage; orphan spans (missing or unresolvable parent) placed at root depth 0; never drops or crashes on malformed data
 - **200-span cap:** constant `_kMaxSpans = 200` in `trace_detail_panel.dart`; when exceeded a `spans_capped_notice` banner is shown above the waterfall; raising the cap requires no spec change
+- **`Span.attributes`:** `serde_json::Value` field on the `Span` struct; populated by `row_to_span` reading the `attributes` column from the ClickHouse `traces` table; uses the same `parse_attributes` fallback (`{}` on parse failure or missing column) as `LogRow.attributes`; included in both `query_traces` and `query_trace` SQL selects; Dart model field is `Object? attributes`
 
 ## Spec System
 `/spec` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/spec-dev` → impl PR → merge(main)

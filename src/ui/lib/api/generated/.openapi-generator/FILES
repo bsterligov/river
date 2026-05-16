@@ -4,6 +4,9 @@ README.md
 analysis_options.yaml
 doc/DefaultApi.md
 doc/ErrorBody.md
+doc/FacetField.md
+doc/FacetValue.md
+doc/HistogramBucket.md
 doc/LogRow.md
 doc/MetricPoint.md
 doc/Span.md
@@ -22,6 +25,9 @@ lib/auth/http_basic_auth.dart
 lib/auth/http_bearer_auth.dart
 lib/auth/oauth.dart
 lib/model/error_body.dart
+lib/model/facet_field.dart
+lib/model/facet_value.dart
+lib/model/histogram_bucket.dart
 lib/model/log_row.dart
 lib/model/metric_point.dart
 lib/model/span.dart

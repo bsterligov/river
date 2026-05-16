@@ -13,6 +13,7 @@ part of openapi.api;
 class Span {
   /// Returns a new [Span] instance.
   Span({
+    required this.attributes,
     required this.durationMs,
     required this.endTime,
     this.events = const [],
@@ -24,6 +25,8 @@ class Span {
     required this.startTime,
     required this.statusCode,
   });
+
+  Object? attributes;
 
   double durationMs;
 
@@ -47,6 +50,7 @@ class Span {
 
   @override
   bool operator ==(Object other) => identical(this, other) || other is Span &&
+    other.attributes == attributes &&
     other.durationMs == durationMs &&
     other.endTime == endTime &&
     _deepEquality.equals(other.events, events) &&
@@ -61,6 +65,7 @@ class Span {
   @override
   int get hashCode =>
     // ignore: unnecessary_parenthesis
+    (attributes == null ? 0 : attributes!.hashCode) +
     (durationMs.hashCode) +
     (endTime.hashCode) +
     (events.hashCode) +
@@ -73,10 +78,15 @@ class Span {
     (statusCode.hashCode);
 
   @override
-  String toString() => 'Span[durationMs=$durationMs, endTime=$endTime, events=$events, links=$links, operation=$operation, parentSpanId=$parentSpanId, service=$service, spanId=$spanId, startTime=$startTime, statusCode=$statusCode]';
+  String toString() => 'Span[attributes=$attributes, durationMs=$durationMs, endTime=$endTime, events=$events, links=$links, operation=$operation, parentSpanId=$parentSpanId, service=$service, spanId=$spanId, startTime=$startTime, statusCode=$statusCode]';
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
+    if (this.attributes != null) {
+      json[r'attributes'] = this.attributes;
+    } else {
+      json[r'attributes'] = null;
+    }
       json[r'duration_ms'] = this.durationMs;
       json[r'end_time'] = this.endTime;
       json[r'events'] = this.events;
@@ -101,6 +111,7 @@ class Span {
       // Note 1: the values aren't checked for validity beyond being non-null.
       // Note 2: this code is stripped in release mode!
       assert(() {
+        assert(json.containsKey(r'attributes'), 'Required key "Span[attributes]" is missing from JSON.');
         assert(json.containsKey(r'duration_ms'), 'Required key "Span[duration_ms]" is missing from JSON.');
         assert(json[r'duration_ms'] != null, 'Required key "Span[duration_ms]" has a null value in JSON.');
         assert(json.containsKey(r'end_time'), 'Required key "Span[end_time]" is missing from JSON.');
@@ -125,6 +136,7 @@ class Span {
       }());
 
       return Span(
+        attributes: mapValueOfType<Object>(json, r'attributes'),
         durationMs: mapValueOfType<double>(json, r'duration_ms')!,
         endTime: mapValueOfType<String>(json, r'end_time')!,
         events: SpanEvent.listFromJson(json[r'events']),
@@ -182,6 +194,7 @@ class Span {
 
   /// The list of required keys that must be present in a JSON.
   static const requiredKeys = <String>{
+    'attributes',
     'duration_ms',
     'end_time',
     'events',
