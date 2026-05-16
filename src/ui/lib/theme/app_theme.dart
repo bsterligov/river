@@ -39,6 +39,7 @@ abstract final class AppLayout {
   // Panel widths
   static const facetPanelWidth = 220.0;
   static const detailPanelWidth = 420.0;
+  static const traceDetailPanelWidth = 560.0;
   static const detailLabelWidth = 130.0;
 
   // Cell / tile padding

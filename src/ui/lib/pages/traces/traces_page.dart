@@ -61,17 +61,17 @@ class _TracesPageState extends State<TracesPage> {
           ),
           const SizedBox(height: AppLayout.gapL),
           Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Stack(
               children: [
-                Expanded(
-                  child: _controller.loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : TracesTable(controller: _controller),
+                _controller.loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : TracesTable(controller: _controller),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: TraceDetailPanel(controller: _controller),
                 ),
-                if (_controller.selectedTraceId != null)
-                  const SizedBox(width: AppLayout.gapL),
-                TraceDetailPanel(controller: _controller),
               ],
             ),
           ),

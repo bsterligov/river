@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
@@ -8,9 +10,9 @@ import 'traces_controller.dart';
 /// Maximum number of spans displayed in the waterfall.
 const _kMaxSpans = 200;
 
-/// 420 px-wide side panel that appears when a trace row is selected.
-/// Animates open/closed via [AnimatedSize] matching the [LogDetailPanel]
-/// pattern.
+/// 560 px-wide side panel that appears when a trace row is selected.
+/// Overlays the table (Stack + Positioned), animates open/closed via
+/// [AnimatedSize] matching the [LogDetailPanel] pattern.
 class TraceDetailPanel extends StatefulWidget {
   const TraceDetailPanel({super.key, required this.controller});
 
@@ -105,7 +107,7 @@ class _TraceDetailPanelState extends State<TraceDetailPanel> {
           child: isOpen
               ? SizedBox(
                   key: const Key('trace_detail_panel'),
-                  width: AppLayout.detailPanelWidth,
+                  width: AppLayout.traceDetailPanelWidth,
                   child: _PanelContent(
                     nodes: _nodes,
                     loading: _loading,
@@ -139,8 +141,18 @@ class _PanelContent extends StatelessWidget {
   final void Function(String) onSelectSpan;
   final bool spansCapped;
 
+  Span? get _selectedSpan {
+    if (selectedSpanId == null) return null;
+    try {
+      return nodes.firstWhere((n) => n.span.spanId == selectedSpanId).span;
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final selected = _selectedSpan;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -167,6 +179,10 @@ class _PanelContent extends StatelessWidget {
             selectedSpanId: selectedSpanId,
             onSelectSpan: onSelectSpan,
           )),
+          if (selected != null) ...[
+            const Divider(height: 1),
+            _SpanAttributesSection(span: selected),
+          ],
         ],
       ),
     );
@@ -325,5 +341,134 @@ class _PanelBody extends StatelessWidget {
     final durationMs =
         maxEnd.difference(minStart).inMicroseconds / 1000.0;
     return (startMs, durationMs.clamp(0.001, double.infinity));
+  }
+}
+
+class _SpanAttributesSection extends StatelessWidget {
+  const _SpanAttributesSection({required this.span});
+
+  final Span span;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 260),
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: AppLayout.gapM),
+        shrinkWrap: true,
+        children: [
+          ExpansionTile(
+            key: const Key('span_attrs_info'),
+            initiallyExpanded: true,
+            tilePadding: AppLayout.tilePadding,
+            title: const Text('Span Info', style: AppText.label),
+            children: [
+              _KvRow(k: 'span_id', v: span.spanId),
+              _KvRow(k: 'service', v: span.service),
+              _KvRow(k: 'operation', v: span.operation),
+              _KvRow(k: 'status_code', v: '${span.statusCode}'),
+              _KvRow(k: 'duration_ms', v: span.durationMs.toStringAsFixed(3)),
+              _KvRow(k: 'start_time', v: span.startTime),
+              _KvRow(k: 'end_time', v: span.endTime),
+            ],
+          ),
+          ExpansionTile(
+            key: const Key('span_attrs_events'),
+            initiallyExpanded: false,
+            tilePadding: AppLayout.tilePadding,
+            title: Text('Events (${span.events.length})', style: AppText.label),
+            children: span.events.isEmpty
+                ? [_emptyRow('No events')]
+                : span.events.map((e) => _EventRow(event: e)).toList(),
+          ),
+          ExpansionTile(
+            key: const Key('span_attrs_links'),
+            initiallyExpanded: false,
+            tilePadding: AppLayout.tilePadding,
+            title: Text('Links (${span.links.length})', style: AppText.label),
+            children: span.links.isEmpty
+                ? [_emptyRow('No links')]
+                : span.links.map((l) => _LinkRow(link: l)).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _emptyRow(String text) => Padding(
+        padding: AppLayout.sectionPadding,
+        child: Text(text, style: AppText.body),
+      );
+}
+
+class _EventRow extends StatelessWidget {
+  const _EventRow({required this.event});
+
+  final SpanEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    final attrs = _parseAttrs(event.attributes);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _KvRow(k: 'name', v: event.name),
+        _KvRow(k: 'timestamp', v: event.timestamp),
+        ...attrs.map((p) => _KvRow(k: '  ${p.$1}', v: p.$2)),
+        const Divider(height: 1, indent: AppLayout.cellPaddingH),
+      ],
+    );
+  }
+
+  static List<(String, String)> _parseAttrs(Object? raw) {
+    try {
+      final decoded = raw is String ? jsonDecode(raw) : raw;
+      if (decoded is Map<String, dynamic>) {
+        return decoded.entries.map((e) => (e.key, '${e.value}')).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+}
+
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({required this.link});
+
+  final SpanLink link;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _KvRow(k: 'trace_id', v: link.traceId),
+        _KvRow(k: 'span_id', v: link.spanId),
+        const Divider(height: 1, indent: AppLayout.cellPaddingH),
+      ],
+    );
+  }
+}
+
+class _KvRow extends StatelessWidget {
+  const _KvRow({required this.k, required this.v});
+
+  final String k;
+  final String v;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: AppLayout.sectionPadding,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: AppLayout.detailLabelWidth,
+            child: Text(k, style: AppText.label),
+          ),
+          Expanded(child: SelectableText(v, style: AppText.mono)),
+        ],
+      ),
+    );
   }
 }
