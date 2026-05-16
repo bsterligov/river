@@ -3,111 +3,37 @@ import 'package:river_api/api.dart';
 
 import '../../theme/app_theme.dart';
 import '../shared/column_def.dart';
-import '../shared/column_menu.dart';
-import '../shared/table_header.dart';
-import 'column_layout.dart';
+import '../shared/table_shell.dart';
 import 'logs_controller.dart';
 
-class LogsTable extends StatefulWidget {
+class LogsTable extends StatelessWidget {
   const LogsTable({super.key, required this.controller});
 
   final LogsController controller;
 
   @override
-  State<LogsTable> createState() => _LogsTableState();
-}
-
-class _LogsTableState extends State<LogsTable> {
-  bool _menuOpen = false;
-  final _menuKey = GlobalKey();
-
-  void _toggleMenu() => setState(() => _menuOpen = !_menuOpen);
-  void _closeMenu() => setState(() => _menuOpen = false);
-
-  @override
   Widget build(BuildContext context) {
-    final controller = widget.controller;
     final rows = controller.rows;
-    final columns = controller.columns;
-    final visibleColumns = columns.where((c) => c.visible).toList();
+    final columns = controller.columns.cast<ColumnDef>();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(AppLayout.radius),
-      ),
-      child: Stack(
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final widths = computeColumnWidths(
-                visibleColumns.cast<ColumnDef>(),
-                constraints.maxWidth,
-                rows,
-              );
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SharedTableHeader(
-                    columns: columns.cast<ColumnDef>(),
-                    rows: rows,
-                    sortColumnId: controller.sortColumnId,
-                    sortAsc: controller.sortAsc,
-                    menuKey: _menuKey,
-                    onSort: controller.setSort,
-                    onSettingsTap: _toggleMenu,
-                    precomputedWidths: widths,
-                  ),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: rows.isEmpty
-                        ? const Center(child: Text('No logs found.'))
-                        : ListView.separated(
-                            key: const Key('logs_table'),
-                            itemCount: rows.length,
-                            separatorBuilder: (context, i) => const Divider(
-                              height: 1,
-                              indent: AppLayout.cellPaddingH,
-                              endIndent: AppLayout.cellPaddingH,
-                            ),
-                            itemBuilder: (_, i) => ListenableBuilder(
-                              listenable: controller,
-                              builder: (context, _) => _LogRowWidget(
-                                row: rows[i],
-                                columns: visibleColumns,
-                                widths: widths,
-                                selected: controller.selectedRow == rows[i],
-                                onTap: () => controller.selectRow(rows[i]),
-                              ),
-                            ),
-                          ),
-                  ),
-                ],
-              );
-            },
-          ),
-          if (_menuOpen)
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _closeMenu,
-                child: Stack(
-                  children: [
-                    ColumnMenu(
-                      menuKey: _menuKey,
-                      items: columns
-                          .map((c) => ColumnMenuItem(id: c.id, label: c.label, visible: c.visible))
-                          .toList(),
-                      onToggle: (id) {
-                        controller.toggleColumn(id);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
+    return TableShell(
+      columns: columns,
+      rows: rows,
+      sortColumnId: controller.sortColumnId,
+      sortAsc: controller.sortAsc,
+      onSort: controller.setSort,
+      onToggleColumn: controller.toggleColumn,
+      emptyText: 'No logs found.',
+      listKey: const Key('logs_table'),
+      rowBuilder: (i, widths) => ListenableBuilder(
+        listenable: controller,
+        builder: (context, _) => _LogRowWidget(
+          row: rows[i],
+          columns: controller.columns,
+          widths: widths,
+          selected: controller.selectedRow == rows[i],
+          onTap: () => controller.selectRow(rows[i]),
+        ),
       ),
     );
   }
@@ -130,6 +56,7 @@ class _LogRowWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final visibleColumns = columns.where((c) => c.visible).toList();
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -139,12 +66,12 @@ class _LogRowWidget extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (int i = 0; i < columns.length; i++) ...[
+            for (int i = 0; i < visibleColumns.length; i++) ...[
               Expanded(
                 flex: (widths[i] * 1000).round(),
-                child: _cellText(columns[i]),
+                child: _cellText(visibleColumns[i]),
               ),
-              if (i < columns.length - 1)
+              if (i < visibleColumns.length - 1)
                 const SizedBox(width: AppLayout.gapM),
             ],
           ],
