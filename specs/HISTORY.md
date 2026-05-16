@@ -135,3 +135,7 @@ Added `TraceDetailPanel` (420px `AnimatedSize` slide-in) and `SpanWaterfallPaint
 ### 2026-05-16 — RIVER-70: implementation done
 
 Added `attributes: serde_json::Value` to the `Span` struct, read `SpanAttributes` from ClickHouse in `row_to_span` using the same `parse_attributes` fallback pattern as `LogRow`, and updated both `query_trace` and `query_traces` SQL to select the `attributes` column. Regenerated the Dart API client from the live API server; `Span` now has an `attributes: Object?` field. Four BDD tests added for key-value, empty, malformed, and SQL column scenarios.
+
+### 2026-05-16 — RIVER-61: implementation done
+
+Added an "Attributes" `ExpansionTile` to `SpanAttributesSection` that parses `span.attributes` as JSON key-value pairs (same try/catch fallback as `LogDetailPanel`), and added a `_SpanAttrHeader` with an X button (`span_attrs_close` key) that calls `onClear` to dismiss the section. Five new BDD tests cover valid JSON attributes, null attributes, non-JSON fallback, and the close button both standalone and integrated in the full panel.
