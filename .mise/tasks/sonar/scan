@@ -1,8 +1,19 @@
 #!/usr/bin/env bash
-#MISE description="Generate coverage reports and run SonarQube branch scan"
+#MISE description="Generate coverage reports and run SonarQube PR scan"
 set -euo pipefail
 
 BRANCH=$(git branch --show-current)
+
+PR_JSON=$(gh pr view --json number,baseRefName 2>/dev/null || true)
+if [[ -n "$PR_JSON" ]]; then
+  PR_NUMBER=$(echo "$PR_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['number'])")
+  BASE_BRANCH=$(echo "$PR_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['baseRefName'])")
+  echo "==> Running sonar-scanner on PR #$PR_NUMBER ($BRANCH -> $BASE_BRANCH)"
+  SONAR_MODE="-Dsonar.pullrequest.key=$PR_NUMBER -Dsonar.pullrequest.branch=$BRANCH -Dsonar.pullrequest.base=$BASE_BRANCH"
+else
+  echo "==> No open PR found — running sonar-scanner on branch: $BRANCH"
+  SONAR_MODE="-Dsonar.branch.name=$BRANCH"
+fi
 
 echo "==> Generating Rust coverage (lcov.info)..."
 cargo llvm-cov --workspace --no-cfg-coverage --lcov --output-path lcov.info \
@@ -11,9 +22,8 @@ cargo llvm-cov --workspace --no-cfg-coverage --lcov --output-path lcov.info \
 echo "==> Generating Flutter coverage (src/ui/coverage/lcov.info)..."
 (cd src/ui && flutter test --coverage --coverage-path coverage/lcov.info)
 
-echo "==> Running sonar-scanner on branch: $BRANCH"
 sonar-scanner \
-  -Dsonar.branch.name="$BRANCH" \
+  $SONAR_MODE \
   ${SONAR_TOKEN:+-Dsonar.token="$SONAR_TOKEN"}
 
 echo "==> Scan submitted. Run 'mise run sonar:check' to poll results."
