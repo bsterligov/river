@@ -59,6 +59,11 @@ double spanOffsetMs(Span span, double traceStartMs) {
   return dt.millisecondsSinceEpoch.toDouble() - traceStartMs;
 }
 
+const double spanRowHeight = 28.0;
+const double _barHeight = 14.0;
+const double _indentPx = 12.0;
+const double _minBarWidth = 2.0;
+
 /// Paints a single row of the waterfall: label on the left, proportional bar
 /// on the right.
 class SpanRowPainter extends CustomPainter {
@@ -76,11 +81,6 @@ class SpanRowPainter extends CustomPainter {
   final double labelColumnWidth;
   final bool isSelected;
 
-  static const _rowHeight = 28.0;
-  static const _barHeight = 14.0;
-  static const _indentPx = 12.0;
-  static const _minBarWidth = 2.0;
-
   @override
   void paint(Canvas canvas, Size size) {
     final span = node.span;
@@ -88,7 +88,7 @@ class SpanRowPainter extends CustomPainter {
     // Background highlight for selected span.
     if (isSelected) {
       canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.width, _rowHeight),
+        Rect.fromLTWH(0, 0, size.width, spanRowHeight),
         Paint()..color = AppColors.rowSelected,
       );
     }
@@ -107,7 +107,7 @@ class SpanRowPainter extends CustomPainter {
 
     labelPainter.paint(
       canvas,
-      Offset(indent, (_rowHeight - labelPainter.height) / 2),
+      Offset(indent, (spanRowHeight - labelPainter.height) / 2),
     );
 
     // Bar.
@@ -124,7 +124,7 @@ class SpanRowPainter extends CustomPainter {
     canvas.drawRect(
       Rect.fromLTWH(
         barLeft,
-        (_rowHeight - _barHeight) / 2,
+        (spanRowHeight - _barHeight) / 2,
         barWidth,
         _barHeight,
       ),
@@ -174,7 +174,7 @@ class SpanWaterfallRow extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        height: SpanRowPainter._rowHeight,
+        height: spanRowHeight,
         child: CustomPaint(
           painter: SpanRowPainter(
             node: node,

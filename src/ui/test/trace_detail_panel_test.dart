@@ -3,10 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:river_api/api.dart';
 
 import 'package:ui/pages/traces/traces.dart';
-import 'package:ui/pages/traces/span_waterfall.dart';
-import 'package:ui/pages/traces/traces_controller.dart';
 import 'package:ui/controllers/time_range_controller.dart';
-import 'package:ui/theme/app_theme.dart';
 
 // ---------------------------------------------------------------------------
 // Fake API
@@ -145,7 +142,6 @@ void main() {
           startTime: '2024-01-01T12:00:00.010Z',
           endTime: '2024-01-01T12:00:00.030Z'),
     ];
-    final traces = [_makeTrace(traceId: 'trace-abc', spans: spans)];
     final api = FakeTraceDetailApi(spansById: {'trace-abc': spans});
 
     await tester.pumpWidget(

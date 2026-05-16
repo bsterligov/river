@@ -30,7 +30,7 @@ class TracesTable extends StatelessWidget {
                 : ListView.separated(
                     key: const Key('traces_table'),
                     itemCount: rows.length,
-                    separatorBuilder: (_, __) => const Divider(
+                    separatorBuilder: (context, i) => const Divider(
                       height: 1,
                       indent: AppLayout.cellPaddingH,
                       endIndent: AppLayout.cellPaddingH,

@@ -3,6 +3,7 @@ import 'package:river_api/api.dart';
 
 import '../../controllers/time_range_controller.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/river_search_bar.dart';
 import 'trace_detail_panel.dart';
 import 'traces_controller.dart';
 import 'traces_table.dart';
@@ -54,9 +55,11 @@ class _TracesPageState extends State<TracesPage> {
       builder: (context, _) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TracesSearchBar(
+          FilterBar(
+            fieldKey: const Key('traces_search'),
             controller: _searchController,
             onSubmit: _onSubmit,
+            hintText: 'Filter (e.g. service:myapp AND operation:GET)',
             errorText: _controller.error,
           ),
           const SizedBox(height: AppLayout.gapL),
@@ -77,39 +80,6 @@ class _TracesPageState extends State<TracesPage> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _TracesSearchBar extends StatelessWidget {
-  const _TracesSearchBar({
-    required this.controller,
-    required this.onSubmit,
-    this.errorText,
-  });
-
-  final TextEditingController controller;
-  final void Function(String) onSubmit;
-  final String? errorText;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          key: const Key('traces_search'),
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: 'Filter (e.g. service:myapp AND operation:GET)',
-            prefixIcon: const Icon(Icons.search, size: AppIcons.sizeL),
-            errorText: errorText,
-          ),
-          onSubmitted: onSubmit,
-          style: AppText.mono,
-        ),
-      ],
     );
   }
 }

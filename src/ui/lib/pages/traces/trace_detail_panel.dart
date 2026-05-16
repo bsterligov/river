@@ -1,18 +1,13 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:river_api/api.dart';
 
 import '../../theme/app_theme.dart';
+import 'span_detail_widgets.dart';
 import 'span_waterfall.dart';
 import 'traces_controller.dart';
 
-/// Maximum number of spans displayed in the waterfall.
 const _kMaxSpans = 200;
 
-/// 560 px-wide side panel that appears when a trace row is selected.
-/// Overlays the table (Stack + Positioned), animates open/closed via
-/// [AnimatedSize] matching the [LogDetailPanel] pattern.
 class TraceDetailPanel extends StatefulWidget {
   const TraceDetailPanel({super.key, required this.controller});
 
@@ -48,7 +43,6 @@ class _TraceDetailPanelState extends State<TraceDetailPanel> {
   void _syncSelection() {
     final traceId = widget.controller.selectedTraceId;
     if (traceId == null) {
-      // Panel closing — reset state.
       if (_loadedTraceId != null) {
         setState(() {
           _loadedTraceId = null;
@@ -74,9 +68,8 @@ class _TraceDetailPanelState extends State<TraceDetailPanel> {
     try {
       final spans =
           await widget.controller.apiClient.getTrace(traceId) ?? [];
-      final capped = spans.length > _kMaxSpans
-          ? spans.sublist(0, _kMaxSpans)
-          : spans;
+      final capped =
+          spans.length > _kMaxSpans ? spans.sublist(0, _kMaxSpans) : spans;
       final nodes = buildSpanTree(capped);
 
       if (!mounted) return;
@@ -178,14 +171,15 @@ class _PanelContent extends StatelessWidget {
         children: [
           _PanelHeader(controller: controller, nodes: nodes),
           const Divider(height: 1),
-          if (spansCapped)
-            const _CappedNotice(count: _kMaxSpans),
-          Expanded(child: _PanelBody(
-            nodes: nodes,
-            loading: loading,
-            selectedSpanId: selectedSpanId,
-            onSelectSpan: onSelectSpan,
-          )),
+          if (spansCapped) const _CappedNotice(count: _kMaxSpans),
+          Expanded(
+            child: _PanelBody(
+              nodes: nodes,
+              loading: loading,
+              selectedSpanId: selectedSpanId,
+              onSelectSpan: onSelectSpan,
+            ),
+          ),
           if (selected != null) ...[
             const Divider(height: 1),
             SpanAttributesSection(
@@ -312,13 +306,12 @@ class _PanelBody extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Label column is 40% of available width (min 120, max 200).
         final labelWidth =
             (constraints.maxWidth * 0.40).clamp(120.0, 200.0);
         return ListView.separated(
           key: const Key('span_waterfall'),
           itemCount: nodes.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
+          separatorBuilder: (context, i) => const Divider(height: 1),
           itemBuilder: (_, i) => SpanWaterfallRow(
             key: ValueKey(nodes[i].span.spanId),
             node: nodes[i],
@@ -351,203 +344,5 @@ class _PanelBody extends StatelessWidget {
     final durationMs =
         maxEnd.difference(minStart).inMicroseconds / 1000.0;
     return (startMs, durationMs.clamp(0.001, double.infinity));
-  }
-}
-
-class SpanAttributesSection extends StatelessWidget {
-  const SpanAttributesSection({
-    super.key,
-    required this.span,
-    this.onClear,
-  });
-
-  final Span span;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final attrPairs = _parseAttributes(span.attributes);
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 300),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _SpanAttrHeader(onClear: onClear),
-          const Divider(height: 1),
-          Flexible(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ExpansionTile(
-                    key: const Key('span_attrs_attributes'),
-                    initiallyExpanded: true,
-                    tilePadding: AppLayout.tilePadding,
-                    title: const Text('Attributes', style: AppText.label),
-                    children: attrPairs.isEmpty
-                        ? [_emptyRow('No attributes')]
-                        : attrPairs
-                            .map((p) => _KvRow(k: p.$1, v: p.$2))
-                            .toList(),
-                  ),
-                  ExpansionTile(
-                    key: const Key('span_attrs_info'),
-                    initiallyExpanded: true,
-                    tilePadding: AppLayout.tilePadding,
-                    title: const Text('Span Info', style: AppText.label),
-                    children: [
-                      _KvRow(k: 'span_id', v: span.spanId),
-                      _KvRow(k: 'service', v: span.service),
-                      _KvRow(k: 'operation', v: span.operation),
-                      _KvRow(k: 'status_code', v: '${span.statusCode}'),
-                      _KvRow(
-                          k: 'duration_ms',
-                          v: span.durationMs.toStringAsFixed(3)),
-                      _KvRow(k: 'start_time', v: span.startTime),
-                      _KvRow(k: 'end_time', v: span.endTime),
-                    ],
-                  ),
-                  ExpansionTile(
-                    key: const Key('span_attrs_events'),
-                    initiallyExpanded: false,
-                    tilePadding: AppLayout.tilePadding,
-                    title: Text('Events (${span.events.length})',
-                        style: AppText.label),
-                    children: span.events.isEmpty
-                        ? [_emptyRow('No events')]
-                        : span.events.map((e) => EventRow(event: e)).toList(),
-                  ),
-                  ExpansionTile(
-                    key: const Key('span_attrs_links'),
-                    initiallyExpanded: false,
-                    tilePadding: AppLayout.tilePadding,
-                    title: Text('Links (${span.links.length})',
-                        style: AppText.label),
-                    children: span.links.isEmpty
-                        ? [_emptyRow('No links')]
-                        : span.links.map((l) => LinkRow(link: l)).toList(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static List<(String, String)> _parseAttributes(Object? raw) {
-    try {
-      final decoded = raw is String ? jsonDecode(raw) : raw;
-      if (decoded is Map<String, dynamic>) {
-        return decoded.entries.map((e) => (e.key, '${e.value}')).toList();
-      }
-    } catch (_) {}
-    return [];
-  }
-
-  static Widget _emptyRow(String text) => Padding(
-        padding: AppLayout.sectionPadding,
-        child: Text(text, style: AppText.body),
-      );
-}
-
-class _SpanAttrHeader extends StatelessWidget {
-  const _SpanAttrHeader({this.onClear});
-
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: AppLayout.cellPadding,
-      child: Row(
-        children: [
-          const Expanded(
-            child: Text('Span Details', style: AppText.label),
-          ),
-          if (onClear != null)
-            IconButton(
-              key: const Key('span_attrs_close'),
-              icon: const Icon(Icons.close, size: AppIcons.sizeM),
-              onPressed: onClear,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class EventRow extends StatelessWidget {
-  const EventRow({super.key, required this.event});
-
-  final SpanEvent event;
-
-  @override
-  Widget build(BuildContext context) {
-    final attrs = _parseAttrs(event.attributes);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _KvRow(k: 'name', v: event.name),
-        _KvRow(k: 'timestamp', v: event.timestamp),
-        ...attrs.map((p) => _KvRow(k: '  ${p.$1}', v: p.$2)),
-        const Divider(height: 1, indent: AppLayout.cellPaddingH),
-      ],
-    );
-  }
-
-  static List<(String, String)> _parseAttrs(Object? raw) {
-    try {
-      final decoded = raw is String ? jsonDecode(raw) : raw;
-      if (decoded is Map<String, dynamic>) {
-        return decoded.entries.map((e) => (e.key, '${e.value}')).toList();
-      }
-    } catch (_) {}
-    return [];
-  }
-}
-
-class LinkRow extends StatelessWidget {
-  const LinkRow({super.key, required this.link});
-
-  final SpanLink link;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _KvRow(k: 'trace_id', v: link.traceId),
-        _KvRow(k: 'span_id', v: link.spanId),
-        const Divider(height: 1, indent: AppLayout.cellPaddingH),
-      ],
-    );
-  }
-}
-
-class _KvRow extends StatelessWidget {
-  const _KvRow({required this.k, required this.v});
-
-  final String k;
-  final String v;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: AppLayout.sectionPadding,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: AppLayout.detailLabelWidth,
-            child: Text(k, style: AppText.label),
-          ),
-          Expanded(child: SelectableText(v, style: AppText.mono)),
-        ],
-      ),
-    );
   }
 }

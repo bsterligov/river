@@ -12,8 +12,10 @@ abstract final class AppColors {
   static const border = Color(0xFFE2E8F0);
   static const tableHeader = Color(0xFFF1F3F5);
   static const error = Color(0xFFE53E3E);
+  static const warning = Color(0xFFED8936);
   static const spanUnset = Color(0xFF9E9E9E); // OTel status unset bar colour
   static const textMuted = Color(0x8A000000); // black @ 54% (Colors.black54)
+  static const textBody = Color(0xDD000000); // black @ 87% (Colors.black87)
   static const rowSelected = Color(0x144F74E8); // primary @ 8%
   static const shimmer = Color(0xFFE0E0E0);
   static const shadow = Color(0x1A000000); // black @ 10%
