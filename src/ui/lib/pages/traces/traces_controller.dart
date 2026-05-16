@@ -3,6 +3,81 @@ import 'package:river_api/api.dart';
 
 import '../../controllers/time_range_controller.dart';
 import '../../utils/api_error.dart';
+import '../../utils/format_time.dart';
+import '../shared/column_def.dart';
+import '../shared/table_sort_state.dart';
+
+class TraceColumn implements ColumnDef {
+  const TraceColumn({
+    required this.id,
+    required this.label,
+    required this.getValue,
+    this.fixedSample,
+    this.stretchy = false,
+    this.visible = true,
+  });
+
+  @override
+  final String id;
+  @override
+  final String label;
+  @override
+  final String? fixedSample;
+  final String Function(TraceGroup) getValue;
+
+  @override
+  final bool stretchy;
+  @override
+  final bool visible;
+
+  @override
+  String Function(dynamic) get getValueDynamic => (row) => getValue(row as TraceGroup);
+
+  TraceColumn copyWith({bool? visible}) => TraceColumn(
+        id: id,
+        label: label,
+        fixedSample: fixedSample,
+        stretchy: stretchy,
+        getValue: getValue,
+        visible: visible ?? this.visible,
+      );
+}
+
+List<TraceColumn> defaultTraceColumns() => [
+      TraceColumn(
+        id: 'startTime',
+        label: 'Start Time',
+        fixedSample: 'Jan 28 23:59:59.999',
+        getValue: (g) => formatTimestamp(traceGroupStartTime(g)),
+      ),
+      TraceColumn(
+        id: 'traceId',
+        label: 'Trace ID',
+        fixedSample: '0000000000000000000000000000000a',
+        getValue: (g) => g.traceId,
+      ),
+      TraceColumn(
+        id: 'rootService',
+        label: 'Root Service',
+        getValue: (g) => traceGroupRootService(g),
+      ),
+      TraceColumn(
+        id: 'rootOperation',
+        label: 'Root Operation',
+        stretchy: true,
+        getValue: (g) => traceGroupRootOperation(g),
+      ),
+      TraceColumn(
+        id: 'durationMs',
+        label: 'Duration ms',
+        getValue: (g) => traceGroupDurationMs(g).toStringAsFixed(2),
+      ),
+      TraceColumn(
+        id: 'spanCount',
+        label: 'Spans',
+        getValue: (g) => g.spans.length.toString(),
+      ),
+    ];
 
 class TracesController extends ChangeNotifier {
   TracesController({required this.apiClient, required this.rangeController}) {
@@ -17,18 +92,18 @@ class TracesController extends ChangeNotifier {
   bool _loading = false;
   String? _error;
   String? _selectedTraceId;
-  String? _sortColumnId;
-  bool _sortAsc = true;
+  final _sort = TableSortState<TraceColumn>(defaultTraceColumns());
 
   String get filter => _filter;
   DateTime get from => rangeController.from;
   DateTime get to => rangeController.to;
-  List<TraceGroup> get rows => _sortedRows();
+  List<TraceGroup> get rows => _sort.sortedRows(_rows).cast<TraceGroup>();
   bool get loading => _loading;
   String? get error => _error;
   String? get selectedTraceId => _selectedTraceId;
-  String? get sortColumnId => _sortColumnId;
-  bool get sortAsc => _sortAsc;
+  String? get sortColumnId => _sort.sortColumnId;
+  bool get sortAsc => _sort.sortAsc;
+  List<TraceColumn> get columns => _sort.columns;
 
   void _onRangeChanged() {
     notifyListeners();
@@ -51,36 +126,12 @@ class TracesController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void toggleColumn(String id) {
+    if (_sort.toggleColumn(id, (c, v) => c.copyWith(visible: v))) notifyListeners();
+  }
+
   void setSort(String columnId) {
-    if (_sortColumnId == columnId) {
-      _sortAsc = !_sortAsc;
-    } else {
-      _sortColumnId = columnId;
-      _sortAsc = true;
-    }
-    notifyListeners();
-  }
-
-  List<TraceGroup> _sortedRows() {
-    if (_sortColumnId == null) return List.unmodifiable(_rows);
-    final sorted = List.of(_rows)
-      ..sort((a, b) {
-        final cmp = _valueForSort(a).compareTo(_valueForSort(b));
-        return _sortAsc ? cmp : -cmp;
-      });
-    return sorted;
-  }
-
-  String _valueForSort(TraceGroup group) {
-    return switch (_sortColumnId) {
-      'traceId' => group.traceId,
-      'rootService' => _rootService(group),
-      'rootOperation' => _rootOperation(group),
-      'durationMs' => _totalDurationMs(group).toStringAsFixed(2).padLeft(20, '0'),
-      'spanCount' => group.spans.length.toString().padLeft(10, '0'),
-      'startTime' => _earliestStartTime(group),
-      _ => '',
-    };
+    if (_sort.setSort(columnId)) notifyListeners();
   }
 
   @override

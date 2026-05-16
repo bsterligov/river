@@ -147,3 +147,7 @@ Spec for Flutter UI code quality refactoring: extract duplicate `_KvRow` widget 
 ### 2026-05-16 — RIVER-73: implementation done
 
 Extracted `KvRow`, `RiverSearchBar`, `CustomRangeForm`, `parseAttributes` into shared files eliminating all widget/function duplication; split `logs_table.dart` (column layout) and `trace_detail_panel.dart` (span detail widgets) into dedicated modules; added `AppColors.warning` and `AppColors.textBody` theme tokens replacing all raw `Colors.orange/black45/black87` literals; renamed `spanRowHeight` and other pixel constants in `span_waterfall.dart`; fixed `mounted` guard ordering in `facet_panel.dart`, added error handler to unawaited reload in `logs_page.dart`, and added `mounted` guard in `time_range_picker.dart`. All 76 widget tests pass; `flutter analyze` reports zero new issues.
+
+### 2026-05-16 — RIVER-76: implementation done
+
+Unified the traces table with the logs table: added `TraceColumn` model with `ColumnDef` interface, rewrote `TracesTable` to use `computeColumnWidths` and a shared `ColumnMenu`, reordered columns (Start Time first, Trace ID second), and added 5 BDD widget tests covering column order, mono Trace ID, settings menu, hide/show persistence, and client-side sort.

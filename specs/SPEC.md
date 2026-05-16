@@ -99,6 +99,12 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **`Span.attributes`:** `serde_json::Value` field on the `Span` struct; populated by `row_to_span` reading the `attributes` column from the ClickHouse `traces` table; uses the same `parse_attributes` fallback (`{}` on parse failure or missing column) as `LogRow.attributes`; included in both `query_traces` and `query_trace` SQL selects; Dart model field is `Object? attributes`
 - **`SpanAttributesSection`:** inline widget in `trace_detail_panel.dart`; four `ExpansionTile` sections — Attributes (JSON key-value pairs from `span.attributes`, falls back to "No attributes"; key `span_attrs_attributes`), Span Info (key `span_attrs_info`), Events (key `span_attrs_events`), Links (key `span_attrs_links`); `_SpanAttrHeader` with X button (key `span_attrs_close`) calls `onClear` callback; rendered below the waterfall inside `_PanelContent` when `_selectedSpanId != null`; `_clearSpan` on `_TraceDetailPanelState` resets `_selectedSpanId` to null
 
+- **`ColumnDef` interface:** abstract class in `lib/pages/shared/column_def.dart`; defines `id`, `label`, `fixedSample`, `stretchy`, `visible`, `getValueDynamic`; implemented by both `LogColumn` and `TraceColumn`; used by `computeColumnWidths` and `SharedTableHeader` to avoid duplication
+- **`TraceColumn`:** model in `traces_controller.dart` parallel to `LogColumn`; `getValue: TraceGroup → String`; default columns: Start Time (fixed sample), Trace ID (fixed sample 32-char hex), Root Service, Root Operation (stretchy), Duration ms, Spans; all visible by default; `TracesController.columns`/`toggleColumn` follow the same pattern as `LogsController`
+- **`SharedTableHeader`:** shared widget in `lib/pages/shared/table_header.dart`; accepts `List<ColumnDef>`, `sortColumnId`, `sortAsc`, `onSort`, `onSettingsTap`; used by both `LogsTable` and `TracesTable`
+- **`ColumnMenu`:** shared widget in `lib/pages/shared/column_menu.dart`; accepts `List<ColumnMenuItem>` (id, label, visible) and `onToggle` callback; replaces the former private `_ColumnMenu` in `logs_table.dart`
+- **Traces table column order:** Start Time, Trace ID, Root Service, Root Operation, Duration ms, Spans (Start Time first to match logs UX; Trace ID second in mono)
+
 ## Spec System
 `/spec` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/spec-dev` → impl PR → merge(main)
 Path: `/specs/{priority}/{category}/RIVER-{issue_number}-title.md`
