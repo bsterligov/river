@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
-import 'logs_controller.dart';
+import '../shared/column_def.dart';
 
 const double _colPad = 16.0;
 const double _settingsReserved = AppIcons.sizeM + AppLayout.gapS * 2 + 32.0;
@@ -16,19 +16,19 @@ double _measureText(String text, TextStyle style) {
   return tp.width;
 }
 
-double _naturalWidth(LogColumn col, List<dynamic> sample) {
+double _naturalWidth(ColumnDef col, List<dynamic> sample) {
   final labelW = _measureText(col.label, AppText.label);
   final dataW = col.fixedSample != null
       ? _measureText(col.fixedSample!, AppText.mono)
       : sample.fold(0.0, (max, row) {
-          final w = _measureText(col.getValue(row), AppText.mono);
+          final w = _measureText(col.getValueDynamic(row), AppText.mono);
           return w > max ? w : max;
         });
   return (labelW > dataW ? labelW : dataW) + _colPad;
 }
 
 List<double> _scaleToFit(
-    List<LogColumn> columns, List<double> natural, double usable) {
+    List<ColumnDef> columns, List<double> natural, double usable) {
   final scale = usable / natural.fold(0.0, (s, w) => s + w);
   return [
     for (int i = 0; i < columns.length; i++)
@@ -37,7 +37,7 @@ List<double> _scaleToFit(
 }
 
 List<double> _distributeStretch(
-  List<LogColumn> columns,
+  List<ColumnDef> columns,
   List<double> natural,
   double usable,
   int stretchCount,
@@ -60,8 +60,10 @@ List<double> _distributeStretch(
 }
 
 /// Computes pixel widths for [columns] given [available] width and current [rows].
+///
+/// Works with any [ColumnDef] implementation (LogColumn, TraceColumn, etc.).
 List<double> computeColumnWidths(
-  List<LogColumn> columns,
+  List<ColumnDef> columns,
   double available,
   List<dynamic> rows,
 ) {

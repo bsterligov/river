@@ -4,8 +4,9 @@ import 'package:river_api/api.dart';
 import '../../controllers/time_range_controller.dart';
 import '../../utils/api_error.dart';
 import '../../utils/format_time.dart';
+import '../shared/column_def.dart';
 
-class LogColumn {
+class LogColumn implements ColumnDef {
   const LogColumn({
     required this.id,
     required this.label,
@@ -16,8 +17,11 @@ class LogColumn {
   })  : _stretchy = stretchy,
         _visible = visible;
 
+  @override
   final String id;
+  @override
   final String label;
+  @override
   final String? fixedSample;
   final String Function(LogRow) getValue;
 
@@ -25,8 +29,13 @@ class LogColumn {
   final bool? _stretchy;
   final bool? _visible;
 
+  @override
   bool get stretchy => _stretchy ?? false;
+  @override
   bool get visible => _visible ?? true;
+
+  @override
+  String Function(dynamic) get getValueDynamic => (row) => getValue(row as LogRow);
 
   LogColumn copyWith({bool? visible}) => LogColumn(
         id: id,
