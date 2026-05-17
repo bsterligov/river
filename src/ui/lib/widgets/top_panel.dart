@@ -6,9 +6,17 @@ import '../theme/app_theme.dart';
 import '../controllers/time_range_controller.dart';
 
 class TopPanel extends StatelessWidget {
-  const TopPanel({super.key, required this.rangeController});
+  const TopPanel({
+    super.key,
+    required this.rangeController,
+    this.tabs,
+  });
 
   final TimeRangeController rangeController;
+
+  /// Optional tab bar surfaced between the title and the time range picker.
+  /// Only supplied by pages that use sub-tabs (e.g. MetricsPage).
+  final Widget? tabs;
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +34,10 @@ class TopPanel extends StatelessWidget {
             'River',
             style: AppText.appTitle.copyWith(color: Colors.white),
           ),
+          if (tabs != null) ...[
+            const SizedBox(width: AppLayout.gapXL),
+            tabs!,
+          ],
           const Spacer(),
           ListenableBuilder(
             listenable: rangeController,

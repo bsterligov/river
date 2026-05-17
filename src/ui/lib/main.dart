@@ -4,6 +4,7 @@ import 'package:http/io_client.dart';
 import 'package:river_api/api.dart';
 
 import 'pages/logs/logs.dart';
+import 'pages/metrics/metrics.dart';
 import 'pages/traces/traces.dart';
 import 'theme/app_theme.dart';
 import 'controllers/time_range_controller.dart';
@@ -27,7 +28,7 @@ class RiverApp extends StatelessWidget {
   }
 }
 
-enum _Page { logs, traces }
+enum _Page { logs, traces, metrics }
 
 class _Shell extends StatefulWidget {
   const _Shell();
@@ -36,12 +37,14 @@ class _Shell extends StatefulWidget {
   State<_Shell> createState() => _ShellState();
 }
 
-class _ShellState extends State<_Shell> {
+class _ShellState extends State<_Shell> with TickerProviderStateMixin {
   _Page _selected = _Page.logs;
   bool _sidebarExpanded = true;
 
   late final DefaultApi _api = _buildApi();
   final _rangeController = TimeRangeController();
+  late final TabController _metricsTabController =
+      TabController(length: 2, vsync: this);
 
   static DefaultApi _buildApi() {
     final inner = HttpClient()..findProxy = (_) => 'DIRECT';
@@ -54,7 +57,25 @@ class _ShellState extends State<_Shell> {
   @override
   void dispose() {
     _rangeController.dispose();
+    _metricsTabController.dispose();
     super.dispose();
+  }
+
+  Widget? get _topPanelTabs {
+    if (_selected != _Page.metrics) return null;
+    return TabBar(
+      controller: _metricsTabController,
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      labelColor: Colors.white,
+      unselectedLabelColor: AppColors.sidebarText,
+      indicatorColor: AppColors.primary,
+      dividerColor: Colors.transparent,
+      tabs: const [
+        Tab(text: 'All Metrics'),
+        Tab(text: 'Graph'),
+      ],
+    );
   }
 
   @override
@@ -62,7 +83,7 @@ class _ShellState extends State<_Shell> {
     return Scaffold(
       body: Column(
         children: [
-          TopPanel(rangeController: _rangeController),
+          TopPanel(rangeController: _rangeController, tabs: _topPanelTabs),
           Expanded(
             child: Row(
               children: [
@@ -90,6 +111,11 @@ class _ShellState extends State<_Shell> {
     return switch (page) {
       _Page.logs => LogsPage(apiClient: _api, rangeController: _rangeController),
       _Page.traces => TracesPage(apiClient: _api, rangeController: _rangeController),
+      _Page.metrics => MetricsPage(
+          apiClient: _api,
+          rangeController: _rangeController,
+          tabController: _metricsTabController,
+        ),
     };
   }
 }
@@ -138,6 +164,14 @@ class _Sidebar extends StatelessWidget {
             icon: Icons.account_tree_outlined,
             label: 'Traces',
             page: _Page.traces,
+            selected: selected,
+            expanded: expanded,
+            onTap: onSelect,
+          ),
+          _NavItem(
+            icon: Icons.show_chart_outlined,
+            label: 'Metrics',
+            page: _Page.metrics,
             selected: selected,
             expanded: expanded,
             onTap: onSelect,

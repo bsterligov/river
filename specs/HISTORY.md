@@ -163,3 +163,8 @@ Replaced triple-nested `for` loops with `flat_map` chains in `parse_logs`/`parse
 ### 2026-05-17 — RIVER-85: implementation done
 
 Fixed column filter popup position in Logs and Traces views by adding `stackKey: GlobalKey` to `ColumnMenu` so it looks up the outer table Stack's `RenderBox` directly instead of deriving it from its own `context`; extracted offset math into a pure `columnMenuOffset` function covered by 6 unit tests.
+
+
+### 2026-05-17 — RIVER-88: implementation done
+
+Added `GET /v1/metrics/names` endpoint to `river-query-api` (backed by VictoriaMetrics `/api/v1/label/__name__/values`); added `getMetricNames()` to the Dart API client; built `MetricsPage` with two sub-tabs ("All Metrics" list with multi-select, "Graph" with `CustomPainter`-based time-series chart); added tab bar slot to `TopPanel`; registered Metrics nav item in the sidebar.
