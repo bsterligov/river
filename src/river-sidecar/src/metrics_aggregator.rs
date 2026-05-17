@@ -158,6 +158,36 @@ fn resource_key(resource: &Option<Resource>) -> String {
         .unwrap_or_default()
 }
 
+fn ingest_points<'a>(
+    series: &mut HashMap<String, SeriesEntry>,
+    rk: &str,
+    resource: &Option<Resource>,
+    scope_name: &str,
+    scope_ver: &str,
+    m: &Metric,
+    points: impl Iterator<
+        Item = (
+            String,
+            impl FnOnce() -> SeriesKind + 'a,
+            impl FnOnce(&mut SeriesKind) + 'a,
+        ),
+    >,
+) {
+    for (pk, make, update) in points {
+        upsert(
+            series,
+            rk,
+            resource.clone(),
+            scope_name,
+            scope_ver,
+            m,
+            &pk,
+            make,
+            update,
+        );
+    }
+}
+
 fn ingest(
     series: &mut HashMap<String, SeriesEntry>,
     rk: &str,
@@ -167,80 +197,84 @@ fn ingest(
     m: &Metric,
 ) {
     match &m.data {
-        Some(Data::Gauge(g)) => {
-            for p in &g.data_points {
+        Some(Data::Gauge(g)) => ingest_points(
+            series,
+            rk,
+            resource,
+            scope_name,
+            scope_ver,
+            m,
+            g.data_points.iter().map(|p| {
                 let pk = attrs_key(&p.attributes);
-                upsert(
-                    series,
-                    rk,
-                    resource.clone(),
-                    scope_name,
-                    scope_ver,
-                    m,
-                    &pk,
-                    || SeriesKind::Gauge(p.clone()),
-                    |k| {
+                (
+                    pk,
+                    move || SeriesKind::Gauge(p.clone()),
+                    move |k: &mut SeriesKind| {
                         if let SeriesKind::Gauge(e) = k {
                             if p.time_unix_nano >= e.time_unix_nano {
                                 *e = p.clone();
                             }
                         }
                     },
-                );
-            }
-        }
+                )
+            }),
+        ),
         Some(Data::Sum(s)) => {
             let (t, mono) = (s.aggregation_temporality, s.is_monotonic);
-            for p in &s.data_points {
-                let pk = attrs_key(&p.attributes);
-                upsert(
-                    series,
-                    rk,
-                    resource.clone(),
-                    scope_name,
-                    scope_ver,
-                    m,
-                    &pk,
-                    || SeriesKind::Sum {
-                        temporality: t,
-                        is_monotonic: mono,
-                        point: p.clone(),
-                    },
-                    |k| {
-                        if let SeriesKind::Sum { point: e, .. } = k {
-                            if p.time_unix_nano >= e.time_unix_nano {
-                                *e = p.clone();
+            ingest_points(
+                series,
+                rk,
+                resource,
+                scope_name,
+                scope_ver,
+                m,
+                s.data_points.iter().map(move |p| {
+                    let pk = attrs_key(&p.attributes);
+                    (
+                        pk,
+                        move || SeriesKind::Sum {
+                            temporality: t,
+                            is_monotonic: mono,
+                            point: p.clone(),
+                        },
+                        move |k: &mut SeriesKind| {
+                            if let SeriesKind::Sum { point: e, .. } = k {
+                                if p.time_unix_nano >= e.time_unix_nano {
+                                    *e = p.clone();
+                                }
                             }
-                        }
-                    },
-                );
-            }
+                        },
+                    )
+                }),
+            );
         }
         Some(Data::Histogram(h)) => {
             let t = h.aggregation_temporality;
-            for p in &h.data_points {
-                let pk = attrs_key(&p.attributes);
-                upsert(
-                    series,
-                    rk,
-                    resource.clone(),
-                    scope_name,
-                    scope_ver,
-                    m,
-                    &pk,
-                    || SeriesKind::Histogram {
-                        temporality: t,
-                        point: p.clone(),
-                    },
-                    |k| {
-                        if let SeriesKind::Histogram { point: e, .. } = k {
-                            if p.time_unix_nano >= e.time_unix_nano {
-                                *e = p.clone();
+            ingest_points(
+                series,
+                rk,
+                resource,
+                scope_name,
+                scope_ver,
+                m,
+                h.data_points.iter().map(move |p| {
+                    let pk = attrs_key(&p.attributes);
+                    (
+                        pk,
+                        move || SeriesKind::Histogram {
+                            temporality: t,
+                            point: p.clone(),
+                        },
+                        move |k: &mut SeriesKind| {
+                            if let SeriesKind::Histogram { point: e, .. } = k {
+                                if p.time_unix_nano >= e.time_unix_nano {
+                                    *e = p.clone();
+                                }
                             }
-                        }
-                    },
-                );
-            }
+                        },
+                    )
+                }),
+            );
         }
         _ => {} // ExponentialHistogram, Summary: not yet handled
     }
