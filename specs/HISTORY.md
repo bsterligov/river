@@ -151,3 +151,7 @@ Extracted `KvRow`, `RiverSearchBar`, `CustomRangeForm`, `parseAttributes` into s
 ### 2026-05-16 — RIVER-76: implementation done
 
 Unified the traces table with the logs table: added `TraceColumn` model with `ColumnDef` interface, rewrote `TracesTable` to use `computeColumnWidths` and a shared `ColumnMenu`, reordered columns (Start Time first, Trace ID second), and added 5 BDD widget tests covering column order, mono Trace ID, settings menu, hide/show persistence, and client-side sort.
+
+### 2026-05-17 — RIVER-79: implementation done
+
+Replaced triple-nested `for` loops with `flat_map` chains in `parse_logs`/`parse_traces`; extracted `build_events`/`build_links` helpers in both ingestion and query-api; renamed `attrs_map`→`to_json_attrs` and `attrs_as_string_map`→`to_string_attrs`; extracted `STEP_LADDER` and `KEY_SEPARATOR` constants; added `ingest_points` to unify the repeated `upsert` call across Gauge/Sum/Histogram arms; passed `&Option<Resource>` by reference instead of cloning; and added tests for span events/links, Sum/Histogram dedupe, and single-quote escaping in the filter DSL.
