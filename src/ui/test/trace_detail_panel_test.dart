@@ -95,6 +95,8 @@ Future<TracesController> _pumpPanel(
 
   final rc = TimeRangeController();
   final controller = TracesController(apiClient: api, rangeController: rc);
+  addTearDown(controller.dispose);
+  addTearDown(rc.dispose);
 
   await tester.pumpWidget(
     MaterialApp(
@@ -168,6 +170,8 @@ void main() {
     // Pump directly with a controller that already has rows and a selection.
     final rc2 = TimeRangeController();
     final ctrl = TracesController(apiClient: api, rangeController: rc2);
+    addTearDown(ctrl.dispose);
+    addTearDown(rc2.dispose);
     // Manually set a row by selecting trace.
     ctrl.selectTrace('trace-abc');
 

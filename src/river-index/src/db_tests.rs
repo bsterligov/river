@@ -1,14 +1,13 @@
 use crate::db::{self, FileRecord};
 use rusqlite::Connection;
 
-fn mem_db() -> Connection {
-    let conn = Connection::open_in_memory().unwrap();
+fn mem_db() -> anyhow::Result<Connection> {
+    let conn = Connection::open_in_memory()?;
     conn.execute_batch(
         "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA foreign_keys=ON;",
-    )
-    .unwrap();
-    db::migrate(&conn).unwrap();
-    conn
+    )?;
+    db::migrate(&conn)?;
+    Ok(conn)
 }
 
 fn sample_record(path: &str) -> FileRecord {
@@ -25,21 +24,21 @@ fn sample_record(path: &str) -> FileRecord {
 
 #[test]
 fn migrate_is_idempotent() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     db::migrate(&conn).unwrap();
     db::migrate(&conn).unwrap();
 }
 
 #[test]
 fn upsert_file_inserts_and_returns_id() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     let id = db::upsert_file(&conn, &sample_record("src/foo.rs")).unwrap();
     assert!(id > 0);
 }
 
 #[test]
 fn upsert_file_updates_on_conflict() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     let id1 = db::upsert_file(&conn, &sample_record("src/foo.rs")).unwrap();
     let id2 = db::upsert_file(
         &conn,
@@ -65,34 +64,34 @@ fn upsert_file_updates_on_conflict() {
 
 #[test]
 fn file_needs_reindex_new_file() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     assert!(db::file_needs_reindex(&conn, "src/new.rs", 1000, "hash1").unwrap());
 }
 
 #[test]
 fn file_needs_reindex_unchanged() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     db::upsert_file(&conn, &sample_record("src/foo.rs")).unwrap();
     assert!(!db::file_needs_reindex(&conn, "src/foo.rs", 1_000_000, "abc123").unwrap());
 }
 
 #[test]
 fn file_needs_reindex_changed_mtime() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     db::upsert_file(&conn, &sample_record("src/foo.rs")).unwrap();
     assert!(db::file_needs_reindex(&conn, "src/foo.rs", 9_999_999, "abc123").unwrap());
 }
 
 #[test]
 fn file_needs_reindex_changed_hash() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     db::upsert_file(&conn, &sample_record("src/foo.rs")).unwrap();
     assert!(db::file_needs_reindex(&conn, "src/foo.rs", 1_000_000, "newhash").unwrap());
 }
 
 #[test]
 fn insert_and_delete_symbols() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     let id = db::upsert_file(&conn, &sample_record("src/foo.rs")).unwrap();
     db::insert_symbol(&conn, id, "main", "fn", 1, 0, Some("fn main()")).unwrap();
     db::insert_symbol(&conn, id, "Foo", "struct", 5, 0, None).unwrap();
@@ -114,7 +113,7 @@ fn insert_and_delete_symbols() {
 
 #[test]
 fn insert_and_delete_imports() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     let id = db::upsert_file(&conn, &sample_record("src/foo.rs")).unwrap();
     db::insert_import(&conn, id, "std").unwrap();
     db::insert_import(&conn, id, "serde").unwrap();
@@ -130,7 +129,7 @@ fn insert_and_delete_imports() {
 
 #[test]
 fn insert_and_delete_content() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     let id = db::upsert_file(&conn, &sample_record("src/foo.rs")).unwrap();
     db::insert_content(&conn, id, "src/foo.rs", "fn main() {}").unwrap();
 
@@ -156,7 +155,7 @@ fn insert_and_delete_content() {
 
 #[test]
 fn remove_deleted_files_cleans_up() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     db::upsert_file(&conn, &sample_record("src/a.rs")).unwrap();
     db::upsert_file(&conn, &sample_record("src/b.rs")).unwrap();
     db::upsert_file(&conn, &sample_record("src/c.rs")).unwrap();
@@ -172,7 +171,7 @@ fn remove_deleted_files_cleans_up() {
 
 #[test]
 fn remove_deleted_files_empty_list() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     db::upsert_file(&conn, &sample_record("src/a.rs")).unwrap();
     let removed = db::remove_deleted_files(&conn, &[]).unwrap();
     assert_eq!(removed, 0);
@@ -180,7 +179,7 @@ fn remove_deleted_files_empty_list() {
 
 #[test]
 fn delete_file_children_no_content_is_safe() {
-    let conn = mem_db();
+    let conn = mem_db().unwrap();
     let id = db::upsert_file(&conn, &sample_record("src/foo.rs")).unwrap();
     // no content inserted — should not error
     db::delete_file_children(&conn, id).unwrap();

@@ -66,13 +66,18 @@ impl Writer {
             .await?;
         if !resp.status().is_success() {
             let status = resp.status();
-            let body = resp.text().await.unwrap_or_default();
+            let body = resp
+                .text()
+                .await
+                .unwrap_or_else(|e| format!("(error reading response body: {e})"));
             anyhow::bail!("clickhouse insert into {table} failed status={status}: {body}");
         }
         Ok(())
     }
 }
 
+/// Decodes a length-delimited `ExportLogsServiceRequest` protobuf and returns
+/// one JSON row per log record, ready for ClickHouse JSONEachRow insertion.
 pub fn parse_logs(data: &[u8]) -> anyhow::Result<Vec<Value>> {
     let req = ExportLogsServiceRequest::decode_length_delimited(&mut &data[..])?;
     let rows = req

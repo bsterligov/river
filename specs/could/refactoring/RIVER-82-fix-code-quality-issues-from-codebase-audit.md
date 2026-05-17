@@ -1,5 +1,5 @@
 # RIVER-82: Fix Code Quality Issues from Codebase Audit
-Status: In Progress
+Status: Done
 Priority: Could
 Test Approach: TDD
 Why: Recurring patterns of silent error masking, code duplication, and mixed concerns slow down development and hide real failures from operators.

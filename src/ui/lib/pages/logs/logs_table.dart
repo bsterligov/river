@@ -68,11 +68,12 @@ class _LogRowWidget extends StatelessWidget {
           children: [
             for (int i = 0; i < visibleColumns.length; i++) ...[
               Expanded(
+                key: ValueKey(visibleColumns[i].id),
                 flex: (widths[i] * 1000).round(),
                 child: _cellText(visibleColumns[i]),
               ),
               if (i < visibleColumns.length - 1)
-                const SizedBox(width: AppLayout.gapM),
+                SizedBox(key: ValueKey('gap_${visibleColumns[i].id}'), width: AppLayout.gapM),
             ],
           ],
         ),

@@ -110,7 +110,7 @@ class _CollapsibleFacetPanel extends StatelessWidget {
   final bool expanded;
   final Widget child;
 
-  static const _collapsedWidth = 36.0; // header strip only: icon + minimal padding
+  static const _collapsedWidth = AppLayout.collapsedFacetPanelWidth;
 
   @override
   Widget build(BuildContext context) {

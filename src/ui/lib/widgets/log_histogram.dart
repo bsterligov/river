@@ -18,17 +18,10 @@ class LogHistogram extends StatelessWidget {
   }
 }
 
-class _LogHistogramTile extends StatefulWidget {
+class _LogHistogramTile extends StatelessWidget {
   const _LogHistogramTile({required this.controller});
 
   final LogsController controller;
-
-  @override
-  State<_LogHistogramTile> createState() => _LogHistogramTileState();
-}
-
-class _LogHistogramTileState extends State<_LogHistogramTile> {
-  bool _expanded = true;
 
   @override
   Widget build(BuildContext context) {
@@ -44,15 +37,12 @@ class _LogHistogramTileState extends State<_LogHistogramTile> {
         title: const Text('Log distribution', style: AppText.label),
         initiallyExpanded: true,
         tilePadding: AppLayout.tilePadding,
-        onExpansionChanged: (expanded) => setState(() => _expanded = expanded),
         children: [_buildContent()],
       ),
     );
   }
 
   Widget _buildContent() {
-    if (!_expanded) return const SizedBox.shrink();
-    final controller = widget.controller;
     if (controller.loading) {
       return const _HistogramPlaceholder();
     }
