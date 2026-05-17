@@ -586,4 +586,152 @@ mod tests {
 
         assert_eq!(captured.lock().unwrap().len(), 0);
     }
+
+    fn sum_req(metric: &str, points: Vec<NumberDataPoint>) -> ExportMetricsServiceRequest {
+        ExportMetricsServiceRequest {
+            resource_metrics: vec![ResourceMetrics {
+                resource: None,
+                scope_metrics: vec![ScopeMetrics {
+                    scope: None,
+                    metrics: vec![Metric {
+                        name: metric.to_string(),
+                        description: String::new(),
+                        unit: String::new(),
+                        data: Some(Data::Sum(Sum {
+                            data_points: points,
+                            aggregation_temporality: 2,
+                            is_monotonic: true,
+                        })),
+                        metadata: vec![],
+                    }],
+                    schema_url: String::new(),
+                }],
+                schema_url: String::new(),
+            }],
+        }
+    }
+
+    fn histogram_req(metric: &str, ts_ns: u64) -> ExportMetricsServiceRequest {
+        ExportMetricsServiceRequest {
+            resource_metrics: vec![ResourceMetrics {
+                resource: None,
+                scope_metrics: vec![ScopeMetrics {
+                    scope: None,
+                    metrics: vec![Metric {
+                        name: metric.to_string(),
+                        description: String::new(),
+                        unit: String::new(),
+                        data: Some(Data::Histogram(Histogram {
+                            data_points: vec![HistogramDataPoint {
+                                time_unix_nano: ts_ns,
+                                count: 5,
+                                sum: Some(100.0),
+                                ..Default::default()
+                            }],
+                            aggregation_temporality: 2,
+                        })),
+                        metadata: vec![],
+                    }],
+                    schema_url: String::new(),
+                }],
+                schema_url: String::new(),
+            }],
+        }
+    }
+
+    #[tokio::test]
+    async fn sum_keeps_latest_data_point() {
+        let captured = Arc::new(StdMutex::new(vec![]));
+        let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
+
+        agg.push("svc", sum_req("reqs", vec![num_point(1_000, 10.0, vec![])]))
+            .await
+            .unwrap();
+        agg.push("svc", sum_req("reqs", vec![num_point(2_000, 20.0, vec![])]))
+            .await
+            .unwrap();
+
+        agg.flush().await.unwrap();
+
+        let flushed = captured.lock().unwrap();
+        let req = decode(&flushed[0].1);
+        if let Some(Data::Sum(s)) = &req.resource_metrics[0].scope_metrics[0].metrics[0].data {
+            assert_eq!(s.data_points.len(), 1);
+            assert_eq!(s.data_points[0].value, Some(Value::AsDouble(20.0)));
+        } else {
+            panic!("expected Sum");
+        }
+    }
+
+    #[tokio::test]
+    async fn sum_does_not_overwrite_with_older_point() {
+        let captured = Arc::new(StdMutex::new(vec![]));
+        let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
+
+        agg.push("svc", sum_req("reqs", vec![num_point(2_000, 20.0, vec![])]))
+            .await
+            .unwrap();
+        agg.push("svc", sum_req("reqs", vec![num_point(1_000, 10.0, vec![])]))
+            .await
+            .unwrap();
+
+        agg.flush().await.unwrap();
+
+        let flushed = captured.lock().unwrap();
+        let req = decode(&flushed[0].1);
+        if let Some(Data::Sum(s)) = &req.resource_metrics[0].scope_metrics[0].metrics[0].data {
+            assert_eq!(s.data_points[0].value, Some(Value::AsDouble(20.0)));
+        } else {
+            panic!("expected Sum");
+        }
+    }
+
+    #[tokio::test]
+    async fn histogram_keeps_latest_data_point() {
+        let captured = Arc::new(StdMutex::new(vec![]));
+        let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
+
+        agg.push("svc", histogram_req("latency", 1_000))
+            .await
+            .unwrap();
+        agg.push("svc", histogram_req("latency", 2_000))
+            .await
+            .unwrap();
+
+        agg.flush().await.unwrap();
+
+        let flushed = captured.lock().unwrap();
+        let req = decode(&flushed[0].1);
+        if let Some(Data::Histogram(h)) = &req.resource_metrics[0].scope_metrics[0].metrics[0].data
+        {
+            assert_eq!(h.data_points.len(), 1);
+            assert_eq!(h.data_points[0].time_unix_nano, 2_000);
+        } else {
+            panic!("expected Histogram");
+        }
+    }
+
+    #[tokio::test]
+    async fn histogram_does_not_overwrite_with_older_point() {
+        let captured = Arc::new(StdMutex::new(vec![]));
+        let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
+
+        agg.push("svc", histogram_req("latency", 2_000))
+            .await
+            .unwrap();
+        agg.push("svc", histogram_req("latency", 1_000))
+            .await
+            .unwrap();
+
+        agg.flush().await.unwrap();
+
+        let flushed = captured.lock().unwrap();
+        let req = decode(&flushed[0].1);
+        if let Some(Data::Histogram(h)) = &req.resource_metrics[0].scope_metrics[0].metrics[0].data
+        {
+            assert_eq!(h.data_points[0].time_unix_nano, 2_000);
+        } else {
+            panic!("expected Histogram");
+        }
+    }
 }

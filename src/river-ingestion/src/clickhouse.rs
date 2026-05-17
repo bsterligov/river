@@ -541,6 +541,59 @@ mod tests {
     }
 
     #[test]
+    fn parse_traces_with_events_and_links() {
+        use opentelemetry_proto::tonic::trace::v1::{span, Span};
+        let req = ExportTraceServiceRequest {
+            resource_spans: vec![ResourceSpans {
+                resource: make_resource("trace-svc"),
+                scope_spans: vec![ScopeSpans {
+                    scope: None,
+                    spans: vec![Span {
+                        trace_id: vec![0x01u8; 16],
+                        span_id: vec![0x02u8; 8],
+                        parent_span_id: vec![],
+                        name: "GET /api".to_string(),
+                        start_time_unix_nano: 1000,
+                        end_time_unix_nano: 2000,
+                        events: vec![span::Event {
+                            time_unix_nano: 1500,
+                            name: "exception".to_string(),
+                            attributes: vec![make_kv(
+                                "ex.type",
+                                AV::StringValue("RuntimeError".to_string()),
+                            )],
+                            dropped_attributes_count: 0,
+                        }],
+                        links: vec![span::Link {
+                            trace_id: vec![0xaau8; 16],
+                            span_id: vec![0xbbu8; 8],
+                            attributes: vec![],
+                            trace_state: String::new(),
+                            dropped_attributes_count: 0,
+                            flags: 0,
+                        }],
+                        status: None,
+                        ..Default::default()
+                    }],
+                    schema_url: String::new(),
+                }],
+                schema_url: String::new(),
+            }],
+        };
+        let rows = parse_traces(&req.encode_length_delimited_to_vec()).unwrap();
+        assert_eq!(rows.len(), 1);
+        let row = &rows[0];
+        let event_names = row["Events.Name"].as_array().unwrap();
+        assert_eq!(event_names.len(), 1);
+        assert_eq!(event_names[0], "exception");
+        let event_timestamps = row["Events.Timestamp"].as_array().unwrap();
+        assert_eq!(event_timestamps[0], 1500u64);
+        let link_trace_ids = row["Links.TraceId"].as_array().unwrap();
+        assert_eq!(link_trace_ids.len(), 1);
+        assert_eq!(link_trace_ids[0], "aa".repeat(16));
+    }
+
+    #[test]
     fn parse_traces_without_resource_and_no_status() {
         let req = ExportTraceServiceRequest {
             resource_spans: vec![ResourceSpans {
