@@ -6,7 +6,7 @@ import 'span_detail_widgets.dart';
 import 'span_waterfall.dart';
 import 'traces_controller.dart';
 
-const _kMaxSpans = 200;
+const maxSpans = 200;
 
 class TraceDetailPanel extends StatefulWidget {
   const TraceDetailPanel({super.key, required this.controller});
@@ -21,6 +21,7 @@ class _TraceDetailPanelState extends State<TraceDetailPanel> {
   String? _loadedTraceId;
   List<SpanNode> _nodes = [];
   bool _loading = false;
+  String? _error;
   String? _selectedSpanId;
 
   @override
@@ -62,6 +63,7 @@ class _TraceDetailPanelState extends State<TraceDetailPanel> {
       _loading = true;
       _loadedTraceId = traceId;
       _nodes = [];
+      _error = null;
       _selectedSpanId = null;
     });
 
@@ -69,7 +71,7 @@ class _TraceDetailPanelState extends State<TraceDetailPanel> {
       final spans =
           await widget.controller.apiClient.getTrace(traceId) ?? [];
       final capped =
-          spans.length > _kMaxSpans ? spans.sublist(0, _kMaxSpans) : spans;
+          spans.length > maxSpans ? spans.sublist(0, maxSpans) : spans;
       final nodes = buildSpanTree(capped);
 
       if (!mounted) return;
@@ -77,9 +79,12 @@ class _TraceDetailPanelState extends State<TraceDetailPanel> {
         _loading = false;
         _nodes = nodes;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
     }
   }
 
@@ -108,11 +113,12 @@ class _TraceDetailPanelState extends State<TraceDetailPanel> {
                   child: _PanelContent(
                     nodes: _nodes,
                     loading: _loading,
+                    error: _error,
                     controller: widget.controller,
                     selectedSpanId: _selectedSpanId,
                     onSelectSpan: _selectSpan,
                     onClearSpan: _clearSpan,
-                    spansCapped: _nodes.length >= _kMaxSpans,
+                    spansCapped: _nodes.length >= maxSpans,
                   ),
                 )
               : const SizedBox.shrink(),
@@ -126,6 +132,7 @@ class _PanelContent extends StatelessWidget {
   const _PanelContent({
     required this.nodes,
     required this.loading,
+    required this.error,
     required this.controller,
     required this.selectedSpanId,
     required this.onSelectSpan,
@@ -135,6 +142,7 @@ class _PanelContent extends StatelessWidget {
 
   final List<SpanNode> nodes;
   final bool loading;
+  final String? error;
   final TracesController controller;
   final String? selectedSpanId;
   final void Function(String) onSelectSpan;
@@ -171,11 +179,12 @@ class _PanelContent extends StatelessWidget {
         children: [
           _PanelHeader(controller: controller, nodes: nodes),
           const Divider(height: 1),
-          if (spansCapped) const _CappedNotice(count: _kMaxSpans),
+          if (spansCapped) const _CappedNotice(count: maxSpans),
           Expanded(
             child: _PanelBody(
               nodes: nodes,
               loading: loading,
+              error: error,
               selectedSpanId: selectedSpanId,
               onSelectSpan: onSelectSpan,
             ),
@@ -282,12 +291,14 @@ class _PanelBody extends StatelessWidget {
   const _PanelBody({
     required this.nodes,
     required this.loading,
+    required this.error,
     required this.selectedSpanId,
     required this.onSelectSpan,
   });
 
   final List<SpanNode> nodes;
   final bool loading;
+  final String? error;
   final String? selectedSpanId;
   final void Function(String) onSelectSpan;
 
@@ -295,6 +306,18 @@ class _PanelBody extends StatelessWidget {
   Widget build(BuildContext context) {
     if (loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppLayout.cellPaddingH),
+          child: Text(
+            'Failed to load trace: $error',
+            style: AppText.body.copyWith(color: AppColors.error),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
     }
     if (nodes.isEmpty) {
       return const Center(child: Text('No spans found.', style: AppText.body));

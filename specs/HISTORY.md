@@ -152,6 +152,10 @@ Extracted `KvRow`, `RiverSearchBar`, `CustomRangeForm`, `parseAttributes` into s
 
 Unified the traces table with the logs table: added `TraceColumn` model with `ColumnDef` interface, rewrote `TracesTable` to use `computeColumnWidths` and a shared `ColumnMenu`, reordered columns (Start Time first, Trace ID second), and added 5 BDD widget tests covering column order, mono Trace ID, settings menu, hide/show persistence, and client-side sort.
 
+### 2026-05-17 — RIVER-82: implementation done
+
+Fixed HTTP error body reads to include the underlying error instead of swallowing it; renamed single-letter params (`s`→`input`) in `filter.rs` and scope abbreviations (`rk`, `sn`, `sv`, `sm`) in `metrics_aggregator.rs`; added rustdoc to `MetricsAggregator`, `push()`, and `parse_logs()`; added two concurrent access tests for `MetricsAggregator`; converted `mem_db()` in `db_tests.rs` to return `anyhow::Result`; renamed `_kMaxSpans`→`maxSpans` and surfaced fetch errors in the UI in `trace_detail_panel.dart`; converted `_LogHistogramTile` from StatefulWidget to StatelessWidget removing manual `setState` for expansion; moved the `36.0` collapsed panel width to `AppLayout.collapsedFacetPanelWidth`; added `ValueKey` to column loop children in `logs_table.dart`; added `addTearDown` disposal for controllers in `trace_detail_panel_test.dart`; removed all generated API test stubs.
+
 ### 2026-05-17 — RIVER-79: implementation done
 
 Replaced triple-nested `for` loops with `flat_map` chains in `parse_logs`/`parse_traces`; extracted `build_events`/`build_links` helpers in both ingestion and query-api; renamed `attrs_map`→`to_json_attrs` and `attrs_as_string_map`→`to_string_attrs`; extracted `STEP_LADDER` and `KEY_SEPARATOR` constants; added `ingest_points` to unify the repeated `upsert` call across Gauge/Sum/Histogram arms; passed `&Option<Resource>` by reference instead of cloning; and added tests for span events/links, Sum/Histogram dedupe, and single-quote escaping in the filter DSL.

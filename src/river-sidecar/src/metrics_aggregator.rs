@@ -54,6 +54,8 @@ struct State {
     last_flush: Instant,
 }
 
+/// Aggregates incoming OTLP metric data points in memory and flushes them
+/// as a single `ExportMetricsServiceRequest` protobuf to the configured sink.
 pub struct MetricsAggregator {
     config: Config,
     state: Mutex<State>,
@@ -73,6 +75,8 @@ impl MetricsAggregator {
         }
     }
 
+    /// Ingests an `ExportMetricsServiceRequest`, updating the in-memory series map.
+    /// Latest data point wins when the same series key is pushed multiple times.
     pub async fn push(
         &self,
         service_name: &str,
@@ -83,12 +87,27 @@ impl MetricsAggregator {
             state.service_name = service_name.to_string();
         }
         for rm in &req.resource_metrics {
-            let rk = resource_key(&rm.resource);
-            for sm in &rm.scope_metrics {
-                let sn = sm.scope.as_ref().map(|s| s.name.as_str()).unwrap_or("");
-                let sv = sm.scope.as_ref().map(|s| s.version.as_str()).unwrap_or("");
-                for m in &sm.metrics {
-                    ingest(&mut state.series, &rk, &rm.resource, sn, sv, m);
+            let resource_key = resource_key(&rm.resource);
+            for scope_metrics in &rm.scope_metrics {
+                let scope_name = scope_metrics
+                    .scope
+                    .as_ref()
+                    .map(|s| s.name.as_str())
+                    .unwrap_or("");
+                let scope_ver = scope_metrics
+                    .scope
+                    .as_ref()
+                    .map(|s| s.version.as_str())
+                    .unwrap_or("");
+                for m in &scope_metrics.metrics {
+                    ingest(
+                        &mut state.series,
+                        &resource_key,
+                        &rm.resource,
+                        scope_name,
+                        scope_ver,
+                        m,
+                    );
                 }
             }
         }
@@ -689,5 +708,62 @@ mod tests {
         ])
         .await;
         assert_eq!(histogram_point(&req).time_unix_nano, 2_000);
+    }
+
+    #[tokio::test]
+    async fn concurrent_pushes_do_not_lose_series() {
+        let captured = Arc::new(StdMutex::new(vec![]));
+        let agg = Arc::new(make_agg(Duration::from_secs(60), Arc::clone(&captured)));
+
+        let agg1 = Arc::clone(&agg);
+        let agg2 = Arc::clone(&agg);
+        let (r1, r2) = tokio::join!(
+            async move {
+                agg1.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.1, vec![])]))
+                    .await
+                    .unwrap();
+            },
+            async move {
+                agg2.push("svc", gauge_req("mem", vec![num_point(1_000, 0.9, vec![])]))
+                    .await
+                    .unwrap();
+            }
+        );
+        let _ = (r1, r2);
+
+        agg.flush().await.unwrap();
+
+        let flushed = captured.lock().unwrap();
+        assert_eq!(flushed.len(), 1);
+        let req = decode(&flushed[0].1);
+        let metrics = &req.resource_metrics[0].scope_metrics[0].metrics;
+        let names: Vec<&str> = metrics.iter().map(|m| m.name.as_str()).collect();
+        assert!(
+            names.contains(&"cpu"),
+            "expected cpu metric, got: {names:?}"
+        );
+        assert!(
+            names.contains(&"mem"),
+            "expected mem metric, got: {names:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn concurrent_push_and_flush_do_not_deadlock() {
+        let captured = Arc::new(StdMutex::new(vec![]));
+        let agg = Arc::new(make_agg(Duration::from_secs(60), Arc::clone(&captured)));
+
+        let agg1 = Arc::clone(&agg);
+        let agg2 = Arc::clone(&agg);
+        tokio::join!(
+            async move {
+                agg1.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])]))
+                    .await
+                    .unwrap();
+            },
+            async move {
+                agg2.flush().await.unwrap();
+            }
+        );
     }
 }
