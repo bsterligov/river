@@ -105,6 +105,9 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **`ColumnMenu`:** shared widget in `lib/pages/shared/column_menu.dart`; accepts `List<ColumnMenuItem>` (id, label, visible), `menuKey` (icon's GlobalKey), `stackKey` (outer table Stack's GlobalKey), and `onToggle` callback; position computed via pure `columnMenuOffset` function using `stackKey.currentContext` for the correct RenderBox (not `context.findRenderObject()` which resolved to the overlay Stack); replaces the former private `_ColumnMenu` in `logs_table.dart`
 - **Traces table column order:** Start Time, Trace ID, Root Service, Root Operation, Duration ms, Spans (Start Time first to match logs UX; Trace ID second in mono)
 - **`TopPanel` tabs slot:** `TopPanel` accepts an optional `tabs` widget parameter; when non-null, it renders a `TabBar` inside the panel (e.g. for page-level sub-navigation); null for all pages that don't use tabs — no behavioral change to existing pages; `TabController` always lives on the consuming page widget, not on `TopPanel`
+- **Metrics page module:** `lib/pages/metrics/` with barrel `metrics.dart`; `MetricsController` (ChangeNotifier) owns metric names list, selection set (`Set<String>`), per-metric series map (`Map<String, List<MetricPoint>>`), and loading/error state; `TabController` held by `_ShellState` (length: 2, vsync: `TickerProviderStateMixin`)
+- **`GET /v1/metrics/names`:** returns `Vec<String>` of all metric names from VictoriaMetrics `/api/v1/label/__name__/values`; no auth, no params; 503 if VM is down
+- **Metrics chart:** `CustomPainter`-based in `lib/pages/metrics/metrics_chart.dart`; multi-series line chart with colour palette cycling `_kSeriesColors`; axes, grid lines, and legend drawn in `paint()`; no charting package dependency
 
 ## Spec System
 `/spec` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/spec-dev` → impl PR → merge(main)

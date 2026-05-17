@@ -372,6 +372,39 @@ class DefaultApi {
     return null;
   }
 
+  /// Performs an HTTP 'GET /v1/metrics/names' operation and returns the [Response].
+  Future<Response> getMetricNamesWithHttpInfo() async {
+    const path = r'/v1/metrics/names';
+    final queryParams = <QueryParam>[];
+    final headerParams = <String, String>{};
+    final formParams = <String, String>{};
+    final contentTypes = <String>[];
+    return apiClient.invokeAPI(
+      path,
+      'GET',
+      queryParams,
+      null,
+      headerParams,
+      formParams,
+      contentTypes.isEmpty ? null : contentTypes.first,
+    );
+  }
+
+  /// Returns a list of all metric names.
+  Future<List<String>?> getMetricNames() async {
+    final response = await getMetricNamesWithHttpInfo();
+    if (response.statusCode >= HttpStatus.badRequest) {
+      throw ApiException(response.statusCode, await _decodeBodyBytes(response));
+    }
+    if (response.body.isNotEmpty && response.statusCode != HttpStatus.noContent) {
+      final responseBody = await _decodeBodyBytes(response);
+      return (await apiClient.deserializeAsync(responseBody, 'List<String>') as List)
+        .cast<String>()
+        .toList(growable: false);
+    }
+    return null;
+  }
+
   /// Performs an HTTP 'GET /v1/traces/{trace_id}' operation and returns the [Response].
   /// Parameters:
   ///
