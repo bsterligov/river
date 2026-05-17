@@ -26,4 +26,4 @@ Status lives here — not in filenames. Done tasks stay in the list (marked with
 - ~~RIVER-76: Unify traces table with logs table~~
 - ~~RIVER-79: Fix Rust Code Quality Issues Found in Analysis~~
 - ~~RIVER-82: Fix Code Quality Issues from Codebase Audit~~
-- RIVER-85: Fix column filter popup position
+- ~~RIVER-85: Fix column filter popup position~~

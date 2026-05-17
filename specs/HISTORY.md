@@ -159,3 +159,7 @@ Fixed HTTP error body reads to include the underlying error instead of swallowin
 ### 2026-05-17 — RIVER-79: implementation done
 
 Replaced triple-nested `for` loops with `flat_map` chains in `parse_logs`/`parse_traces`; extracted `build_events`/`build_links` helpers in both ingestion and query-api; renamed `attrs_map`→`to_json_attrs` and `attrs_as_string_map`→`to_string_attrs`; extracted `STEP_LADDER` and `KEY_SEPARATOR` constants; added `ingest_points` to unify the repeated `upsert` call across Gauge/Sum/Histogram arms; passed `&Option<Resource>` by reference instead of cloning; and added tests for span events/links, Sum/Histogram dedupe, and single-quote escaping in the filter DSL.
+
+### 2026-05-17 — RIVER-85: implementation done
+
+Fixed column filter popup position in Logs and Traces views by adding `stackKey: GlobalKey` to `ColumnMenu` so it looks up the outer table Stack's `RenderBox` directly instead of deriving it from its own `context`; extracted offset math into a pure `columnMenuOffset` function covered by 6 unit tests.
