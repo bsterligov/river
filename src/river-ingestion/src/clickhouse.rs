@@ -75,82 +75,114 @@ impl Writer {
 
 pub fn parse_logs(data: &[u8]) -> anyhow::Result<Vec<Value>> {
     let req = ExportLogsServiceRequest::decode_length_delimited(&mut &data[..])?;
-    let mut rows = Vec::new();
-    for rl in &req.resource_logs {
-        let service = service_name(&rl.resource);
-        for sl in &rl.scope_logs {
-            for log in &sl.log_records {
-                rows.push(json!({
-                    "timestamp": log.time_unix_nano,
-                    "service_name": service,
-                    "severity_number": log.severity_number,
-                    "severity_text": log.severity_text,
-                    "body": any_value_str(&log.body),
-                    "trace_id": to_hex(&log.trace_id),
-                    "span_id": to_hex(&log.span_id),
-                    "attributes": attrs_map(&log.attributes).to_string(),
-                }));
-            }
-        }
-    }
+    let rows = req
+        .resource_logs
+        .iter()
+        .flat_map(|rl| {
+            let service = service_name(&rl.resource);
+            rl.scope_logs.iter().flat_map(move |sl| {
+                let service = service.clone();
+                sl.log_records.iter().map(move |log| {
+                    json!({
+                        "timestamp": log.time_unix_nano,
+                        "service_name": service,
+                        "severity_number": log.severity_number,
+                        "severity_text": log.severity_text,
+                        "body": any_value_str(&log.body),
+                        "trace_id": to_hex(&log.trace_id),
+                        "span_id": to_hex(&log.span_id),
+                        "attributes": to_json_attrs(&log.attributes).to_string(),
+                    })
+                })
+            })
+        })
+        .collect();
     Ok(rows)
 }
 
 pub fn parse_traces(data: &[u8]) -> anyhow::Result<Vec<Value>> {
     let req = ExportTraceServiceRequest::decode_length_delimited(&mut &data[..])?;
-    let mut rows = Vec::new();
-    for rs in &req.resource_spans {
-        let service = service_name(&rs.resource);
-        for ss in &rs.scope_spans {
-            for span in &ss.spans {
-                let event_names: Vec<Value> = span.events.iter().map(|e| json!(e.name)).collect();
-                let event_timestamps: Vec<Value> = span
-                    .events
-                    .iter()
-                    .map(|e| json!(e.time_unix_nano))
-                    .collect();
-                let event_attributes: Vec<Value> = span
-                    .events
-                    .iter()
-                    .map(|e| attrs_as_string_map(&e.attributes))
-                    .collect();
-                let link_trace_ids: Vec<Value> = span
-                    .links
-                    .iter()
-                    .map(|l| json!(to_hex(&l.trace_id)))
-                    .collect();
-                let link_span_ids: Vec<Value> = span
-                    .links
-                    .iter()
-                    .map(|l| json!(to_hex(&l.span_id)))
-                    .collect();
-                let link_attributes: Vec<Value> = span
-                    .links
-                    .iter()
-                    .map(|l| attrs_as_string_map(&l.attributes))
-                    .collect();
-                rows.push(json!({
-                    "trace_id": to_hex(&span.trace_id),
-                    "span_id": to_hex(&span.span_id),
-                    "parent_span_id": to_hex(&span.parent_span_id),
-                    "service_name": service,
-                    "operation_name": span.name,
-                    "start_time_unix_nano": span.start_time_unix_nano,
-                    "end_time_unix_nano": span.end_time_unix_nano,
-                    "duration_ns": span.end_time_unix_nano.saturating_sub(span.start_time_unix_nano),
-                    "status_code": span.status.as_ref().map(|s| s.code).unwrap_or(0),
-                    "attributes": attrs_map(&span.attributes).to_string(),
-                    "Events.Name": event_names,
-                    "Events.Timestamp": event_timestamps,
-                    "Events.Attributes": event_attributes,
-                    "Links.TraceId": link_trace_ids,
-                    "Links.SpanId": link_span_ids,
-                    "Links.Attributes": link_attributes,
-                }));
-            }
-        }
-    }
+    let rows = req
+        .resource_spans
+        .iter()
+        .flat_map(|rs| {
+            let service = service_name(&rs.resource);
+            rs.scope_spans.iter().flat_map(move |ss| {
+                let service = service.clone();
+                ss.spans.iter().map(move |span| {
+                    let (event_names, event_timestamps, event_attributes) =
+                        build_events(&span.events);
+                    let (link_trace_ids, link_span_ids, link_attributes) =
+                        build_links(&span.links);
+                    json!({
+                        "trace_id": to_hex(&span.trace_id),
+                        "span_id": to_hex(&span.span_id),
+                        "parent_span_id": to_hex(&span.parent_span_id),
+                        "service_name": service,
+                        "operation_name": span.name,
+                        "start_time_unix_nano": span.start_time_unix_nano,
+                        "end_time_unix_nano": span.end_time_unix_nano,
+                        "duration_ns": span.end_time_unix_nano.saturating_sub(span.start_time_unix_nano),
+                        "status_code": span.status.as_ref().map(|s| s.code).unwrap_or(0),
+                        "attributes": to_json_attrs(&span.attributes).to_string(),
+                        "Events.Name": event_names,
+                        "Events.Timestamp": event_timestamps,
+                        "Events.Attributes": event_attributes,
+                        "Links.TraceId": link_trace_ids,
+                        "Links.SpanId": link_span_ids,
+                        "Links.Attributes": link_attributes,
+                    })
+                })
+            })
+        })
+        .collect();
     Ok(rows)
+}
+
+fn build_events(
+    events: &[opentelemetry_proto::tonic::trace::v1::span::Event],
+) -> (Vec<Value>, Vec<Value>, Vec<Value>) {
+    events
+        .iter()
+        .map(|e| {
+            (
+                json!(e.name),
+                json!(e.time_unix_nano),
+                to_string_attrs(&e.attributes),
+            )
+        })
+        .fold(
+            (Vec::new(), Vec::new(), Vec::new()),
+            |(mut names, mut timestamps, mut attrs), (n, t, a)| {
+                names.push(n);
+                timestamps.push(t);
+                attrs.push(a);
+                (names, timestamps, attrs)
+            },
+        )
+}
+
+fn build_links(
+    links: &[opentelemetry_proto::tonic::trace::v1::span::Link],
+) -> (Vec<Value>, Vec<Value>, Vec<Value>) {
+    links
+        .iter()
+        .map(|l| {
+            (
+                json!(to_hex(&l.trace_id)),
+                json!(to_hex(&l.span_id)),
+                to_string_attrs(&l.attributes),
+            )
+        })
+        .fold(
+            (Vec::new(), Vec::new(), Vec::new()),
+            |(mut tids, mut sids, mut attrs), (tid, sid, a)| {
+                tids.push(tid);
+                sids.push(sid);
+                attrs.push(a);
+                (tids, sids, attrs)
+            },
+        )
 }
 
 fn service_name(resource: &Option<Resource>) -> String {
@@ -186,7 +218,7 @@ fn any_value_str(av: &Option<opentelemetry_proto::tonic::common::v1::AnyValue>) 
         .unwrap_or_default()
 }
 
-fn attrs_map(attrs: &[KeyValue]) -> Value {
+fn to_json_attrs(attrs: &[KeyValue]) -> Value {
     let map: Map<String, Value> = attrs
         .iter()
         .map(|kv| {
@@ -208,7 +240,7 @@ fn attrs_map(attrs: &[KeyValue]) -> Value {
     Value::Object(map)
 }
 
-fn attrs_as_string_map(attrs: &[KeyValue]) -> Value {
+fn to_string_attrs(attrs: &[KeyValue]) -> Value {
     let map: Map<String, Value> = attrs
         .iter()
         .map(|kv| {
@@ -452,7 +484,7 @@ mod tests {
 
     #[test]
     fn attrs_map_handles_multiple_value_types() {
-        let m = attrs_map(&all_type_attrs());
+        let m = to_json_attrs(&all_type_attrs());
         assert_eq!(m["s"], serde_json::json!("hello"));
         assert_eq!(m["i"], serde_json::json!(42i64));
         assert_eq!(m["d"], serde_json::json!(2.5f64));
@@ -463,7 +495,7 @@ mod tests {
 
     #[test]
     fn attrs_as_string_map_converts_all_types() {
-        let m = attrs_as_string_map(&all_type_attrs());
+        let m = to_string_attrs(&all_type_attrs());
         assert_eq!(m["s"], serde_json::json!("hello"));
         assert_eq!(m["i"], serde_json::json!("42"));
         assert_eq!(m["d"], serde_json::json!("2.5"));

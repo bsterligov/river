@@ -17,6 +17,8 @@ use opentelemetry_proto::tonic::{
 
 use crate::batcher::Sink;
 
+const KEY_SEPARATOR: &str = "\x00";
+
 pub struct Config {
     pub flush_interval: Duration,
     pub key_prefix: String,
@@ -86,7 +88,7 @@ impl MetricsAggregator {
                 let sn = sm.scope.as_ref().map(|s| s.name.as_str()).unwrap_or("");
                 let sv = sm.scope.as_ref().map(|s| s.version.as_str()).unwrap_or("");
                 for m in &sm.metrics {
-                    ingest(&mut state.series, &rk, rm.resource.clone(), sn, sv, m);
+                    ingest(&mut state.series, &rk, &rm.resource, sn, sv, m);
                 }
             }
         }
@@ -159,85 +161,117 @@ fn resource_key(resource: &Option<Resource>) -> String {
 fn ingest(
     series: &mut HashMap<String, SeriesEntry>,
     rk: &str,
-    resource: Option<Resource>,
+    resource: &Option<Resource>,
     scope_name: &str,
     scope_ver: &str,
     m: &Metric,
 ) {
     match &m.data {
-        Some(Data::Gauge(g)) => {
-            for p in &g.data_points {
-                upsert(
-                    series,
-                    rk,
-                    resource.clone(),
-                    scope_name,
-                    scope_ver,
-                    m,
-                    &attrs_key(&p.attributes),
-                    || SeriesKind::Gauge(p.clone()),
-                    |k| {
-                        if let SeriesKind::Gauge(e) = k {
-                            if p.time_unix_nano >= e.time_unix_nano {
-                                *e = p.clone();
-                            }
-                        }
-                    },
-                );
-            }
-        }
-        Some(Data::Sum(s)) => {
-            let (t, mono) = (s.aggregation_temporality, s.is_monotonic);
-            for p in &s.data_points {
-                upsert(
-                    series,
-                    rk,
-                    resource.clone(),
-                    scope_name,
-                    scope_ver,
-                    m,
-                    &attrs_key(&p.attributes),
-                    || SeriesKind::Sum {
-                        temporality: t,
-                        is_monotonic: mono,
-                        point: p.clone(),
-                    },
-                    |k| {
-                        if let SeriesKind::Sum { point: e, .. } = k {
-                            if p.time_unix_nano >= e.time_unix_nano {
-                                *e = p.clone();
-                            }
-                        }
-                    },
-                );
-            }
-        }
+        Some(Data::Gauge(g)) => ingest_gauge(series, rk, resource, scope_name, scope_ver, m, g),
+        Some(Data::Sum(s)) => ingest_sum(series, rk, resource, scope_name, scope_ver, m, s),
         Some(Data::Histogram(h)) => {
-            let t = h.aggregation_temporality;
-            for p in &h.data_points {
-                upsert(
-                    series,
-                    rk,
-                    resource.clone(),
-                    scope_name,
-                    scope_ver,
-                    m,
-                    &attrs_key(&p.attributes),
-                    || SeriesKind::Histogram {
-                        temporality: t,
-                        point: p.clone(),
-                    },
-                    |k| {
-                        if let SeriesKind::Histogram { point: e, .. } = k {
-                            if p.time_unix_nano >= e.time_unix_nano {
-                                *e = p.clone();
-                            }
-                        }
-                    },
-                );
-            }
+            ingest_histogram(series, rk, resource, scope_name, scope_ver, m, h);
         }
         _ => {} // ExponentialHistogram, Summary: not yet handled
+    }
+}
+
+fn ingest_gauge(
+    series: &mut HashMap<String, SeriesEntry>,
+    rk: &str,
+    resource: &Option<Resource>,
+    scope_name: &str,
+    scope_ver: &str,
+    m: &Metric,
+    g: &Gauge,
+) {
+    for p in &g.data_points {
+        upsert(
+            series,
+            rk,
+            resource.clone(),
+            scope_name,
+            scope_ver,
+            m,
+            &attrs_key(&p.attributes),
+            || SeriesKind::Gauge(p.clone()),
+            |k| {
+                if let SeriesKind::Gauge(e) = k {
+                    if p.time_unix_nano >= e.time_unix_nano {
+                        *e = p.clone();
+                    }
+                }
+            },
+        );
+    }
+}
+
+fn ingest_sum(
+    series: &mut HashMap<String, SeriesEntry>,
+    rk: &str,
+    resource: &Option<Resource>,
+    scope_name: &str,
+    scope_ver: &str,
+    m: &Metric,
+    s: &Sum,
+) {
+    let (t, mono) = (s.aggregation_temporality, s.is_monotonic);
+    for p in &s.data_points {
+        upsert(
+            series,
+            rk,
+            resource.clone(),
+            scope_name,
+            scope_ver,
+            m,
+            &attrs_key(&p.attributes),
+            || SeriesKind::Sum {
+                temporality: t,
+                is_monotonic: mono,
+                point: p.clone(),
+            },
+            |k| {
+                if let SeriesKind::Sum { point: e, .. } = k {
+                    if p.time_unix_nano >= e.time_unix_nano {
+                        *e = p.clone();
+                    }
+                }
+            },
+        );
+    }
+}
+
+fn ingest_histogram(
+    series: &mut HashMap<String, SeriesEntry>,
+    rk: &str,
+    resource: &Option<Resource>,
+    scope_name: &str,
+    scope_ver: &str,
+    m: &Metric,
+    h: &Histogram,
+) {
+    let t = h.aggregation_temporality;
+    for p in &h.data_points {
+        upsert(
+            series,
+            rk,
+            resource.clone(),
+            scope_name,
+            scope_ver,
+            m,
+            &attrs_key(&p.attributes),
+            || SeriesKind::Histogram {
+                temporality: t,
+                point: p.clone(),
+            },
+            |k| {
+                if let SeriesKind::Histogram { point: e, .. } = k {
+                    if p.time_unix_nano >= e.time_unix_nano {
+                        *e = p.clone();
+                    }
+                }
+            },
+        );
     }
 }
 
@@ -253,7 +287,10 @@ fn upsert(
     make: impl FnOnce() -> SeriesKind,
     update: impl FnOnce(&mut SeriesKind),
 ) {
-    let sk = format!("{rk}\x00{scope_name}\x00{}\x00{point_key}", m.name);
+    let sk = format!(
+        "{rk}{KEY_SEPARATOR}{scope_name}{KEY_SEPARATOR}{}{KEY_SEPARATOR}{point_key}",
+        m.name
+    );
     match series.entry(sk) {
         Entry::Vacant(v) => {
             v.insert(SeriesEntry {
