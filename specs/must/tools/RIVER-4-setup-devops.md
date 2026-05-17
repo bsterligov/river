@@ -1,5 +1,5 @@
 # RIVER-4: Setup DevOps
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: Merges to main have no automated quality gate — broken formatting, lint errors, and test failures can land undetected.

@@ -30,7 +30,7 @@ jobs:
       - name: calculate version
         id: version
         run: |
-          VERSION=$(mise run release:version)
+          VERSION=$(mise run ci:release-version)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   rust-quality:
@@ -46,22 +46,16 @@ jobs:
       - uses: jdx/mise-action@v4
         with:
           cache: false
-          install_args: rust cargo:cargo-llvm-cov
+          install_args: rust
 
       - name: fmt check
-        run: mise run cargo:fmt-check
+        run: mise run ci:cargo-fmt-check
 
       - name: clippy
-        run: mise run cargo:clippy
+        run: mise run ci:cargo-clippy
 
-      - name: coverage
-        run: mise run cargo:coverage
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: lcov
-          path: lcov.info
-          retention-days: 1
+      - name: test
+        run: mise run ci:cargo-test
 
   flutter-quality:
     name: Run Flutter Tests
@@ -77,49 +71,8 @@ jobs:
         with:
           install_args: flutter
 
-      - name: flutter coverage
-        run: mise run flutter:coverage
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: flutter-lcov
-          path: src/ui/coverage/lcov.info
-          retention-days: 1
-
-  sonarqube:
-    name: Run SonarQube
-    runs-on: ubuntu-latest
-    needs: [version, rust-quality, flutter-quality]
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - uses: jdx/mise-action@v4
-        with:
-          install_args: flutter
-
-      - run: mise run flutter:ci-setup
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: lcov
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: flutter-lcov
-          path: src/ui/coverage
-
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v8
-        with:
-          args: >-
-            -Dsonar.qualitygate.wait=true
-            -Dsonar.projectVersion=${{ needs.version.outputs.version }}
-            -Dsonar.flutter.sdk.path=${{ env.FLUTTER_SDK }}
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: flutter test
+        run: mise run ci:flutter-test
 
   release:
     name: Create Release
@@ -143,7 +96,7 @@ jobs:
         with:
           install_args: cocogitto
 
-      - run: mise run release:publish
+      - run: mise run ci:release-publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_VERSION: ${{ needs.version.outputs.version }}

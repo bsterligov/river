@@ -31,13 +31,15 @@ git checkout impl/river-{N}
 
 If the branch does not exist yet (GHA did not run), create it with the mise task:
 ```bash
-SPEC_BRANCH=spec/river-{N} mise run spec:impl
+SPEC_BRANCH=spec/river-{N} mise run agent:spec-impl
 git checkout impl/river-{N}
 ```
 
 ## Step 3 — Implement
 
 Implement everything listed under **Scope In**. Follow the Test Approach declared in the spec header (TDD or BDD). Do not implement anything listed under **Scope Out**.
+
+**Mise tasks** — if a `mise run` call fails or the spec requires automation that has no task yet, create or fix the task file before continuing. Tasks live in `.mise/tasks/ci/` (stateless validation, suitable for CI) or `.mise/tasks/agent/` (agent and developer workflow steps). Write tasks directly in Python (`#!/usr/bin/env python3`) or Bash (`#!/usr/bin/env bash`) with a `#MISE description=` header line. Do not inline scripts in command specs — if a script is needed, it belongs in a task file.
 
 Before each commit, run and fix all failures from:
 ```bash
@@ -48,54 +50,10 @@ mise exec -- cargo test
 
 After implementation, review for:
 
-- **Code duplication** — run the script below; fix anything it flags before opening the PR. Target: overall < 3%.
+- **Code duplication** — run the check below; fix anything it flags before opening the PR. Target: overall < 3%.
 
 ```bash
-mise exec -- python - <<'PYEOF'
-import os, hashlib, collections, sys
-
-WINDOW = 8
-
-def rs_files(root="src"):
-    for dp, _, fs in os.walk(root):
-        if "target" in dp:
-            continue
-        for f in fs:
-            if f.endswith(".rs"):
-                yield os.path.join(dp, f)
-
-def read_normalized(path):
-    with open(path) as fh:
-        return [ln.strip() for ln in fh
-                if ln.strip() and not ln.strip().startswith("//")]
-
-files = {p: read_normalized(p) for p in rs_files()}
-
-windows = collections.defaultdict(list)
-for path, lines in files.items():
-    for i in range(len(lines) - WINDOW + 1):
-        h = hashlib.md5("\n".join(lines[i:i+WINDOW]).encode()).hexdigest()
-        windows[h].append((path, i))
-
-dup = collections.defaultdict(set)
-for h, locs in windows.items():
-    if len({p for p, _ in locs}) < 2:
-        continue
-    for path, start in locs:
-        for j in range(WINDOW):
-            dup[path].add(start + j)
-
-total = sum(len(v) for v in files.values())
-total_dup = sum(len(v) for v in dup.values())
-pct = 100 * total_dup / total if total else 0
-
-print(f"Overall: {total_dup}/{total} lines = {pct:.1f}%")
-for path in sorted(dup, key=lambda p: -len(dup[p]))[:10]:
-    fp = 100 * len(dup[path]) / max(len(files[path]), 1)
-    print(f"  {path}: {fp:.1f}% ({len(dup[path])} lines)")
-
-sys.exit(0 if pct < 3 else 1)
-PYEOF
+mise run agent:check-duplication
 ```
 - **Cognitive Complexity ≤ 15** — SonarQube enforces a maximum of 15 per function. Each level of nesting adds to the score (nested `if`/`for`/`match` compounds quickly). When a function exceeds 15, extract the inner logic into a named helper; do not just flatten with early returns if nesting is the root cause.
 
@@ -109,30 +67,20 @@ export SONAR_TOKEN=$(grep '^SONAR_TOKEN' .env.local | cut -d'"' -f2)
 Run a scan and wait for the quality gate:
 
 ```bash
-mise run sonar:scan   # generates lcov reports + submits PR or branch scan
-mise run sonar:check  # polls CE task, prints gate result and any failing conditions
+mise run ci:sonar-scan   # generates lcov reports + submits PR or branch scan
+mise run ci:sonar-check  # polls CE task, prints gate result and any failing conditions
 ```
 
-`sonar:scan` automatically uses PR mode when an open PR exists (passes `sonar.pullrequest.*`), falling back to branch mode otherwise.
+`ci:sonar-scan` automatically uses PR mode when an open PR exists (passes `sonar.pullrequest.*`), falling back to branch mode otherwise.
 
-`sonar:check` exits non-zero if the quality gate fails. When it does, fetch the new issues introduced by this PR and fix every one before continuing:
+`ci:sonar-check` exits non-zero if the quality gate fails. When it does, fetch the new issues introduced by this PR and fix every one before continuing:
 
 ```bash
 export SONAR_TOKEN=$(grep '^SONAR_TOKEN' .env.local | cut -d'"' -f2)
-PR=$(gh pr view --json number -q .number)
-curl -sf -u "${SONAR_TOKEN}:" \
-  "https://sonarcloud.io/api/issues/search?projectKeys=bsterligov_river&pullRequest=${PR}&resolved=false" \
-| python3 -c "
-import sys, json
-issues = json.load(sys.stdin).get('issues', [])
-print(f'New issues: {len(issues)}')
-for i in issues:
-    print(f'  [{i[\"severity\"]}] {i[\"type\"]} — {i[\"message\"]}')
-    print(f'    {i[\"component\"].split(\":\")[-1]}:{i.get(\"line\",\"?\")}')
-"
+mise run agent:sonar-issues
 ```
 
-After fixing, re-run `sonar:scan` + `sonar:check` until the gate passes. The dashboard URL is printed at the end for drill-down.
+After fixing, re-run `ci:sonar-scan` + `ci:sonar-check` until the gate passes. The dashboard URL is printed at the end for drill-down.
 
 ## Step 5 — Close out tracking files
 
@@ -152,7 +100,13 @@ Update `specs/SPEC.md` with any decisions from this spec.
 
 ## Step 7 — Open a PR
 
-Commit all changes (implementation + tracking files), push the branch, and open a draft PR targeting main:
+Before opening the PR, check that no other `impl/*` PR is already open. One impl PR at a time is the rule — it keeps the review queue clean and prevents merge conflicts from piling up.
+
+```bash
+mise run agent:check-impl-pr
+```
+
+If the check passes, commit all changes (implementation + tracking files), push, and open the draft PR:
 
 ```bash
 git add <files>

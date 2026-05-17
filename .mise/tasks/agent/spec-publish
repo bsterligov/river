@@ -2,7 +2,7 @@
 #MISE description="Commit draft spec and open draft PR"
 set -eu
 
-[ -f .spec-env ] || { echo "run spec:draft first"; exit 1; }
+[ -f .spec-env ] || { echo "run agent:spec-draft first"; exit 1; }
 . ./.spec-env
 rm -f .spec-env
 

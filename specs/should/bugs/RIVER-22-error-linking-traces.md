@@ -1,5 +1,5 @@
 # RIVER-22: Error linking traces
-Status: In Progress
+
 Priority: Should
 Test Approach: BDD
 Why: Trace linking in Grafana is broken — clicking a trace ID returns a ClickHouse SQL error and the datasource trace configuration is unset, making distributed tracing unusable from the dashboard.

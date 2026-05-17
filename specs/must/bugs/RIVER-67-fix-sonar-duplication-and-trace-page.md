@@ -1,5 +1,5 @@
 # RIVER-67: Fix Sonar Duplication and Trace Page
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: Sonar reports high code duplication blocking quality gates, and the Traces page fails to display data for users.

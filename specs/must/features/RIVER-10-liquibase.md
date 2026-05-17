@@ -1,5 +1,5 @@
 # RIVER-10: Database Migration Management
-Status: In Progress
+
 Priority: Must
 Test Approach: TDD
 Why: Schema changes are embedded in application code with no versioning, rollback path, or separation from runtime logic.

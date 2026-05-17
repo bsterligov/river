@@ -1,5 +1,5 @@
 # RIVER-35: UI: Logs Table with Column Management and Sort
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: Operators need to show and hide columns and sort by any field to focus on what matters in an incident without switching tools.

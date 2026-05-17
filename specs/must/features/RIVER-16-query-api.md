@@ -1,5 +1,5 @@
 # RIVER-16: Query API
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: The frontend cannot display observability data without a query layer — the API is the missing link between storage and UI.

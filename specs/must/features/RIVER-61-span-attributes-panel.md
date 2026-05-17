@@ -1,5 +1,5 @@
 # RIVER-61: Span attributes panel
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: Operators viewing the trace waterfall cannot inspect a span's attributes, events, or links without leaving the UI, because tapping a span row does nothing today.

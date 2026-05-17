@@ -1,5 +1,5 @@
 # RIVER-30: UI: Facet Panel
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: Operators have no way to narrow down logs without knowing exact field values — the facet panel lets them explore and filter by clicking rather than typing.

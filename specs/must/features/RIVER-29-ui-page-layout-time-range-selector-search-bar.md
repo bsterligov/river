@@ -1,5 +1,5 @@
 # RIVER-29: UI: Page Layout + Time Range Selector + Search Bar
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: Operators have no way to scope log queries by time or filter expression without leaving the app — the current Logs page loads everything with no controls.

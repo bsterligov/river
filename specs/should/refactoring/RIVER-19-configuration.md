@@ -1,5 +1,5 @@
 # RIVER-19: Configuration
-Status: In Progress
+
 Priority: Should
 Test Approach: TDD
 Why: Each component reads env vars ad-hoc with inconsistent naming and hardcoded credential defaults, making configuration error-prone and violating the `RIVER_` prefix convention.

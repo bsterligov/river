@@ -1,5 +1,5 @@
 # RIVER-73: Refactor Flutter widgets: extract duplicates, split large files, fix async safety
-Status: In Progress
+
 Priority: Could
 Test Approach: TDD
 Why: A code review found duplicated widgets and logic, oversized files, hardcoded colors, and unsafe async patterns that make the Flutter UI harder to maintain and extend.

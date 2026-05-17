@@ -1,5 +1,5 @@
 # RIVER-37: UI: Log Detail Panel
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: Operators need to inspect the full context of a log row — tags, message, and structured attributes — without leaving the table view.

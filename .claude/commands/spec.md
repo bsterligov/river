@@ -56,7 +56,6 @@ Write specs in this exact structure. Keep each section tight — one spec should
 
 ```markdown
 # {TASK_NUMBER}: {Title}
-Status: In Progress | Done | Updated
 Priority: Must | Should | Could | Won't
 Test Approach: TDD | BDD
 Why: {One sentence — the problem or goal this solves.}

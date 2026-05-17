@@ -26,4 +26,4 @@ sonar-scanner \
   $SONAR_MODE \
   ${SONAR_TOKEN:+-Dsonar.token="$SONAR_TOKEN"}
 
-echo "==> Scan submitted. Run 'mise run sonar:check' to poll results."
+echo "==> Scan submitted. Run 'mise run ci:sonar-check' to poll results."

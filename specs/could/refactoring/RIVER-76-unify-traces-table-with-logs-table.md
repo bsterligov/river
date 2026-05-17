@@ -1,5 +1,5 @@
 # RIVER-76: Unify traces table with logs table
-Status: In Progress
+
 Priority: Could
 Test Approach: BDD
 Why: The traces table is a hardcoded second-class citizen while the logs table has content-aware column widths, show/hide, and a consistent sort UX — operators get a worse experience on the Traces page for no reason.

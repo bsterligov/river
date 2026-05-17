@@ -1,5 +1,5 @@
 # RIVER-52: Logo and Window Title
-Status: In Progress
+
 Priority: Should
 Test Approach: BDD
 Why: The app has no visual identity and the window title is a generic placeholder, making it look unfinished to anyone who opens it.

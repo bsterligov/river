@@ -1,5 +1,5 @@
 # RIVER-28: API: Histogram & Facets + Extend LogRow
-Status: In Progress
+
 Priority: Must
 Test Approach: TDD
 Why: The UI needs time-bucketed log counts and top-value facets that the current API does not expose, and `LogRow` is missing fields the detail panel requires.

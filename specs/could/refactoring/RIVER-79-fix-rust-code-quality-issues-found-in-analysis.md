@@ -1,5 +1,5 @@
 # RIVER-79: Fix Rust Code Quality Issues Found in Analysis
-Status: In Progress
+
 Priority: Could
 Test Approach: TDD
 Why: Static analysis surfaced a Clippy deny error, silent error discard, and a range of maintainability issues across the Rust codebase that will compound as the project grows.

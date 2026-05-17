@@ -1,5 +1,5 @@
 # RIVER-31: UI: Log Distribution Histogram
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: Operators need a fast visual read of log volume over time to spot spikes and anomalies without writing queries.

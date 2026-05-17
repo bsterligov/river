@@ -1,5 +1,5 @@
 # RIVER-55: Single-trace API endpoint
-Status: In Progress
+
 Priority: Must
 Test Approach: TDD
 Why: The UI cannot fetch or display a complete trace because no endpoint exists to retrieve all spans for a given trace ID.

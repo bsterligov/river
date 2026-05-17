@@ -3,7 +3,7 @@
 set -eu
 
 NUMBER="${ISSUE_NUMBER:-${1:-}}"
-[ -n "$NUMBER" ] || { echo "usage: ISSUE_NUMBER=<n> mise run spec:draft"; exit 1; }
+[ -n "$NUMBER" ] || { echo "usage: ISSUE_NUMBER=<n> mise run agent:spec-draft"; exit 1; }
 
 DATA=$(gh issue view "$NUMBER" --json number,title,body,labels)
 ISSUE_NUMBER=$(echo "$DATA" | jq -r '.number')

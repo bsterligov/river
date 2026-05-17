@@ -40,8 +40,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
         run: |
-          mise run spec:draft
-          mise run spec:publish
+          mise run agent:spec-draft
+          mise run agent:spec-publish
 
   create-impl-draft:
     name: Create Implementation Draft PR
@@ -65,4 +65,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SPEC_BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: mise run spec:impl
+        run: mise run agent:spec-impl

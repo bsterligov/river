@@ -47,7 +47,7 @@ The index is kept fresh automatically: a `PostToolUse` hook on `Bash` detects `g
 **Setup** — build the release binary once:
 
 ```bash
-mise run index:reindex
+mise run agent:index-reindex
 ```
 
 This builds `target/release/river-index`, indexes the workspace, and prints stats. Both hooks are wired in `.claude/settings.local.json` — no further configuration needed.

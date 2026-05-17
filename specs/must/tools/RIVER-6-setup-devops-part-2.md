@@ -1,5 +1,5 @@
 # RIVER-6: Setup DevOps Part 2
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: The project has no automated release process — creating a git tag and GitHub release must be done manually, which is inconsistent and error-prone.

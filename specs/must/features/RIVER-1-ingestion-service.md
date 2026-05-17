@@ -1,5 +1,5 @@
 # RIVER-1: Ingestion Service
-Status: In Progress
+
 Priority: Must
 Test Approach: TDD
 Why: Signals accumulate in S3 but nothing reads them — the pipeline has no path from buffer to queryable storage.

@@ -1,5 +1,5 @@
 # RIVER-25: Setup Flutter MVP App
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: River has no UI — operators have no production-ready way to view observability data, and Grafana is explicitly dev-only.

@@ -33,7 +33,7 @@ Existing tools like OpenSpec, SpecKit, and similar spec-authoring frameworks wer
 
 ## How it works
 
-Two workflow versions exist, each building on the previous. Full details: [V0 — Single task](docs/v0.md) · [V1 — Ambitious features](docs/v1.md)
+Three workflow versions exist, each building on the previous. Full details: [V0 — Single task](docs/v0.md) · [V1 — Ambitious features](docs/v1.md) · [V1.1 — Workflow refinements](docs/v1.1.md)
 
 ### V0 — Single task
 
@@ -46,6 +46,20 @@ The spec PR is the only review gate. Implementation runs without further review 
 V1 adds three commands above the V0 loops. `/create-feature` decomposes the feature into phases and assigns each one an execution mode — `parallel` (no dependencies, can run alongside others) or `sequential` (must wait for dependencies to land). `/plan-spec` and `/plan-dev` respect that order: independent phases spawn simultaneously, dependent phases wait for their wave to complete before starting.
 
 Full command reference: [docs/v1.md](docs/v1.md)
+
+### V1.1 — Workflow refinements
+
+V1.1 tightens quality gates and reduces CI noise without adding new commands.
+
+**What changed and why:**
+
+| Change | What | Why |
+|--------|------|-----|
+| SonarQube out of CI | Sonar is now a `spec-dev` step: the agent runs it after the code is stable, before marking the PR ready. CI (lint + tests) still fires on `ready_for_review` as an independent check. | CI ran Sonar on every `ready_for_review` push. The agent never saw the result until after the commit — fixing issues meant another push and another CI queue wait. Running it in-session gives immediate feedback. |
+| One impl PR at a time | `spec-dev` checks for open `impl/*` PRs before opening a new one and exits with an error if any exist. | Was documented convention, not enforced. Opening a second impl PR while the first was in review created merge conflicts in tracking files (`QUEUE.md`, `HISTORY.md`) and confused the review queue. |
+| Mise tasks reorganized | Tasks moved from nested dirs (`cargo/`, `flutter/`, `sonar/`, etc.) to two flat buckets: `ci/` for stateless validation, `agent/` for agentic and developer workflow tasks. | The old structure mixed tasks with different lifecycles in the same namespace. `flutter:run` (local dev) sat next to `flutter:coverage` (CI). The new split makes the intent of each task immediately clear and lets CI jobs reference `ci:*` exclusively. |
+
+Full details: [docs/v1.1.md](docs/v1.1.md)
 
 ---
 

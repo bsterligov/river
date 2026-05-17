@@ -1,5 +1,5 @@
 # RIVER-49: Refactor UI Layout — Top Panel with Datetime Picker
-Status: In Progress
+
 Priority: Should
 Test Approach: BDD
 Why: The time range picker lives inside the Logs page today, so navigating to another page silently discards the selected range.

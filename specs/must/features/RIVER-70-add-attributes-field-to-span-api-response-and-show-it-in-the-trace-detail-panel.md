@@ -1,5 +1,5 @@
 # RIVER-70: Add `attributes` field to Span API response and show it in the trace detail panel
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: The `Span` struct omits `attributes`, so `GET /v1/traces/{id}` never returns span-level attributes and the UI cannot display them.

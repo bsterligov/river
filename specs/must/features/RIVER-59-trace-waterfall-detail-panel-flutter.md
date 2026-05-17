@@ -1,5 +1,5 @@
 # RIVER-59: Trace waterfall detail panel (Flutter)
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: Operators who select a trace have no way to see its internal span structure — the trace list shows summary rows only, leaving timing and error diagnosis opaque.

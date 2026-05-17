@@ -1,5 +1,5 @@
 # RIVER-56: Trace list page (Flutter)
-Status: In Progress
+
 Priority: Must
 Test Approach: BDD
 Why: Users have no first-class UI to search and visualize distributed traces, even though trace data is fully ingested and queryable via the existing API.

@@ -1,5 +1,5 @@
 # RIVER-46: Set up SonarQube and Tests CI Run for Flutter Code
-Status: In Progress
+
 Priority: Should
 Test Approach: BDD
 Why: Flutter code has no static analysis or automated test execution in CI, so regressions and quality issues go undetected until code review.

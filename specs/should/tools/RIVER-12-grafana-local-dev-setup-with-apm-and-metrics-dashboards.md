@@ -1,5 +1,5 @@
 # RIVER-12: Grafana Local Dev Setup with APM and Metrics Dashboards
-Status: In Progress
+
 Priority: Should
 Test Approach: BDD
 Why: Developers have no unified view of signals in local dev — they must query ClickHouse and VictoriaMetrics separately with no dashboards.
