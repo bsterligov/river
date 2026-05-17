@@ -38,7 +38,7 @@ An operator opens the Metrics page from the sidebar, browses the full list of av
 
 **In**
 - Sidebar nav item for Metrics (`Icons.show_chart_outlined`)
-- `MetricsPage` with two tabs: "All Metrics" and "Graph"
+- `MetricsPage` with two sub-tabs: "All Metrics" and "Graph"; tab bar rendered inside `TopPanel` (replacing the page body header) when Metrics is the active page
 - "All Metrics" tab: fetches metric names from the API, renders a scrollable list with selection state
 - Multi-select: tapping a metric toggles selection; selected metrics highlighted with `AppColors.primary.withOpacity(0.08)`
 - "Graph" tab: renders a time-series chart for each selected metric using the active `TimeRangeController` range
@@ -58,4 +58,5 @@ An operator opens the Metrics page from the sidebar, browses the full list of av
 - Query metrics via the existing generated Dart API client (`river_api`); no direct VictoriaMetrics calls from the UI
 - Chart uses `CustomPainter` to stay consistent with `LogHistogram` and avoid adding a charting dependency
 - Selection state lives on `MetricsController` (in-memory only, lost on page dispose)
-- Tab switching uses Flutter's built-in `TabBar`/`TabBarView`
+- Tab bar is surfaced in `TopPanel` when Metrics is the active page; `TopPanel` receives an optional `tabs` widget slot that is null for all other pages (no change to existing pages)
+- Tab switching uses Flutter's built-in `TabBar`/`TabBarView`; `TabController` lives on `MetricsPage`
