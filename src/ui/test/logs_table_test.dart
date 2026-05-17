@@ -142,7 +142,9 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('col_toggle_timestamp')), findsOneWidget);
+    // Timestamp is a required column and is hidden from the menu.
+    expect(find.byKey(const Key('col_toggle_timestamp')), findsNothing);
+    expect(find.byKey(const Key('col_toggle_severity')), findsOneWidget);
 
     final tableList = find.byKey(const Key('logs_table'));
     if (tableList.evaluate().isNotEmpty) {
@@ -152,7 +154,7 @@ void main() {
     }
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('col_toggle_timestamp')), findsNothing);
+    expect(find.byKey(const Key('col_toggle_severity')), findsNothing);
     expect(find.text('Timestamp'), findsOneWidget);
     expect(find.text('Message'), findsOneWidget);
   });

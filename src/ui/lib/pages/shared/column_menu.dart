@@ -7,13 +7,11 @@ class ColumnMenuItem {
     required this.id,
     required this.label,
     required this.visible,
-    this.required = false,
   });
 
   final String id;
   final String label;
   final bool visible;
-  final bool required;
 }
 
 /// Computes the [top] and [right] offsets for the column menu popup.
@@ -89,7 +87,7 @@ class ColumnMenu extends StatelessWidget {
                   dense: true,
                   title: Text(item.label, style: AppText.label),
                   value: item.visible,
-                  onChanged: item.required ? null : (_) => onToggle(item.id),
+                  onChanged: (_) => onToggle(item.id),
                   controlAffinity: ListTileControlAffinity.leading,
                   contentPadding: AppLayout.tilePadding,
                 );
