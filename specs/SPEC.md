@@ -104,6 +104,7 @@ Open-source observability platform: infinitely scalable, deployable anywhere. Co
 - **`SharedTableHeader`:** shared widget in `lib/pages/shared/table_header.dart`; accepts `List<ColumnDef>`, `sortColumnId`, `sortAsc`, `onSort`, `onSettingsTap`; used by both `LogsTable` and `TracesTable`
 - **`ColumnMenu`:** shared widget in `lib/pages/shared/column_menu.dart`; accepts `List<ColumnMenuItem>` (id, label, visible), `menuKey` (icon's GlobalKey), `stackKey` (outer table Stack's GlobalKey), and `onToggle` callback; position computed via pure `columnMenuOffset` function using `stackKey.currentContext` for the correct RenderBox (not `context.findRenderObject()` which resolved to the overlay Stack); replaces the former private `_ColumnMenu` in `logs_table.dart`
 - **Traces table column order:** Start Time, Trace ID, Root Service, Root Operation, Duration ms, Spans (Start Time first to match logs UX; Trace ID second in mono)
+- **`TopPanel` tabs slot:** `TopPanel` accepts an optional `tabs` widget parameter; when non-null, it renders a `TabBar` inside the panel (e.g. for page-level sub-navigation); null for all pages that don't use tabs — no behavioral change to existing pages; `TabController` always lives on the consuming page widget, not on `TopPanel`
 
 ## Spec System
 `/spec` → spec PR → merge(main) → [GHA: impl branch + draft PR] → `/spec-dev` → impl PR → merge(main)
