@@ -209,9 +209,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
-    // One checkbox entry per column.
+    // One checkbox entry per non-required column (Start Time is required and hidden).
     for (final label in [
-      'Start Time',
       'Trace ID',
       'Root Service',
       'Root Operation',

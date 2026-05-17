@@ -14,6 +14,26 @@ class ColumnMenuItem {
   final bool visible;
 }
 
+/// Computes the [top] and [right] offsets for the column menu popup.
+///
+/// [iconGlobal] and [iconSize] describe the filter icon's global position and
+/// size. [stackGlobal] and [stackWidth] describe the outer table Stack.
+/// Returns `(top: 36, right: 8)` as fallback defaults when null is passed.
+({double top, double right}) columnMenuOffset({
+  required Offset? iconGlobal,
+  required Size? iconSize,
+  required Offset? stackGlobal,
+  required double? stackWidth,
+}) {
+  if (iconGlobal == null || iconSize == null || stackGlobal == null || stackWidth == null) {
+    return (top: 36, right: 8);
+  }
+  return (
+    top: iconGlobal.dy - stackGlobal.dy + iconSize.height + 4,
+    right: stackWidth - (iconGlobal.dx - stackGlobal.dx) - iconSize.width,
+  );
+}
+
 /// Positioned column-visibility overlay.
 ///
 /// Renders a checkbox list anchored below [menuKey]. The caller owns open/close
@@ -22,30 +42,30 @@ class ColumnMenu extends StatelessWidget {
   const ColumnMenu({
     super.key,
     required this.menuKey,
+    required this.stackKey,
     required this.items,
     required this.onToggle,
   });
 
   final GlobalKey menuKey;
+  final GlobalKey stackKey;
   final List<ColumnMenuItem> items;
   final void Function(String id) onToggle;
 
   @override
   Widget build(BuildContext context) {
     final iconBox = menuKey.currentContext?.findRenderObject() as RenderBox?;
-    final stackBox = context.findRenderObject() as RenderBox?;
-    double menuTop = 36;
-    double menuRight = 8;
-    if (iconBox != null && stackBox != null) {
-      final iconGlobal = iconBox.localToGlobal(Offset.zero);
-      final stackGlobal = stackBox.localToGlobal(Offset.zero);
-      menuTop = iconGlobal.dy - stackGlobal.dy + iconBox.size.height + 4;
-      menuRight = stackBox.size.width - (iconGlobal.dx - stackGlobal.dx) - iconBox.size.width;
-    }
+    final stackBox = stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final offset = columnMenuOffset(
+      iconGlobal: iconBox?.localToGlobal(Offset.zero),
+      iconSize: iconBox?.size,
+      stackGlobal: stackBox?.localToGlobal(Offset.zero),
+      stackWidth: stackBox?.size.width,
+    );
 
     return Positioned(
-      top: menuTop,
-      right: menuRight,
+      top: offset.top,
+      right: offset.right,
       child: GestureDetector(
         onTap: () {},
         child: Material(

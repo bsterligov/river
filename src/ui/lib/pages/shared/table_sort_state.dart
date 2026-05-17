@@ -15,9 +15,11 @@ class TableSortState<C extends ColumnDef> {
   List<C> get columns => List.unmodifiable(_columns);
 
   /// Returns true if state changed (caller should call notifyListeners).
+  /// Required columns cannot be hidden and are silently ignored.
   bool toggleColumn(String id, C Function(C col, bool visible) copyWith) {
     final idx = _columns.indexWhere((c) => c.id == id);
     if (idx == -1) return false;
+    if (_columns[idx].required) return false;
     _columns = List.of(_columns)..[idx] = copyWith(_columns[idx], !_columns[idx].visible);
     return true;
   }

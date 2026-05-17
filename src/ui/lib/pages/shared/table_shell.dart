@@ -42,6 +42,7 @@ class TableShell extends StatefulWidget {
 class _TableShellState extends State<TableShell> {
   bool _menuOpen = false;
   final _menuKey = GlobalKey();
+  final _stackKey = GlobalKey();
 
   void _toggleMenu() => setState(() => _menuOpen = !_menuOpen);
   void _closeMenu() => setState(() => _menuOpen = false);
@@ -59,6 +60,7 @@ class _TableShellState extends State<TableShell> {
         borderRadius: BorderRadius.circular(AppLayout.radius),
       ),
       child: Stack(
+        key: _stackKey,
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
@@ -108,8 +110,14 @@ class _TableShellState extends State<TableShell> {
                   children: [
                     ColumnMenu(
                       menuKey: _menuKey,
+                      stackKey: _stackKey,
                       items: columns
-                          .map((c) => ColumnMenuItem(id: c.id, label: c.label, visible: c.visible))
+                          .where((c) => !c.required)
+                          .map((c) => ColumnMenuItem(
+                                id: c.id,
+                                label: c.label,
+                                visible: c.visible,
+                              ))
                           .toList(),
                       onToggle: widget.onToggleColumn,
                     ),
