@@ -112,7 +112,12 @@ class _TableShellState extends State<TableShell> {
                       menuKey: _menuKey,
                       stackKey: _stackKey,
                       items: columns
-                          .map((c) => ColumnMenuItem(id: c.id, label: c.label, visible: c.visible))
+                          .map((c) => ColumnMenuItem(
+                                id: c.id,
+                                label: c.label,
+                                visible: c.visible,
+                                required: c.required,
+                              ))
                           .toList(),
                       onToggle: widget.onToggleColumn,
                     ),

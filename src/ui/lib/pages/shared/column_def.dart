@@ -4,5 +4,6 @@ abstract class ColumnDef {
   String? get fixedSample;
   bool get stretchy;
   bool get visible;
+  bool get required;
   String Function(dynamic) get getValueDynamic;
 }

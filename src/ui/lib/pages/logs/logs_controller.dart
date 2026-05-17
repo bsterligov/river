@@ -15,6 +15,7 @@ class LogColumn implements ColumnDef {
     this.fixedSample,
     this.stretchy = false,
     this.visible = true,
+    this.required = false,
   });
 
   @override
@@ -29,6 +30,8 @@ class LogColumn implements ColumnDef {
   final bool stretchy;
   @override
   final bool visible;
+  @override
+  final bool required;
 
   @override
   String Function(dynamic) get getValueDynamic => (row) => getValue(row as LogRow);
@@ -40,6 +43,7 @@ class LogColumn implements ColumnDef {
         stretchy: stretchy,
         getValue: getValue,
         visible: visible ?? this.visible,
+        required: required,
       );
 }
 
@@ -50,6 +54,7 @@ List<LogColumn> defaultColumns() => [
         // All formatted timestamps are the same character width.
         fixedSample: 'Jan 28 23:59:59.999',
         getValue: (r) => formatTimestamp(r.timestamp),
+        required: true,
       ),
       LogColumn(
         id: 'severity',

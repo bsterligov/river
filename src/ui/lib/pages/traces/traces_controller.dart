@@ -15,6 +15,7 @@ class TraceColumn implements ColumnDef {
     this.fixedSample,
     this.stretchy = false,
     this.visible = true,
+    this.required = false,
   });
 
   @override
@@ -29,6 +30,8 @@ class TraceColumn implements ColumnDef {
   final bool stretchy;
   @override
   final bool visible;
+  @override
+  final bool required;
 
   @override
   String Function(dynamic) get getValueDynamic => (row) => getValue(row as TraceGroup);
@@ -40,6 +43,7 @@ class TraceColumn implements ColumnDef {
         stretchy: stretchy,
         getValue: getValue,
         visible: visible ?? this.visible,
+        required: required,
       );
 }
 
@@ -49,6 +53,7 @@ List<TraceColumn> defaultTraceColumns() => [
         label: 'Start Time',
         fixedSample: 'Jan 28 23:59:59.999',
         getValue: (g) => formatTimestamp(traceGroupStartTime(g)),
+        required: true,
       ),
       TraceColumn(
         id: 'traceId',
