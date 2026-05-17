@@ -9,7 +9,7 @@ project_root = subprocess.check_output(
 ).strip()
 
 # ── Step 1: token events from Claude Code sessions ───────────────────────────
-proj_slug = project_root.lstrip("/").replace("/", "-")
+proj_slug = re.sub(r"[^A-Za-z0-9]", "-", project_root.lstrip("/"))
 proj = os.path.join(os.path.expanduser("~"), ".claude", "projects", f"-{proj_slug}", "")
 files = glob.glob(proj + "*.jsonl")
 
@@ -88,6 +88,7 @@ for i, (commit_ts, sha, msg) in enumerate(commits):
     rows.append({
         "sha": sha,
         "date": commit_ts.strftime("%m-%d %H:%M"),
+        "commit_ts": commit_ts,
         "input": sum(e[1] for e in window),
         "cache_create": sum(e[2] for e in window),
         "cache_read": sum(e[3] for e in window),
@@ -98,8 +99,23 @@ for i, (commit_ts, sha, msg) in enumerate(commits):
     })
 
 # ── Step 5: write docs/token-usage.md ───────────────────────────────────────
+PRICING = {
+    "input":        3.00 / 1e6,
+    "cache_create": 3.75 / 1e6,
+    "cache_read":   0.30 / 1e6,
+    "output":      15.00 / 1e6,
+}
+
 def fmt(n):
     return f"{n:,}"
+
+def row_cost(row):
+    return (
+        row["input"]        * PRICING["input"]
+        + row["cache_create"] * PRICING["cache_create"]
+        + row["cache_read"]   * PRICING["cache_read"]
+        + row["output"]       * PRICING["output"]
+    )
 
 today = datetime.now().strftime("%Y-%m-%d")
 header = f"# Token Usage — updated {today}\n\n"
@@ -123,37 +139,77 @@ table += (
     f"| **{fmt(totals['output'])}** | **{totals['turns']}** | **{fmt(totals['rtk_saved'])}** | — |\n"
 )
 
+# ── Weekly summary table ─────────────────────────────────────────────────────
+week_buckets = collections.OrderedDict()
+for r in rows:
+    iso = r["commit_ts"].isocalendar()
+    week_key = f"{iso[0]}-W{iso[1]:02d}"
+    if week_key not in week_buckets:
+        week_buckets[week_key] = {"input": 0, "cache_create": 0, "cache_read": 0, "output": 0, "turns": 0, "cost": 0.0}
+    b = week_buckets[week_key]
+    for k in ("input", "cache_create", "cache_read", "output", "turns"):
+        b[k] += r[k]
+    b["cost"] += row_cost(r)
+
+total_cost = sum(b["cost"] for b in week_buckets.values())
+
+weekly_section = "\n## Weekly Cost\n\n"
+weekly_section += "| Week | Input | CacheC | CacheR | Output | Turns | Cost |\n"
+weekly_section += "|------|------:|-------:|-------:|-------:|------:|-----:|\n"
+for week_key, b in week_buckets.items():
+    weekly_section += (
+        f"| {week_key} | {fmt(b['input'])} | {fmt(b['cache_create'])} | {fmt(b['cache_read'])} "
+        f"| {fmt(b['output'])} | {b['turns']} | ${b['cost']:.2f} |\n"
+    )
+weekly_section += (
+    f"| **Total** | **{fmt(totals['input'])}** | **{fmt(totals['cache_create'])}** "
+    f"| **{fmt(totals['cache_read'])}** | **{fmt(totals['output'])}** "
+    f"| **{totals['turns']}** | **${total_cost:.2f}** |\n"
+)
+
+# ── Per-week files: docs/week-XX.md ─────────────────────────────────────────
+docs_dir = os.path.join(project_root, "docs")
+for week_key, b in week_buckets.items():
+    week_rows = [r for r in rows if f"{r['commit_ts'].isocalendar()[0]}-W{r['commit_ts'].isocalendar()[1]:02d}" == week_key]
+    week_cost = b["cost"]
+    wf_name = f"week-{week_key}.md"
+    wf_path = os.path.join(docs_dir, wf_name)
+    wf_lines = f"# Token Usage — {week_key} (${week_cost:.2f})\n\n"
+    wf_lines += "| Date | SHA | Input | CacheC | CacheR | Output | Turns | RTKSaved | Cost | Subject |\n"
+    wf_lines += "|------|-----|------:|-------:|-------:|-------:|------:|---------:|-----:|---------|\n"
+    for r in week_rows:
+        rc = row_cost(r)
+        wf_lines += (
+            f"| {r['date']} | {r['sha']} "
+            f"| {fmt(r['input'])} | {fmt(r['cache_create'])} | {fmt(r['cache_read'])} "
+            f"| {fmt(r['output'])} | {r['turns']} | {fmt(r['rtk_saved'])} "
+            f"| ${rc:.2f} | {r['subject']} |\n"
+        )
+    wf_lines += (
+        f"| **Total** | — "
+        f"| **{fmt(b['input'])}** | **{fmt(b['cache_create'])}** | **{fmt(b['cache_read'])}** "
+        f"| **{fmt(b['output'])}** | **{b['turns']}** | — | **${week_cost:.2f}** | — |\n"
+    )
+    with open(wf_path, "w") as f:
+        f.write(wf_lines)
+
+# ── Notes section (always regenerated) ──────────────────────────────────────
+notes = (
+    "\n## Notes\n\n"
+    f"- Pricing: Sonnet 4.6 — $3.00/1M input, $3.75/1M cache write, $0.30/1M cache read, $15.00/1M output\n"
+    f"- **Total estimated cost: ${total_cost:.4f}**\n"
+    "- RTKSaved = tokens removed from tool results before being fed back as context (not billed, but avoided context inflation)\n"
+)
+
 usage_path = os.path.join(project_root, "docs", "token-usage.md")
 os.makedirs(os.path.dirname(usage_path), exist_ok=True)
 
-notes = ""
-if os.path.exists(usage_path):
-    with open(usage_path) as f:
-        content = f.read()
-    if "## Notes" in content:
-        notes = "\n" + content[content.index("## Notes"):]
-
 with open(usage_path, "w") as f:
-    f.write(header + table + notes)
+    f.write(header + table + weekly_section + notes)
 
 print(f"docs/token-usage.md updated ({len(rows)} commits).")
 
 # ── Step 6: cost breakdown ───────────────────────────────────────────────────
-PRICING = {
-    "input":        3.00 / 1e6,
-    "cache_create": 3.75 / 1e6,
-    "cache_read":   0.30 / 1e6,
-    "output":      15.00 / 1e6,
-}
-
-def row_cost(row):
-    return (
-        row["input"]        * PRICING["input"]
-        + row["cache_create"] * PRICING["cache_create"]
-        + row["cache_read"]   * PRICING["cache_read"]
-        + row["output"]       * PRICING["output"]
-    )
-
 river_map = {}
 for root, _, fnames in os.walk(os.path.join(project_root, "specs")):
     parts = root.replace("\\", "/").split("/")
@@ -178,8 +234,6 @@ for row in rows:
     priority_costs[pri] = priority_costs.get(pri, 0) + c
     category_costs[cat] = category_costs.get(cat, 0) + c
 
-total_cost = sum(row_cost(r) for r in rows)
-
 # ── Step 7: update README.md tables ─────────────────────────────────────────
 readme_path = os.path.join(project_root, "README.md")
 with open(readme_path) as f:
@@ -199,6 +253,12 @@ for cat, c in sorted(category_costs.items(), key=lambda x: -x[1]):
 
 new_category_table = f"| Category | Cost | Share |\n|----------|-----:|------:|\n{cat_lines}"
 
+week_lines = ""
+for week_key, b in week_buckets.items():
+    week_lines += f"| [{week_key}](docs/week-{week_key}.md) | ${b['cost']:.2f} | {b['turns']} |\n"
+week_lines += f"| **Total** | **${total_cost:.2f}** | **{totals['turns']}** |\n"
+new_weekly_table = f"| Week | Cost | Turns |\n|------|-----:|------:|\n{week_lines}"
+
 readme = re.sub(
     r"\| Priority \| Cost \| Share \|\n\|[-|: ]+\|\n(?:\|.*\|\n)+",
     new_priority_table,
@@ -207,6 +267,11 @@ readme = re.sub(
 readme = re.sub(
     r"\| Category \| Cost \| Share \|\n\|[-|: ]+\|\n(?:\|.*\|\n)+",
     new_category_table,
+    readme,
+)
+readme = re.sub(
+    r"\| Week \| Cost \| Turns \|\n\|[-|: ]+\|\n(?:\|.*\|\n)+",
+    new_weekly_table,
     readme,
 )
 

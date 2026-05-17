@@ -103,6 +103,16 @@ Cost and stability. Claude Code Pro is a flat subscription with no per-token bil
 
 [RTK](https://github.com/rtk-ai/rtk) compresses Bash tool output before it reaches Claude's context window. `river-index` intercepts `Read` calls on source files and returns compact symbol summaries (~60 tokens instead of ~1500). Full details: [docs/token-optimization.md](docs/token-optimization.md)
 
+### Weekly cost
+
+| Week | Cost | Turns |
+|------|-----:|------:|
+| [2026-W19](docs/week-2026-W19.md) | $118.20 | 2972 |
+| [2026-W20](docs/week-2026-W20.md) | $201.31 | 5843 |
+| **Total** | **$319.51** | **8815** |
+
+Full breakdown: [docs/token-usage.md](docs/token-usage.md)
+
 ---
 
 ## The project itself

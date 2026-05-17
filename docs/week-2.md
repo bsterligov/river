@@ -10,50 +10,50 @@ Week 2 focus: lift the workflow one level up. Instead of driving individual task
 
 Three new commands were added above the existing V0 loops:
 
-- `/create-feature` — interactive session that produces a phase-by-phase plan in `specs/plans/`. Claude asks for the why, scope boundaries, and constraints, then decomposes the feature into independently shippable phases with goals, steps, dependencies, done criteria, risks, and open questions.
+- `/feature-plan` — interactive session that produces a phase-by-phase plan in `specs/plans/`. Claude asks for the why, scope boundaries, and constraints, then decomposes the feature into independently shippable phases with goals, steps, dependencies, done criteria, risks, and open questions.
 
-- `/plan-spec {name}` — reads a saved plan and spawns one parallel subagent per phase. Each subagent runs in an isolated git work tree, creates the GitHub issue, waits for the GHA spec branch, and runs `/spec`. The result: all spec PRs for a feature open simultaneously rather than one at a time.
+- `/dev-plan {name}` — reads a saved plan and spawns one parallel subagent per phase. Each subagent runs in an isolated git work tree, creates the GitHub issue, waits for the GHA spec branch, and runs `/po-spec-writer`. The result: all spec PRs for a feature open simultaneously rather than one at a time.
 
-- `/plan-dev {name}` — closes the loop after spec review. Finds all open spec PRs for the plan, gates on approval status, merges them in phase order (rebasing and resolving conflicts automatically), then spawns one parallel subagent per phase to run `/spec-dev`. All impl PRs for a feature land simultaneously.
+- `/dev-plan-impl {name}` — closes the loop after spec review. Finds all open spec PRs for the plan, gates on approval status, merges them in phase order (rebasing and resolving conflicts automatically), then spawns one parallel subagent per phase to run `/dev-spec`. All impl PRs for a feature land simultaneously.
 
-**Routing guidance** was also added to `CLAUDE.md` so Claude proactively suggests the right command based on task size — `/create-issue` for small self-contained tasks, `/create-feature` for anything that spans multiple components or requires design decisions first.
+**Routing guidance** was also added to `CLAUDE.md` so Claude proactively suggests the right command based on task size — `/issue-create` for small self-contained tasks, `/feature-plan` for anything that spans multiple components or requires design decisions first.
 
 **API-equivalent cost so far** (Sonnet 4.6 pricing — $3/1M input, $3.75/1M cache write, $0.30/1M cache read, $15/1M output):
 
 | Token type | Volume | Cost | Share |
 |------------|--------|-----:|------:|
-| Cache reads | 228.7M | $68.61 | 65% |
-| Output | 1.3M | $19.25 | 18% |
-| Cache writes | 4.7M | $17.81 | 17% |
-| Input | 4K | $0.01 | <1% |
-| **Total** | | **$105.69** | |
+| Cache reads | 93.6M | $28.09 | 58% |
+| Output | 0.7M | $11.16 | 23% |
+| Cache writes | 2.5M | $9.44 | 19% |
+| Input | 2K | $0.01 | <1% |
+| **Total** | | **$48.72** | |
 
-30 commits, 3,003 assistant turns. RTK compressed 73K additional tokens (~$0.22 avoided).
+17 commits, 1,384 assistant turns. RTK compressed 44K additional tokens (~$0.13 avoided).
 
 Full token breakdown: [docs/token-usage.md](token-usage.md)
 
-For comparison, week 1 ran to **$126.63** across 35 commits and 3,309 turns. Week 2 is on track to exceed week 1 spend as more implementation work lands — the Flutter UI build is driving the bulk of context load.
+For comparison, week 1 ran to **$126.63** across 35 commits and 3,309 turns. The lower turn count in week 2 so far reflects the plan-driven parallel approach — fewer sequential context-heavy debug loops.
 
 **By phase:**
 
 | Phase | Cost | Share |
 |-------|-----:|------:|
-| Implementation | $98.02 | 93% |
-| Setup / tooling | $6.31 | 6% |
-| Spec writing | $1.36 | 1% |
+| Implementation | $35.12 | 72% |
+| Setup / tooling | $12.24 | 25% |
+| Spec writing | $1.36 | 3% |
 
-Spec writing remains nearly free — parallel `/plan-spec` subagents write specs with minimal context ($0.11–$0.13 each). Implementation now dominates at 93% as the full Flutter UI layer was built out.
+Spec writing is nearly free in week 2 — the parallel `/dev-plan` subagents each write specs with minimal context, keeping individual session costs at $0.11–$0.36. Implementation dominates because it carries the full context of the codebase.
 
-**Most expensive session**: `impl: RIVER-31 -- UI: Log Distribution Histogram` at **$12.93** — 323 turns, building the histogram widget from scratch.
+**Most expensive session**: `feat: add sqlite based index` at **$12.10** — 314 turns, building `river-index` from scratch.
 
-**Cheapest sessions**: parallel spec writes at **$0.11–$0.13** each.
+**Cheapest sessions**: parallel spec writes at **$0.11–$0.36** each.
 
 **By MoSCoW priority:**
 
 | Priority | Cost | Share |
 |----------|-----:|------:|
-| must | $78.45 | 74% |
-| should | $27.24 | 26% |
+| must | $48.72 | 100% |
+| should | — | — |
 | could | — | — |
 | wont | — | — |
 
@@ -61,11 +61,10 @@ Spec writing remains nearly free — parallel `/plan-spec` subagents write specs
 
 | Category | Cost | Share |
 |----------|-----:|------:|
-| features | $57.97 | 55% |
-| tools | $36.08 | 34% |
-| refactoring | $11.64 | 11% |
+| features | $24.38 | 50% |
+| tools | $24.34 | 50% |
 
-Features now dominate as the Flutter UI build ramps up. The `should` priority share (26%) reflects the UI layer being classified as non-critical infrastructure — logs table, histogram, facet panel, log detail.
+Features and tooling are evenly split — the `river-index` build ($12.10) accounts for most of the tooling cost and is a one-time investment.
 
 **Open questions being studied in week 2:**
 
