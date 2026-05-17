@@ -17,6 +17,8 @@ use opentelemetry_proto::tonic::{
 
 use crate::batcher::Sink;
 
+const KEY_SEPARATOR: &str = "\x00";
+
 pub struct Config {
     pub flush_interval: Duration,
     pub key_prefix: String,
@@ -86,7 +88,7 @@ impl MetricsAggregator {
                 let sn = sm.scope.as_ref().map(|s| s.name.as_str()).unwrap_or("");
                 let sv = sm.scope.as_ref().map(|s| s.version.as_str()).unwrap_or("");
                 for m in &sm.metrics {
-                    ingest(&mut state.series, &rk, rm.resource.clone(), sn, sv, m);
+                    ingest(&mut state.series, &rk, &rm.resource, sn, sv, m);
                 }
             }
         }
@@ -156,86 +158,123 @@ fn resource_key(resource: &Option<Resource>) -> String {
         .unwrap_or_default()
 }
 
+fn ingest_points<'a>(
+    series: &mut HashMap<String, SeriesEntry>,
+    rk: &str,
+    resource: &Option<Resource>,
+    scope_name: &str,
+    scope_ver: &str,
+    m: &Metric,
+    points: impl Iterator<
+        Item = (
+            String,
+            impl FnOnce() -> SeriesKind + 'a,
+            impl FnOnce(&mut SeriesKind) + 'a,
+        ),
+    >,
+) {
+    for (pk, make, update) in points {
+        upsert(
+            series,
+            rk,
+            resource.clone(),
+            scope_name,
+            scope_ver,
+            m,
+            &pk,
+            make,
+            update,
+        );
+    }
+}
+
 fn ingest(
     series: &mut HashMap<String, SeriesEntry>,
     rk: &str,
-    resource: Option<Resource>,
+    resource: &Option<Resource>,
     scope_name: &str,
     scope_ver: &str,
     m: &Metric,
 ) {
     match &m.data {
-        Some(Data::Gauge(g)) => {
-            for p in &g.data_points {
-                upsert(
-                    series,
-                    rk,
-                    resource.clone(),
-                    scope_name,
-                    scope_ver,
-                    m,
-                    &attrs_key(&p.attributes),
-                    || SeriesKind::Gauge(p.clone()),
-                    |k| {
+        Some(Data::Gauge(g)) => ingest_points(
+            series,
+            rk,
+            resource,
+            scope_name,
+            scope_ver,
+            m,
+            g.data_points.iter().map(|p| {
+                let pk = attrs_key(&p.attributes);
+                (
+                    pk,
+                    move || SeriesKind::Gauge(p.clone()),
+                    move |k: &mut SeriesKind| {
                         if let SeriesKind::Gauge(e) = k {
                             if p.time_unix_nano >= e.time_unix_nano {
                                 *e = p.clone();
                             }
                         }
                     },
-                );
-            }
-        }
+                )
+            }),
+        ),
         Some(Data::Sum(s)) => {
             let (t, mono) = (s.aggregation_temporality, s.is_monotonic);
-            for p in &s.data_points {
-                upsert(
-                    series,
-                    rk,
-                    resource.clone(),
-                    scope_name,
-                    scope_ver,
-                    m,
-                    &attrs_key(&p.attributes),
-                    || SeriesKind::Sum {
-                        temporality: t,
-                        is_monotonic: mono,
-                        point: p.clone(),
-                    },
-                    |k| {
-                        if let SeriesKind::Sum { point: e, .. } = k {
-                            if p.time_unix_nano >= e.time_unix_nano {
-                                *e = p.clone();
+            ingest_points(
+                series,
+                rk,
+                resource,
+                scope_name,
+                scope_ver,
+                m,
+                s.data_points.iter().map(move |p| {
+                    let pk = attrs_key(&p.attributes);
+                    (
+                        pk,
+                        move || SeriesKind::Sum {
+                            temporality: t,
+                            is_monotonic: mono,
+                            point: p.clone(),
+                        },
+                        move |k: &mut SeriesKind| {
+                            if let SeriesKind::Sum { point: e, .. } = k {
+                                if p.time_unix_nano >= e.time_unix_nano {
+                                    *e = p.clone();
+                                }
                             }
-                        }
-                    },
-                );
-            }
+                        },
+                    )
+                }),
+            );
         }
         Some(Data::Histogram(h)) => {
             let t = h.aggregation_temporality;
-            for p in &h.data_points {
-                upsert(
-                    series,
-                    rk,
-                    resource.clone(),
-                    scope_name,
-                    scope_ver,
-                    m,
-                    &attrs_key(&p.attributes),
-                    || SeriesKind::Histogram {
-                        temporality: t,
-                        point: p.clone(),
-                    },
-                    |k| {
-                        if let SeriesKind::Histogram { point: e, .. } = k {
-                            if p.time_unix_nano >= e.time_unix_nano {
-                                *e = p.clone();
+            ingest_points(
+                series,
+                rk,
+                resource,
+                scope_name,
+                scope_ver,
+                m,
+                h.data_points.iter().map(move |p| {
+                    let pk = attrs_key(&p.attributes);
+                    (
+                        pk,
+                        move || SeriesKind::Histogram {
+                            temporality: t,
+                            point: p.clone(),
+                        },
+                        move |k: &mut SeriesKind| {
+                            if let SeriesKind::Histogram { point: e, .. } = k {
+                                if p.time_unix_nano >= e.time_unix_nano {
+                                    *e = p.clone();
+                                }
                             }
-                        }
-                    },
-                );
-            }
+                        },
+                    )
+                }),
+            );
         }
         _ => {} // ExponentialHistogram, Summary: not yet handled
     }
@@ -253,7 +292,10 @@ fn upsert(
     make: impl FnOnce() -> SeriesKind,
     update: impl FnOnce(&mut SeriesKind),
 ) {
-    let sk = format!("{rk}\x00{scope_name}\x00{}\x00{point_key}", m.name);
+    let sk = format!(
+        "{rk}{KEY_SEPARATOR}{scope_name}{KEY_SEPARATOR}{}{KEY_SEPARATOR}{point_key}",
+        m.name
+    );
     match series.entry(sk) {
         Entry::Vacant(v) => {
             v.insert(SeriesEntry {
@@ -450,20 +492,11 @@ mod tests {
 
     #[tokio::test]
     async fn keeps_latest_data_point() {
-        let captured = Arc::new(StdMutex::new(vec![]));
-        let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
-
-        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])]))
-            .await
-            .unwrap();
-        agg.push("svc", gauge_req("cpu", vec![num_point(2_000, 0.9, vec![])]))
-            .await
-            .unwrap();
-
-        agg.flush().await.unwrap();
-
-        let flushed = captured.lock().unwrap();
-        let req = decode(&flushed[0].1);
+        let req = push_and_flush(vec![
+            gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])]),
+            gauge_req("cpu", vec![num_point(2_000, 0.9, vec![])]),
+        ])
+        .await;
         let pts = gauge_points(&req);
         assert_eq!(pts.len(), 1);
         assert_eq!(pts[0].value, Some(Value::AsDouble(0.9)));
@@ -471,23 +504,12 @@ mod tests {
 
     #[tokio::test]
     async fn does_not_overwrite_with_older_point() {
-        let captured = Arc::new(StdMutex::new(vec![]));
-        let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
-
-        agg.push("svc", gauge_req("cpu", vec![num_point(2_000, 0.9, vec![])]))
-            .await
-            .unwrap();
-        agg.push("svc", gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])]))
-            .await
-            .unwrap();
-
-        agg.flush().await.unwrap();
-
-        let flushed = captured.lock().unwrap();
-        assert_eq!(
-            gauge_points(&decode(&flushed[0].1))[0].value,
-            Some(Value::AsDouble(0.9))
-        );
+        let req = push_and_flush(vec![
+            gauge_req("cpu", vec![num_point(2_000, 0.9, vec![])]),
+            gauge_req("cpu", vec![num_point(1_000, 0.5, vec![])]),
+        ])
+        .await;
+        assert_eq!(gauge_points(&req)[0].value, Some(Value::AsDouble(0.9)));
     }
 
     #[tokio::test]
@@ -548,5 +570,124 @@ mod tests {
         agg.tick().await.unwrap();
 
         assert_eq!(captured.lock().unwrap().len(), 0);
+    }
+
+    fn make_metric_req(name: &str, data: Data) -> ExportMetricsServiceRequest {
+        ExportMetricsServiceRequest {
+            resource_metrics: vec![ResourceMetrics {
+                resource: None,
+                scope_metrics: vec![ScopeMetrics {
+                    scope: None,
+                    metrics: vec![Metric {
+                        name: name.to_string(),
+                        description: String::new(),
+                        unit: String::new(),
+                        data: Some(data),
+                        metadata: vec![],
+                    }],
+                    schema_url: String::new(),
+                }],
+                schema_url: String::new(),
+            }],
+        }
+    }
+
+    async fn push_and_flush(
+        pairs: Vec<ExportMetricsServiceRequest>,
+    ) -> ExportMetricsServiceRequest {
+        let captured = Arc::new(StdMutex::new(vec![]));
+        let agg = make_agg(Duration::from_secs(60), Arc::clone(&captured));
+        for req in pairs {
+            agg.push("svc", req).await.unwrap();
+        }
+        agg.flush().await.unwrap();
+        let flushed = captured.lock().unwrap();
+        decode(&flushed[0].1)
+    }
+
+    fn sum_req_mono(metric: &str, ts_ns: u64, value: f64) -> ExportMetricsServiceRequest {
+        make_metric_req(
+            metric,
+            Data::Sum(Sum {
+                data_points: vec![num_point(ts_ns, value, vec![])],
+                aggregation_temporality: 2,
+                is_monotonic: true,
+            }),
+        )
+    }
+
+    fn histogram_req_simple(metric: &str, ts_ns: u64) -> ExportMetricsServiceRequest {
+        make_metric_req(
+            metric,
+            Data::Histogram(Histogram {
+                data_points: vec![HistogramDataPoint {
+                    time_unix_nano: ts_ns,
+                    count: 5,
+                    sum: Some(100.0),
+                    ..Default::default()
+                }],
+                aggregation_temporality: 2,
+            }),
+        )
+    }
+
+    fn sum_point(req: &ExportMetricsServiceRequest) -> &NumberDataPoint {
+        if let Some(Data::Sum(s)) = &req.resource_metrics[0].scope_metrics[0].metrics[0].data {
+            &s.data_points[0]
+        } else {
+            panic!("expected Sum");
+        }
+    }
+
+    fn histogram_point(req: &ExportMetricsServiceRequest) -> &HistogramDataPoint {
+        if let Some(Data::Histogram(h)) = &req.resource_metrics[0].scope_metrics[0].metrics[0].data
+        {
+            &h.data_points[0]
+        } else {
+            panic!("expected Histogram");
+        }
+    }
+
+    #[tokio::test]
+    async fn sum_keeps_latest_data_point() {
+        let req = push_and_flush(vec![
+            sum_req_mono("reqs", 1_000, 10.0),
+            sum_req_mono("reqs", 2_000, 20.0),
+        ])
+        .await;
+        let s = sum_point(&req);
+        assert_eq!(s.value, Some(Value::AsDouble(20.0)));
+    }
+
+    #[tokio::test]
+    async fn sum_does_not_overwrite_with_older_point() {
+        let req = push_and_flush(vec![
+            sum_req_mono("reqs", 2_000, 20.0),
+            sum_req_mono("reqs", 1_000, 10.0),
+        ])
+        .await;
+        assert_eq!(sum_point(&req).value, Some(Value::AsDouble(20.0)));
+    }
+
+    #[tokio::test]
+    async fn histogram_keeps_latest_data_point() {
+        let req = push_and_flush(vec![
+            histogram_req_simple("lat", 1_000),
+            histogram_req_simple("lat", 2_000),
+        ])
+        .await;
+        let h = histogram_point(&req);
+        assert_eq!(h.time_unix_nano, 2_000);
+        assert_eq!(h.count, 5);
+    }
+
+    #[tokio::test]
+    async fn histogram_does_not_overwrite_with_older_point() {
+        let req = push_and_flush(vec![
+            histogram_req_simple("lat", 2_000),
+            histogram_req_simple("lat", 1_000),
+        ])
+        .await;
+        assert_eq!(histogram_point(&req).time_unix_nano, 2_000);
     }
 }
