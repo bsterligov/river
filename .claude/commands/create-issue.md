@@ -111,10 +111,20 @@ Ask the user:
 
 > "Is the spec approved, or are there comments to fix?"
 
-**If there are comments:** ask the user to paste or describe them. Fix the relevant parts of the spec file, commit the fix, push, and reply to each comment thread:
+**If there are comments:** fetch them directly from GitHub — do not ask the user to paste them:
 
 ```bash
-gh pr comment <pr_number> --body "Fixed: <one-line summary of the change>"
+gh api repos/{owner}/{repo}/pulls/<pr_number>/comments \
+  --jq '[.[] | {id: .id, body: .body, path: .path, line: .line}]'
+```
+
+Read each comment, fix the relevant parts of the spec file, commit the fix, push, then reply to each comment thread in-line using your authority as Claude (sign off with your email `noreply@anthropic.com`):
+
+```bash
+gh api repos/{owner}/{repo}/pulls/<pr_number>/comments \
+  --method POST \
+  --field body="<answer addressing the comment — end with: — Claude <noreply@anthropic.com>>" \
+  --field in_reply_to=<comment_id>
 ```
 
 Then ask again: "Anything else, or are we good to merge?"
