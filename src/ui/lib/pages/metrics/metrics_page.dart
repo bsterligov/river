@@ -43,15 +43,15 @@ class _MetricsPageState extends State<MetricsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _controller,
-      builder: (context, _) => TabBarView(
-        controller: widget.tabController,
-        children: [
-          _AllMetricsTab(controller: _controller),
-          _GraphTab(controller: _controller),
-        ],
-      ),
+    return TabBarView(
+      controller: widget.tabController,
+      children: [
+        ListenableBuilder(
+          listenable: _controller,
+          builder: (context, _) => _AllMetricsTab(controller: _controller),
+        ),
+        _GraphTab(controller: _controller),
+      ],
     );
   }
 }
@@ -113,14 +113,18 @@ class _GraphTabState extends State<_GraphTab> {
   void initState() {
     super.initState();
     widget.controller.rangeController.addListener(_onRangeChanged);
+    widget.controller.addListener(_onNamesChanged);
   }
 
   @override
   void dispose() {
     widget.controller.rangeController.removeListener(_onRangeChanged);
+    widget.controller.removeListener(_onNamesChanged);
     _inputController.dispose();
     super.dispose();
   }
+
+  void _onNamesChanged() => setState(() {});
 
   void _onRangeChanged() {
     if (_selected.isNotEmpty) _loadSeries();
