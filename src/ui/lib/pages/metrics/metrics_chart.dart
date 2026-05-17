@@ -33,6 +33,24 @@ class MetricsChart extends StatelessWidget {
   }
 }
 
+class _ChartBounds {
+  const _ChartBounds({
+    required this.chartW,
+    required this.chartH,
+    required this.minTs,
+    required this.tsRange,
+    required this.minVal,
+    required this.valRange,
+  });
+
+  final double chartW;
+  final double chartH;
+  final double minTs;
+  final double tsRange;
+  final double minVal;
+  final double valRange;
+}
+
 class _ChartPainter extends CustomPainter {
   _ChartPainter({required this.series});
 
@@ -64,10 +82,16 @@ class _ChartPainter extends CustomPainter {
     final minVal = allPoints.map((p) => p.value).reduce(min);
     final maxVal = allPoints.map((p) => p.value).reduce(max);
 
-    final tsRange = (maxTs - minTs).clamp(1.0, double.infinity);
-    final valRange = (maxVal - minVal).clamp(1e-9, double.infinity);
+    final bounds = _ChartBounds(
+      chartW: chartW,
+      chartH: chartH,
+      minTs: minTs,
+      tsRange: (maxTs - minTs).clamp(1.0, double.infinity),
+      minVal: minVal,
+      valRange: (maxVal - minVal).clamp(1e-9, double.infinity),
+    );
 
-    _drawGrid(canvas, size, chartW, chartH, minVal, maxVal, valRange);
+    _drawGrid(canvas, size, bounds);
 
     final colorKeys = series.keys.toList();
     for (var i = 0; i < colorKeys.length; i++) {
@@ -75,14 +99,13 @@ class _ChartPainter extends CustomPainter {
       final points = series[name]!;
       if (points.isEmpty) continue;
       final color = _kSeriesColors[i % _kSeriesColors.length];
-      _drawSeries(canvas, points, color, chartW, chartH, minTs, tsRange, minVal, valRange);
+      _drawSeries(canvas, points, color, bounds);
     }
 
     _drawLegend(canvas, size, colorKeys);
   }
 
-  void _drawGrid(Canvas canvas, Size size, double chartW, double chartH,
-      double minVal, double maxVal, double valRange) {
+  void _drawGrid(Canvas canvas, Size size, _ChartBounds b) {
     final gridPaint = Paint()
       ..color = AppColors.border
       ..strokeWidth = 0.5;
@@ -92,34 +115,24 @@ class _ChartPainter extends CustomPainter {
 
     const steps = 4;
     for (var i = 0; i <= steps; i++) {
-      final y = _paddingTop + chartH * (1 - i / steps);
+      final y = _paddingTop + b.chartH * (1 - i / steps);
       canvas.drawLine(
         Offset(_paddingLeft, y),
-        Offset(_paddingLeft + chartW, y),
+        Offset(_paddingLeft + b.chartW, y),
         i == 0 ? axisPaint : gridPaint,
       );
-      final label = (minVal + valRange * i / steps).toStringAsFixed(2);
+      final label = (b.minVal + b.valRange * i / steps).toStringAsFixed(2);
       _drawText(canvas, label, Offset(0, y - 6), _paddingLeft - 4, TextAlign.right);
     }
 
     canvas.drawLine(
-      Offset(_paddingLeft, _paddingTop),
-      Offset(_paddingLeft, _paddingTop + chartH),
+      const Offset(_paddingLeft, _paddingTop),
+      Offset(_paddingLeft, _paddingTop + b.chartH),
       axisPaint,
     );
   }
 
-  void _drawSeries(
-    Canvas canvas,
-    List<MetricPoint> points,
-    Color color,
-    double chartW,
-    double chartH,
-    double minTs,
-    double tsRange,
-    double minVal,
-    double valRange,
-  ) {
+  void _drawSeries(Canvas canvas, List<MetricPoint> points, Color color, _ChartBounds b) {
     final paint = Paint()
       ..color = color
       ..strokeWidth = 1.5
@@ -132,8 +145,8 @@ class _ChartPainter extends CustomPainter {
     final path = Path();
     for (var i = 0; i < sorted.length; i++) {
       final ts = DateTime.parse(sorted[i].timestamp).millisecondsSinceEpoch.toDouble();
-      final x = _paddingLeft + chartW * (ts - minTs) / tsRange;
-      final y = _paddingTop + chartH * (1 - (sorted[i].value - minVal) / valRange);
+      final x = _paddingLeft + b.chartW * (ts - b.minTs) / b.tsRange;
+      final y = _paddingTop + b.chartH * (1 - (sorted[i].value - b.minVal) / b.valRange);
       if (i == 0) {
         path.moveTo(x, y);
       } else {

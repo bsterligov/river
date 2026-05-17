@@ -79,21 +79,13 @@ class _AllMetricsTab extends StatelessWidget {
       itemExtent: 40,
       itemBuilder: (context, index) {
         final name = controller.names[index];
-        final selected = controller.selected.contains(name);
-        return GestureDetector(
-          onTap: () => controller.toggleSelection(name),
-          child: Container(
-            color: selected ? AppColors.rowSelected : Colors.transparent,
-            padding: AppLayout.cellPadding,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              name,
-              style: AppText.mono.copyWith(
-                color: selected ? AppColors.primary : AppColors.textBody,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
+        return Container(
+          padding: AppLayout.cellPadding,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            name,
+            style: AppText.mono.copyWith(color: AppColors.textBody),
+            overflow: TextOverflow.ellipsis,
           ),
         );
       },
@@ -112,67 +104,103 @@ class _GraphTab extends StatefulWidget {
 
 class _GraphTabState extends State<_GraphTab> {
   final _inputController = TextEditingController();
+  final Set<String> _selected = {};
+  Map<String, List<MetricPoint>> _series = {};
+  bool _loadingSeries = false;
+  String? _seriesError;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.rangeController.addListener(_onRangeChanged);
+  }
 
   @override
   void dispose() {
+    widget.controller.rangeController.removeListener(_onRangeChanged);
     _inputController.dispose();
     super.dispose();
   }
 
+  void _onRangeChanged() {
+    if (_selected.isNotEmpty) _loadSeries();
+  }
+
   void _onSelected(String name) {
-    widget.controller.toggleSelection(name);
+    if (_selected.contains(name)) return;
+    setState(() => _selected.add(name));
     _inputController.clear();
+    _loadSeries();
+  }
+
+  void _removeMetric(String name) {
+    setState(() {
+      _selected.remove(name);
+      _series.remove(name);
+    });
+    if (_selected.isNotEmpty) _loadSeries();
+  }
+
+  Future<void> _loadSeries() async {
+    if (_selected.isEmpty) return;
+    setState(() {
+      _loadingSeries = true;
+      _seriesError = null;
+    });
+    try {
+      final from = widget.controller.rangeController.from.toUtc().toIso8601String();
+      final to = widget.controller.rangeController.to.toUtc().toIso8601String();
+      final results = await Future.wait(
+        _selected.map((name) async {
+          final points = await widget.controller.fetchSeries(name, from, to);
+          return MapEntry(name, points);
+        }),
+      );
+      if (mounted) setState(() => _series = Map.fromEntries(results));
+    } catch (e) {
+      if (mounted) setState(() => _seriesError = e.toString());
+    } finally {
+      if (mounted) setState(() => _loadingSeries = false);
+    }
+  }
+
+  Widget _buildChartArea() {
+    if (_loadingSeries) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_seriesError != null && _series.isEmpty) {
+      return Center(
+        child: Text(_seriesError!, style: const TextStyle(color: AppColors.error)),
+      );
+    }
+    if (_selected.isEmpty) {
+      return const Center(child: Text('Add a metric above to render a graph.'));
+    }
+    return MetricsChart(series: _series);
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = widget.controller;
     return Padding(
       padding: const EdgeInsets.all(AppLayout.gapXL),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: _MetricAutocomplete(
-                  names: controller.names,
-                  selected: controller.selected,
-                  textController: _inputController,
-                  onSelected: _onSelected,
-                ),
-              ),
-              const SizedBox(width: AppLayout.gapM),
-              FilledButton(
-                onPressed: controller.loadingSeries || controller.selected.isEmpty
-                    ? null
-                    : controller.loadSeries,
-                style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-                child: const Text('Refresh'),
-              ),
-            ],
+          _MetricAutocomplete(
+            names: widget.controller.names,
+            selected: _selected,
+            textController: _inputController,
+            onSelected: _onSelected,
           ),
-          if (controller.selected.isNotEmpty) ...[
+          if (_selected.isNotEmpty) ...[
             const SizedBox(height: AppLayout.gapM),
             _SelectedChips(
-              selected: controller.selected,
-              onRemove: controller.toggleSelection,
+              selected: _selected,
+              onRemove: _removeMetric,
             ),
           ],
           const SizedBox(height: AppLayout.gapL),
-          Expanded(
-            child: controller.loadingSeries
-                ? const Center(child: CircularProgressIndicator())
-                : controller.error != null && controller.series.isEmpty
-                    ? Center(
-                        child: Text(controller.error!,
-                            style: const TextStyle(color: AppColors.error)))
-                    : controller.selected.isEmpty
-                        ? const Center(
-                            child: Text('Add a metric above to render a graph.'))
-                        : MetricsChart(series: controller.series),
-          ),
+          Expanded(child: _buildChartArea()),
         ],
       ),
     );
