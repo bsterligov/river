@@ -167,111 +167,82 @@ fn ingest(
     m: &Metric,
 ) {
     match &m.data {
-        Some(Data::Gauge(g)) => ingest_gauge(series, rk, resource, scope_name, scope_ver, m, g),
-        Some(Data::Sum(s)) => ingest_sum(series, rk, resource, scope_name, scope_ver, m, s),
+        Some(Data::Gauge(g)) => {
+            for p in &g.data_points {
+                let pk = attrs_key(&p.attributes);
+                upsert(
+                    series,
+                    rk,
+                    resource.clone(),
+                    scope_name,
+                    scope_ver,
+                    m,
+                    &pk,
+                    || SeriesKind::Gauge(p.clone()),
+                    |k| {
+                        if let SeriesKind::Gauge(e) = k {
+                            if p.time_unix_nano >= e.time_unix_nano {
+                                *e = p.clone();
+                            }
+                        }
+                    },
+                );
+            }
+        }
+        Some(Data::Sum(s)) => {
+            let (t, mono) = (s.aggregation_temporality, s.is_monotonic);
+            for p in &s.data_points {
+                let pk = attrs_key(&p.attributes);
+                upsert(
+                    series,
+                    rk,
+                    resource.clone(),
+                    scope_name,
+                    scope_ver,
+                    m,
+                    &pk,
+                    || SeriesKind::Sum {
+                        temporality: t,
+                        is_monotonic: mono,
+                        point: p.clone(),
+                    },
+                    |k| {
+                        if let SeriesKind::Sum { point: e, .. } = k {
+                            if p.time_unix_nano >= e.time_unix_nano {
+                                *e = p.clone();
+                            }
+                        }
+                    },
+                );
+            }
+        }
         Some(Data::Histogram(h)) => {
-            ingest_histogram(series, rk, resource, scope_name, scope_ver, m, h);
+            let t = h.aggregation_temporality;
+            for p in &h.data_points {
+                let pk = attrs_key(&p.attributes);
+                upsert(
+                    series,
+                    rk,
+                    resource.clone(),
+                    scope_name,
+                    scope_ver,
+                    m,
+                    &pk,
+                    || SeriesKind::Histogram {
+                        temporality: t,
+                        point: p.clone(),
+                    },
+                    |k| {
+                        if let SeriesKind::Histogram { point: e, .. } = k {
+                            if p.time_unix_nano >= e.time_unix_nano {
+                                *e = p.clone();
+                            }
+                        }
+                    },
+                );
+            }
         }
         _ => {} // ExponentialHistogram, Summary: not yet handled
-    }
-}
-
-fn ingest_gauge(
-    series: &mut HashMap<String, SeriesEntry>,
-    rk: &str,
-    resource: &Option<Resource>,
-    scope_name: &str,
-    scope_ver: &str,
-    m: &Metric,
-    g: &Gauge,
-) {
-    for p in &g.data_points {
-        upsert(
-            series,
-            rk,
-            resource.clone(),
-            scope_name,
-            scope_ver,
-            m,
-            &attrs_key(&p.attributes),
-            || SeriesKind::Gauge(p.clone()),
-            |k| {
-                if let SeriesKind::Gauge(e) = k {
-                    if p.time_unix_nano >= e.time_unix_nano {
-                        *e = p.clone();
-                    }
-                }
-            },
-        );
-    }
-}
-
-fn ingest_sum(
-    series: &mut HashMap<String, SeriesEntry>,
-    rk: &str,
-    resource: &Option<Resource>,
-    scope_name: &str,
-    scope_ver: &str,
-    m: &Metric,
-    s: &Sum,
-) {
-    let (t, mono) = (s.aggregation_temporality, s.is_monotonic);
-    for p in &s.data_points {
-        upsert(
-            series,
-            rk,
-            resource.clone(),
-            scope_name,
-            scope_ver,
-            m,
-            &attrs_key(&p.attributes),
-            || SeriesKind::Sum {
-                temporality: t,
-                is_monotonic: mono,
-                point: p.clone(),
-            },
-            |k| {
-                if let SeriesKind::Sum { point: e, .. } = k {
-                    if p.time_unix_nano >= e.time_unix_nano {
-                        *e = p.clone();
-                    }
-                }
-            },
-        );
-    }
-}
-
-fn ingest_histogram(
-    series: &mut HashMap<String, SeriesEntry>,
-    rk: &str,
-    resource: &Option<Resource>,
-    scope_name: &str,
-    scope_ver: &str,
-    m: &Metric,
-    h: &Histogram,
-) {
-    let t = h.aggregation_temporality;
-    for p in &h.data_points {
-        upsert(
-            series,
-            rk,
-            resource.clone(),
-            scope_name,
-            scope_ver,
-            m,
-            &attrs_key(&p.attributes),
-            || SeriesKind::Histogram {
-                temporality: t,
-                point: p.clone(),
-            },
-            |k| {
-                if let SeriesKind::Histogram { point: e, .. } = k {
-                    if p.time_unix_nano >= e.time_unix_nano {
-                        *e = p.clone();
-                    }
-                }
-            },
-        );
     }
 }
 
