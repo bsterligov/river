@@ -145,19 +145,18 @@ void main() {
     testWidgets(
       'Given no metrics are selected, '
       'When the Graph tab is active, '
-      'Then a prompt to select metrics is shown',
+      'Then the metric autocomplete input is shown',
       (tester) async {
         final api = _FakeMetricsApi();
         final rangeController = TimeRangeController();
-        final tabController = TabController(length: 2, vsync: tester);
+        // Start directly on the Graph tab.
+        final tabController = TabController(length: 2, vsync: tester, initialIndex: 1);
 
         await tester.pumpWidget(_metricsPage(api, rangeController, tabController));
         await tester.pumpAndSettle();
 
-        tabController.animateTo(1);
-        await tester.pumpAndSettle();
-
-        expect(find.textContaining('Select one or more metrics'), findsOneWidget);
+        expect(find.widgetWithText(TextField, ''), findsWidgets);
+        expect(find.text('Refresh'), findsOneWidget);
 
         tabController.dispose();
         rangeController.dispose();
